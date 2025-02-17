@@ -1,0 +1,10 @@
+PyQt6
+numpy
+scipy
+matplotlib
+pandas
+pyopengl
+msgpack
+zmq
+pygame
+pyqtwebengine
