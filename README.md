@@ -51,3 +51,103 @@ containing the same commands with a time stamp before the command ("HH:MM:SS.hh>
 ## Contributions
 BlueSky can be considered 'perpetual beta'. We would like to encourage anyone with a strong interest in
 ATM and/or Python to join us. Please feel free to comment, criticise, and contribute to this project. Please send suggestions, proposed changes or contributions through GitHub pull requests, preferably after debugging it and optimising it for run-time performance.
+
+# AI-Based Ground ATC Agent for Conflict Resolution at LEBL in BlueSky
+
+## **Project Overview**
+This project develops an **AI-powered Tower ATC Agent** for **LEBL (Barcelona Airport)** using **BlueSky**. The system focuses on taxiway conflict resolution and runway assignments. It integrates **Multi-Agent Systems, Machine Learning, NLP, and Explainable AI (XAI)** to ensure efficient and transparent decision-making.
+
+## **1. System Components & Technologies**
+| **Component**  | **Technology Used** | **Functionality** |
+|---------------|------------------|----------------|
+| **1. ATC Multi-Agent System** | **Multi-Agent System (MAS)** | Manages **Ground Control operations** independently. |
+| **2. NLP for ATC Communications** | **Speech-to-Text & GPT-based response system** | Allows **aircraft to interact with ATC via text-based or voice commands**. |
+| **3. A\* Taxi Routing** | **A\* Search Algorithm** | Optimizes **taxi paths based on congestion and ground conditions**. |
+| **4. Runway Selection** | **Game Theory (Non-Cooperative Model)** | Allocates **runways dynamically** based on **traffic flow, wind, and taxi time**. |
+| **6. Explainable AI (XAI) for ATC Justifications** | **SHAP (Shapley Additive Explanations)** | Explains **why the system issued reroutes, hold-short orders, or taxi delays**. |
+| **7. Computer Vision for Surveillance** | **Object Detection & Tracking** | Ensures aircraft are **following taxiway and hold-short commands correctly**. |
+
+---
+
+## **2. System Architecture**
+### **A. ATC Ground Control Agent**
+The **Ground Control AI Agent** will manage:  
+1. **Taxiway Conflict Resolution**  
+   - Uses **A* algorithm** for optimal taxiway routing.  
+   - Detects **taxi route conflicts and suggests alternate paths**.  
+
+2. **Pushback & Gate Assignments**  
+   - Ensures **pushbacks do not interfere with taxiing aircraft**.  
+   - Assigns **gates dynamically** to avoid congestion.  
+
+3. **Runway Selection & Sequencing**  
+   - Uses **Game Theory** for **optimal runway allocation**.  
+   - Prioritizes **shortest taxi time & minimal crossings**.  
+
+4. **Hold-Short & Priority Clearance Management**  
+   - Issues **hold-short instructions to avoid runway incursions**.  
+   - Prioritizes **departure queues dynamically**.  
+
+### **B. Conflict Resolution Using AI**
+- **LSTM Model for Predictive Conflict Detection**  
+  - Predicts **taxi conflicts before they occur**.  
+  - Issues **real-time rerouting suggestions**.  
+
+- **Dynamic Rerouting & Prioritization**  
+  - Modifies taxi routes using **A* Search Algorithm**.  
+  - Adjusts **departure sequencing to minimize taxi congestion**.  
+
+### **C. Explainable AI (XAI) for Justifications**
+Implemented **SHAP-based explanations** to **justify Ground ATC decisions**:
+
+#### **1. Taxi Conflict Resolution Explanations**
+- **"Aircraft rerouted via Taxiway B due to bottleneck at Taxiway A"**  
+  - **Justification:** High aircraft density detected at Taxiway A.  
+  - **XAI Factors:** Congestion level, aircraft queue length, predicted delays.  
+
+- **"Aircraft stopped at intersection due to simultaneous crossings"**  
+  - **Justification:** Prevents a taxi conflict at a critical intersection.  
+  - **XAI Factors:** Aircraft speed, crossing priority, real-time positional data.  
+
+- **"Hold-short instruction issued at RWY 24 threshold due to expected departure clearance for another aircraft"**  
+  - **Justification:** Prevents runway incursion and ensures safe sequencing.  
+  - **XAI Factors:** Scheduled departure, aircraft separation rules, runway occupancy.  
+
+#### **2. Runway Assignment Justifications**
+- **"Aircraft moved to alternate runway due to wind shift"**  
+  - **Justification:** Aligns with optimal wind conditions for takeoff.  
+  - **XAI Factors:** METAR wind data, aircraft performance, ATC runway use policies.  
+
+- **"Aircraft delayed on runway queue due to spacing requirement"**  
+  - **Justification:** Ensures compliance with wake turbulence separation.  
+  - **XAI Factors:** Aircraft type (Heavy/Medium/Light), time-based separation rules.  
+
+### **D. NLP for Ground ATC Communication**
+- Converts **spoken ATC requests into structured BlueSky commands**.  
+- Generates **automated text-based clearances & reroutes**.  
+
+---
+
+## **4. Expected Deliverables**
+By the end of **two months**, the project will produce:
+✅ **A fully functional AI-based Ground ATC system in BlueSky**  
+✅ **Multi-Agent AI for Ground Control & Conflict Resolution**  
+✅ **Explainable AI (XAI) for taxi routing decisions**  
+✅ **Deep Learning model for ground conflict prediction**  
+✅ **Game Theory-based Runway Allocation**  
+✅ **A*-based Taxiway Routing System**  
+✅ **NLP-based ATC Communication**  
+✅ **Computer Vision for Taxiway Compliance**  
+
+---
+
+## **5. Summary**
+This **structured project** ensures that the **AI-powered Ground ATC system for LEBL** will be:
+- **Efficient in handling taxiway congestion & conflict resolution**.
+- **Capable of predicting taxi conflicts before they occur**.
+- **Providing clear explanations for ATC decisions using XAI**.
+- **Interacting with pilots via NLP-based ATC communication**.
+
+With a **structured implementation plan**, the project is **achievable within two months** and leaves **room for future enhancements**.
+
+---
