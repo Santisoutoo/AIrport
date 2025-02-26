@@ -1,0 +1,126 @@
+{
+    "airport": "Aeropuerto Josep Tarradellas Barcelona-El Prat",
+    "configurations": {
+        "West": {
+            "taxiways": [
+                {"name": "GATE RN", "coordinates": [41.294813, 2.060951], "connections": ["RN"]},
+                {"name": "GATE QN", "coordinates": [41.295257, 2.062271], "connections": ["RN"]},
+                {"name": "GATE PN", "coordinates": [41.295733, 2.063623], "connections": ["S13", "PN"]},
+                {"name": "GATE MN", "coordinates": [41.296228, 2.065095], "connections": ["PN", "S13"]},
+                {"name": "GATE LN", "coordinates": [41.297100, 2.067687], "connections": ["LN", "S12"]},
+                {"name": "GATE KN", "coordinates": [41.298398, 2.071720], "connections": ["KN", "S11"]},
+                {"name": "GATE JN", "coordinates": [41.299590, 2.075223], "connections": ["JN", "S10"]},
+                {"name": "GATE HN", "coordinates": [41.300129, 2.076910], "connections": ["HN", "S9"]},
+                {"name": "GATE GN", "coordinates": [41.300990, 2.079564], "connections": ["GN", "S8"]},
+                {"name": "GATE FN", "coordinates": [41.301785, 2.081848], "connections": ["FN", "S7"]},
+                {"name": "GATE EN", "coordinates": [41.302715, 2.084516], "connections": ["EN", "S6"]},
+                {"name": "GATE DN", "coordinates": [41.303225, 2.086074], "connections": ["S6"]},
+
+                {"name": "RN", "coordinates": [41.294145, 2.061299], "connections": ["S14", "GATE RN"]},
+                {"name": "PN", "coordinates": [41.295169, 2.064474], "connections": ["T13", "T12", "GATE PN"]},
+                {"name": "LN", "coordinates": [41.296457, 2.068149], "connections": ["T12", "T11", "GATE LN"]},
+                {"name": "KN", "coordinates": [41.297788, 2.072081], "connections": ["T11", "T10", "GATE KN"]},
+                {"name": "JN", "coordinates": [41.298950, 2.075617], "connections": ["T10", "T9", "GATE JN"]},
+                {"name": "HN", "coordinates": [41.299539, 2.077260], "connections": ["T9", "T8", "GATE KN"]},
+                {"name": "GN", "coordinates": [41.300450, 2.079898], "connections": ["T8", "T7", "GATE GN"]},
+                {"name": "FN", "coordinates": [41.301221, 2.082183], "connections": ["T7", "T6", "GATE FN"]},
+                {"name": "EN", "coordinates": [41.302146, 2.084867], "connections": ["T6", "T5", "GATE EN"]},
+
+
+                {"name": "N7", "coordinates": [41.296259, 2.081548], "connections": ["E5", "N8", "HS"]},
+                {"name": "N8", "coordinates": [441.295744, 2.080038], "connections": ["N9", "N7", "HS", "GS"]},
+                {"name": "N9", "coordinates": [41.295282, 2.078691], "connections": ["N10", "N8", "GS", "FS"]},
+                {"name": "N10", "coordinates": [41.294842, 2.077440], "connections": ["N11", "N9", "ES", "FS"]},
+                {"name": "N11", "coordinates": [41.294373, 2.076059], "connections": ["N12", "N10", "DS", "ES"]},
+                {"name": "N12", "coordinates": [41.293828, 2.074509], "connections": ["N13", "N11", "CS", "DS"]},
+                {"name": "N13", "coordinates": [41.293021, 2.072077], "connections": ["N14", "N12", "BS", "DS"]},
+                {"name": "N14", "coordinates": [41.292124, 2.069464], "connections": ["N16", "N13", "BS", "AS"]},
+                {"name": "N15", "coordinates": [41.291433, 2.067635], "connections": ["N14", "AS"]},
+                {"name": "N16", "coordinates": [41.302184, 2.084020], "connections": ["N15"]},
+
+
+                {"name": "AS", "coordinates": [41.291476, 2.068627], "connections": ["N14", "M14", "GATE AS"]},
+                {"name": "BS", "coordinates": [41.292148, 2.070584], "connections": ["N13", "M13", "GATE BS"]},
+                {"name": "CS", "coordinates": [41.293151, 2.073521], "connections": ["N12", "M12", "GATE CS"]},
+                {"name": "DS", "coordinates": [41.293801, 2.075352], "connections": ["N11", "M11", "GATE DS"]},
+                {"name": "ES", "coordinates": [41.294300, 2.076905], "connections": ["N10", "M10", "GATE ES"]},
+                {"name": "FS", "coordinates": [41.294674, 2.078202], "connections": ["N9", "M9", "GATE FS"]},
+                {"name": "GS", "coordinates": [41.295145, 2.079457], "connections": ["N8", "M8", "GATE GS"]},
+                {"name": "HS", "coordinates": [41.295576, 2.080767], "connections": ["N7", "M7", "GATE HS"]},
+
+
+                {"name": "M7", "coordinates": [41.295573, 2.081881], "connections": [""]},
+                {"name": "M8", "coordinates": [41.295045, 2.080339], "connections": ["M7"]},
+                {"name": "M9", "coordinates": [41.294604, 2.079036], "connections": ["M8"]},
+                {"name": "M10", "coordinates": [41.294172, 2.077753], "connections": ["M9"]},
+                {"name": "M11", "coordinates": [41.293699, 2.076335], "connections": ["M10"]},
+                {"name": "M12", "coordinates": [41.293265, 2.074892], "connections": ["M11"]},
+                {"name": "M13", "coordinates": [41.292631, 2.073052], "connections": ["M12"]},
+                {"name": "M14", "coordinates": [41.291676, 2.070100], "connections": ["M13"]},
+                {"name": "M15", "coordinates": [41.290992, 2.068147], "connections": ["M14"]},
+                {"name": "M16", "coordinates": [41.302184, 2.084020], "connections": ["M15"]},
+
+
+                {"name": "GATE AS", "coordinates": [41.290925, 2.068937], "connections": ["M14"]},
+                {"name": "GATE BS", "coordinates": [41.291566, 2.070931], "connections": ["M13"]},
+                {"name": "GATE CS", "coordinates": [41.292529, 2.073897], "connections": ["M12"]},
+                {"name": "GATE DS", "coordinates": [41.293202, 2.075712], "connections": ["M11"]},
+                {"name": "GATE ES", "coordinates": [41.293671, 2.077272], "connections": ["M10"]},
+                {"name": "GATE FS", "coordinates": [41.294113, 2.078540], "connections": ["M9"]},
+                {"name": "GATE GS", "coordinates": [41.294544, 2.079810], "connections": ["M8"]},
+                {"name": "GATE HS", "coordinates": [41.294934, 2.081159], "connections": ["M7"]},
+
+
+                {"name": "S5", "coordinates": [41.302963, 2.086254], "connections": ["S6"]},
+                {"name": "S6", "coordinates": [41.302184, 2.084020], "connections": ["S7"]},
+                {"name": "S7", "coordinates": [41.301264, 2.081327], "connections": ["S8"]},
+                {"name": "S8", "coordinates": [41.300501, 2.079050], "connections": ["S9"]},
+                {"name": "S9", "coordinates": [41.299594, 2.076424], "connections": ["S10"]},
+                {"name": "S10", "coordinates": [41.298999, 2.074750], "connections": ["S11"]},
+                {"name": "S11", "coordinates": [41.297559, 2.070343], "connections": ["S12"]},
+                {"name": "S12", "coordinates": [41.296493, 2.067256], "connections": ["S13"]},
+                {"name": "S13", "coordinates": [41.295090, 2.063183], "connections": ["S14"]},
+                {"name": "S14", "coordinates": [41.292725, 2.061676], "connections": ["M16"]},
+
+
+                {"name": "P3", "coordinates": [41.300647, 2.085571], "connections": ["T6", "EN"]},
+                {"name": "P5", "coordinates": [41.299378, 2.081563], "connections": ["T7", "T8", "GN"]},
+                {"name": "P6", "coordinates": [41.297672, 2.076555], "connections": ["T9", "T10", "JN"]},
+
+                {"name": "S5", "coordinates": [41.302963, 2.086254], "connections": ["S6"]},
+                {"name": "S6", "coordinates": [41.302184, 2.084020], "connections": ["S7"]},
+                {"name": "S7", "coordinates": [41.301264, 2.081327], "connections": ["S8"]},
+                {"name": "S8", "coordinates": [41.300501, 2.079050], "connections": ["S9"]},
+                {"name": "S9", "coordinates": [41.299594, 2.076424], "connections": ["S10"]},
+                {"name": "S10", "coordinates": [41.298999, 2.074750], "connections": ["S11"]},
+                {"name": "S11", "coordinates": [41.297559, 2.070343], "connections": ["S12"]},
+                {"name": "S12", "coordinates": [41.296493, 2.067256], "connections": ["S13"]},
+                {"name": "S13", "coordinates": [41.295090, 2.063183], "connections": ["S14"]},
+                {"name": "S14", "coordinates": [41.292725, 2.061676], "connections": ["M16"]},
+
+                {"name": "T5", "coordinates": [41.302330, 2.086597], "connections": ["T6", "EN"]},
+                {"name": "T6", "coordinates": [41.301559, 2.084302], "connections": ["T7", "T5", "EN", "FN"]},
+                {"name": "T7", "coordinates": [41.300689, 2.081750], "connections": ["T8", "T6", "FN", "GN"]},
+                {"name": "T8", "coordinates": [41.299826, 2.079219], "connections": ["T9", "T7", "GN", "HN"]},
+                {"name": "T9", "coordinates": [41.299006, 2.076843], "connections": ["T10", "T8", "HN", "JN"]},
+                {"name": "T10", "coordinates": [41.298398, 2.075101], "connections": ["T11", "T9", "JN", "KN"]},
+                {"name": "T11", "coordinates": [41.297104, 2.071336], "connections": ["T12", "T10", "KN", "LN"]},
+                {"name": "T12", "coordinates": [41.295869, 2.067741], "connections": ["T13", "T11", "LN", "PN"]},
+                {"name": "T13", "coordinates": [41.294323, 2.063236], "connections": ["T14", "T12", "PN", "RN"]},
+                {"name": "T14", "coordinates": [41.292947, 2.062599], "connections": ["N16"]},
+
+                {"name": "Z5", "coordinates": [41.296142, 2.070824], "connections": ["T11"]},
+                {"name": "Z6", "coordinates": [41.295900, 2.070083], "connections": ["T11"]},
+                {"name": "Z7", "coordinates": [41.295674, 2.069358], "connections": ["T11"]},
+                {"name": "Z8", "coordinates": [41.294220, 2.065056], "connections": ["PN", "T13", "T12"]}
+               
+
+               
+
+                
+            ]
+        },
+        "East": [
+        ]
+    }
+}
