@@ -30,11 +30,40 @@
                 {"name": "D2", "coordinates": [41.294080, 2.086486], "connections": ["D1"]},
                 {"name": "D3", "coordinates": [41.296772, 2.084844], "connections": ["D2"]},
 
+                {"name": "G1", "coordinates": [41.293192, 2.102525], "connections": []},
+                {"name": "G2", "coordinates": [41.292845, 2.101665], "connections": []},
+
                 {"name": "E1", "coordinates": [41.288905, 2.086700], "connections": ["K5"]},
                 {"name": "E2", "coordinates": [41.291382, 2.085191], "connections": ["E1"]},
                 {"name": "E3", "coordinates": [41.293138, 2.084127], "connections": ["E2", "J5"]},
                 {"name": "E4", "coordinates": [41.294455, 2.083331], "connections": ["E3"]},
                 {"name": "E5", "coordinates": [41.295973, 2.082433], "connections": ["E4", "M6"]},
+
+                {"name": "J5", "coordinates": [41.291232, 2.084058], "connections": ["GATE KS", "J6"]},
+                {"name": "J6", "coordinates": [41.289884, 2.083429], "connections": [ "J7"]},
+                {"name": "J7", "coordinates": [41.287691, 2.082292], "connections": ["GATE LS", "J8"]},
+                {"name": "J8", "coordinates": [41.287206, 2.081009], "connections": ["GATE MS"]},
+
+                {"name": "GATE KS", "coordinates": [41.290308, 2.083036], "connections": ["J5"]},
+                {"name": "GATE LS", "coordinates": [41.288045, 2.082104], "connections": ["J7"]},
+                {"name": "GATE MS", "coordinates": [41.287672, 2.080790], "connections": ["J8"]},
+                {"name": "GATE NS", "coordinates": [41.287335, 2.079185], "connections": ["GATE PS"]},
+
+                {"name": "GATE VS", "coordinates": [41.284492, 2.074098], "connections": ["K11"]},
+                {"name": "GATE TS", "coordinates": [41.284890, 2.075315], "connections": ["K10"]},
+                {"name": "GATE RS", "coordinates": [41.285652, 2.077208], "connections": ["K9"]},
+                {"name": "GATE PS", "coordinates": [41.286484, 2.079713], "connections": ["K8"]},
+
+                {"name": "K1", "coordinates": [41.293259, 2.100469], "connections": ["G1", "G2"]},
+                {"name": "K2", "coordinates": [41.292676, 2.099111], "connections": ["K1"]},
+                {"name": "K4", "coordinates": [41.289594, 2.090204], "connections": ["K2"]},
+                {"name": "K5", "coordinates": [41.289140, 2.088684], "connections": ["K4"]},
+                {"name": "K6", "coordinates": [41.288304, 2.086244], "connections": ["K5"]},
+                {"name": "K7", "coordinates": [41.287284, 2.083371], "connections": ["K6"]},
+                {"name": "K8", "coordinates": [41.286752, 2.081797], "connections": ["K7"]},
+                {"name": "K9", "coordinates": [41.285857, 2.079288], "connections": ["K8"]},
+                {"name": "K10", "coordinates": [41.285059, 2.076907], "connections": ["K9"]},
+                {"name": "K11", "coordinates": [41.284379, 2.074635], "connections": ["K10"]},
 
                 {"name": "N5", "coordinates": [41.297795, 2.086119], "connections": ["N6"]},
                 {"name": "N6", "coordinates": [41.297495, 2.085318], "connections": ["N7", "E5"]},
@@ -94,7 +123,6 @@
                 {"name": "S13", "coordinates": [41.295090, 2.063183], "connections": ["S14"]},
                 {"name": "S14", "coordinates": [41.292725, 2.061676], "connections": ["M16"]},
 
-
                 {"name": "P3", "coordinates": [41.300647, 2.085571], "connections": ["T6", "EN"]},
                 {"name": "P5", "coordinates": [41.299378, 2.081563], "connections": ["T7", "T8", "GN"]},
                 {"name": "P6", "coordinates": [41.297672, 2.076555], "connections": ["T9", "T10", "JN"]},
@@ -125,10 +153,6 @@
                 {"name": "Z6", "coordinates": [41.295900, 2.070083], "connections": ["T11"]},
                 {"name": "Z7", "coordinates": [41.295674, 2.069358], "connections": ["T11"]},
                 {"name": "Z8", "coordinates": [41.294220, 2.065056], "connections": ["PN", "T13", "T12"]}
-               
-
-               
-
                 
             ]
         },
