@@ -26,9 +26,20 @@
                 {"name": "FN", "coordinates": [41.301221, 2.082183], "connections": ["T7", "T6", "GATE FN"]},
                 {"name": "EN", "coordinates": [41.302146, 2.084867], "connections": ["T6", "T5", "GATE EN"]},
 
+                {"name": "D1", "coordinates": [41.289789, 2.089064], "connections": ["K4"]},
+                {"name": "D2", "coordinates": [41.294080, 2.086486], "connections": ["D1"]},
+                {"name": "D3", "coordinates": [41.296772, 2.084844], "connections": ["D2"]},
 
+                {"name": "E1", "coordinates": [41.288905, 2.086700], "connections": ["K5"]},
+                {"name": "E2", "coordinates": [41.291382, 2.085191], "connections": ["E1"]},
+                {"name": "E3", "coordinates": [41.293138, 2.084127], "connections": ["E2", "J5"]},
+                {"name": "E4", "coordinates": [41.294455, 2.083331], "connections": ["E3"]},
+                {"name": "E5", "coordinates": [41.295973, 2.082433], "connections": ["E4", "M6"]},
+
+                {"name": "N5", "coordinates": [41.297795, 2.086119], "connections": ["N6"]},
+                {"name": "N6", "coordinates": [41.297495, 2.085318], "connections": ["N7", "E5"]},
                 {"name": "N7", "coordinates": [41.296259, 2.081548], "connections": ["E5", "N8", "HS"]},
-                {"name": "N8", "coordinates": [441.295744, 2.080038], "connections": ["N9", "N7", "HS", "GS"]},
+                {"name": "N8", "coordinates": [41.295744, 2.080038], "connections": ["N9", "N7", "HS", "GS"]},
                 {"name": "N9", "coordinates": [41.295282, 2.078691], "connections": ["N10", "N8", "GS", "FS"]},
                 {"name": "N10", "coordinates": [41.294842, 2.077440], "connections": ["N11", "N9", "ES", "FS"]},
                 {"name": "N11", "coordinates": [41.294373, 2.076059], "connections": ["N12", "N10", "DS", "ES"]},
@@ -37,7 +48,6 @@
                 {"name": "N14", "coordinates": [41.292124, 2.069464], "connections": ["N16", "N13", "BS", "AS"]},
                 {"name": "N15", "coordinates": [41.291433, 2.067635], "connections": ["N14", "AS"]},
                 {"name": "N16", "coordinates": [41.302184, 2.084020], "connections": ["N15"]},
-
 
                 {"name": "AS", "coordinates": [41.291476, 2.068627], "connections": ["N14", "M14", "GATE AS"]},
                 {"name": "BS", "coordinates": [41.292148, 2.070584], "connections": ["N13", "M13", "GATE BS"]},
@@ -48,8 +58,8 @@
                 {"name": "GS", "coordinates": [41.295145, 2.079457], "connections": ["N8", "M8", "GATE GS"]},
                 {"name": "HS", "coordinates": [41.295576, 2.080767], "connections": ["N7", "M7", "GATE HS"]},
 
-
-                {"name": "M7", "coordinates": [41.295573, 2.081881], "connections": [""]},
+                {"name": "M6", "coordinates": [41.295988, 2.083871], "connections": ["D2"]},
+                {"name": "M7", "coordinates": [41.295573, 2.081881], "connections": ["E5"]},
                 {"name": "M8", "coordinates": [41.295045, 2.080339], "connections": ["M7"]},
                 {"name": "M9", "coordinates": [41.294604, 2.079036], "connections": ["M8"]},
                 {"name": "M10", "coordinates": [41.294172, 2.077753], "connections": ["M9"]},
@@ -60,7 +70,6 @@
                 {"name": "M15", "coordinates": [41.290992, 2.068147], "connections": ["M14"]},
                 {"name": "M16", "coordinates": [41.302184, 2.084020], "connections": ["M15"]},
 
-
                 {"name": "GATE AS", "coordinates": [41.290925, 2.068937], "connections": ["M14"]},
                 {"name": "GATE BS", "coordinates": [41.291566, 2.070931], "connections": ["M13"]},
                 {"name": "GATE CS", "coordinates": [41.292529, 2.073897], "connections": ["M12"]},
@@ -70,6 +79,9 @@
                 {"name": "GATE GS", "coordinates": [41.294544, 2.079810], "connections": ["M8"]},
                 {"name": "GATE HS", "coordinates": [41.294934, 2.081159], "connections": ["M7"]},
 
+                {"name": "R3", "coordinates": [41.297952, 2.084980], "connections": ["N5"]},
+                {"name": "R5", "coordinates": [41.296915, 2.081884], "connections": ["N7", "E5"]},
+                {"name": "R6", "coordinates": [41.295781, 2.078216], "connections": ["N9", "N10", "FS"]},
 
                 {"name": "S5", "coordinates": [41.302963, 2.086254], "connections": ["S6"]},
                 {"name": "S6", "coordinates": [41.302184, 2.084020], "connections": ["S7"]},
