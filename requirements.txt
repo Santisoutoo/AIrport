@@ -1,3 +1,5 @@
+networkx
+plotly
 PyQt6
 numpy
 scipy
