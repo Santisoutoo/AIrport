@@ -184,13 +184,6 @@
                 {"name": "EN", "coordinates": [41.302146, 2.084867], "connections": ["T6", "T5", "GATE EN"]},
                 {"name": "CN", "coordinates": [41.303619, 2.089063], "connections": ["S5", "GATE CN"]},
 
-                {"name": "D1", "coordinates": [41.289789, 2.089064], "connections": ["K4"]},
-                {"name": "D2", "coordinates": [41.294080, 2.086486], "connections": ["D1"]},
-                {"name": "D3", "coordinates": [41.296772, 2.084844], "connections": ["D2"]},
-
-                {"name": "G1", "coordinates": [41.293192, 2.102525], "connections": []},
-                {"name": "G2", "coordinates": [41.292845, 2.101665], "connections": []},
-
                 {"name": "E3", "coordinates": [41.293138, 2.084127], "connections": ["J5"]},
                 {"name": "E4", "coordinates": [41.294455, 2.083331], "connections": ["E3"]},
                 {"name": "E5", "coordinates": [41.295973, 2.082433], "connections": ["E4"]},
@@ -205,7 +198,7 @@
                 {"name": "GATE MS", "coordinates": [41.287672, 2.080790], "connections": ["J8"]},
                 {"name": "GATE NS", "coordinates": [41.287335, 2.079185], "connections": ["GATE PS"]},
 
-                {"name": "GATE VS", "coordinates": [41.284492, 2.074098], "connections": ["K11"]},
+                {"name": "GATE VS", "coordinates": [41.284492, 2.074098], "connections": ["G11"]},
                 {"name": "GATE TS", "coordinates": [41.284890, 2.075315], "connections": ["K10"]},
                 {"name": "GATE RS", "coordinates": [41.285652, 2.077208], "connections": ["K9"]},
                 {"name": "GATE PS", "coordinates": [41.286484, 2.079713], "connections": ["K8"]},
