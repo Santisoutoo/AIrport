@@ -73,10 +73,10 @@
                 {"name": "N10", "coordinates": [41.294842, 2.077440], "connections": ["N11", "N9", "ES", "FS"]},
                 {"name": "N11", "coordinates": [41.294373, 2.076059], "connections": ["N12", "N10", "DS", "ES"]},
                 {"name": "N12", "coordinates": [41.293828, 2.074509], "connections": ["N13", "N11", "CS", "DS"]},
-                {"name": "N13", "coordinates": [41.293021, 2.072077], "connections": ["N14", "N12", "BS", "DS"]},
-                {"name": "N14", "coordinates": [41.292124, 2.069464], "connections": ["N16", "N13", "BS", "AS"]},
+                {"name": "N13", "coordinates": [41.293021, 2.072077], "connections": ["N14", "N12", "BS", "CS"]},
+                {"name": "N14", "coordinates": [41.292124, 2.069464], "connections": ["N13", "BS", "AS"]},
                 {"name": "N15", "coordinates": [41.291433, 2.067635], "connections": ["N14", "AS"]},
-                {"name": "N16", "coordinates": [41.302184, 2.084020], "connections": ["N15"]},
+                {"name": "N16", "coordinates": [41.291000, 2.064383], "connections": ["N15"]},
 
                 {"name": "AS", "coordinates": [41.291476, 2.068627], "connections": ["N14", "M14", "GATE AS"]},
                 {"name": "BS", "coordinates": [41.292148, 2.070584], "connections": ["N13", "M13", "GATE BS"]},
@@ -97,7 +97,7 @@
                 {"name": "M13", "coordinates": [41.292631, 2.073052], "connections": ["M12"]},
                 {"name": "M14", "coordinates": [41.291676, 2.070100], "connections": ["M13"]},
                 {"name": "M15", "coordinates": [41.290992, 2.068147], "connections": ["M14"]},
-                {"name": "M16", "coordinates": [41.302184, 2.084020], "connections": ["M15"]},
+                {"name": "M16", "coordinates": [41.290498, 2.063417], "connections": ["M15"]},
 
                 {"name": "GATE AS", "coordinates": [41.290925, 2.068937], "connections": ["M14"]},
                 {"name": "GATE BS", "coordinates": [41.291566, 2.070931], "connections": ["M13"]},
@@ -120,7 +120,7 @@
                 {"name": "S10", "coordinates": [41.298999, 2.074750], "connections": ["S11"]},
                 {"name": "S11", "coordinates": [41.297559, 2.070343], "connections": ["S12"]},
                 {"name": "S12", "coordinates": [41.296493, 2.067256], "connections": ["S13"]},
-                {"name": "S13", "coordinates": [41.295090, 2.063183], "connections": ["S14"]},
+                {"name": "S13", "coordinates": [41.295090, 2.063183], "connections": ["S14", "RN"]},
                 {"name": "S14", "coordinates": [41.292725, 2.061676], "connections": ["M16"]},
 
                 {"name": "P3", "coordinates": [41.300647, 2.085571], "connections": ["T6", "EN"]},
