@@ -1,2 +1,5 @@
 xplane_airports
 folium
+networkx
+matplotlib
+jupyter
