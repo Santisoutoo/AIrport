@@ -1,7 +1,7 @@
 from typing import List
 
 from xplane_airports.AptDat import RowCode
-from models import TaxiNode
+from models import TaxiEdge, TaxiNode
 
 
 class AptDatParser:
@@ -18,10 +18,10 @@ class AptDatParser:
         return lines
     
     
-    def parse_nodes(self):
-        """Extract taxi route nodes"""
-        nodes = {}
+    def parse_nodes(self) -> dict[int, TaxiNode]:
+        """CODE: 1201"""
         
+        nodes = {}
         for line in self.raw_data:
             if line.startswith(str(RowCode.TAXI_ROUTE_NODE)):  # 1201
                 parts = line.strip().split()
@@ -48,9 +48,45 @@ class AptDatParser:
         
         return nodes
     
-    def parse_edges(self):
-        """Extract taxi route edges"""
-        pass
+    def parse_edges(self) -> List[TaxiEdge]:
+        """CODE: 1202"""
+        
+        edges = []
+    
+        for line_num, line in enumerate(self.raw_data, 1):
+            if line.startswith(str(RowCode.TAXI_ROUTE_EDGE)):  # 1202
+                parts = line.strip().split()
+            
+                # Check it has minimum required fields
+                if len(parts) >= 5:
+                    try:
+                        start_id = int(parts[1])                    
+                        end_id = int(parts[2])              
+                        direction = parts[3]
+                        restriction = parts[4]                      
+
+                        # Taxiway ATC name
+                        taxiway_name = parts[5] if len(parts) >= 6 else ""
+                    
+                        edge = TaxiEdge(
+                            start_node_id=start_id,
+                            end_node_id=end_id,
+                            direction=direction,
+                            atc_restriction=restriction,
+                            taxiway_id=taxiway_name,
+                        )
+                        edges.append(edge)
+                    
+                    except (ValueError, IndexError) as e:
+                        print(f"Error parsing edge line {line_num}: {line.strip()} - {e}")
+                        continue
+                        
+                else:
+                    print(f"Edge line {line_num} has insufficient fields (expected 5-6): {line.strip()}")
+    
+        return edges
+        
+        
     
     def parse_stands(self):
         """Extract taxi stands"""
@@ -60,16 +96,48 @@ class AptDatParser:
         pass
     
 
+
 if __name__ == "__main__":
     
+    import json
     from pathlib import Path
 
-    ICAO = "LEBL"
-    BASE_DIR = Path(__file__).resolve().parents[2]  # sube dos niveles hasta "AIrport"
+    ICAO = "LEBL".upper()  # Change ICAO code here
+    
+    BASE_DIR = Path(__file__).resolve().parents[2]
     ROUTE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}.dat"
-    
-    parser = AptDatParser(file_path=ROUTE)
-    
+    OUTPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}_graph.json"
+
+    parser = AptDatParser(file_path=str(ROUTE))
     nodes = parser.parse_nodes()
-    for node_id, node in nodes.items():
-        print(f"Node {node_id}: {node}")
+    edges = parser.parse_edges()
+
+    # Save to JSON
+    graph_data = {
+        "nodes": [
+            {
+                "id": node.id,
+                "lat": node.lat,
+                "lon": node.lon,
+                "usage": node.usage,
+                "name": node.name
+            }
+            for node in nodes.values()
+        ],
+        "edges": [
+            {
+                "start_node_id": edge.start_node_id,
+                "end_node_id": edge.end_node_id,
+                "direction": edge.direction,  
+                "atc_restriction": edge.atc_restriction,
+                "taxiway_id": edge.taxiway_id
+            }
+            for edge in edges
+        ]
+    }
+
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(graph_data, f, indent=4)
+
+    print(f"Info stored in:  {OUTPUT_FILE}")
+        
