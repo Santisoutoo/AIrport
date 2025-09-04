@@ -211,3 +211,4 @@ __marimo__/
 *.html
 .env
 *.dat
+*.json
