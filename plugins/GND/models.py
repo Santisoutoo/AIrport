@@ -20,7 +20,7 @@ class TaxiNode:
    """
    lat: float
    lon: float
-   id: int
+   node_id: int
    usage: str
    name: str
 
@@ -48,3 +48,34 @@ class TaxiEdge:
    direction: str
    atc_restriction: str
    taxiway_id: Optional[str] = None
+
+@dataclass
+class Stand:
+    """
+    CODE: 1300
+    Represents a start or end point for aircraft. Not linked to taxi routing 
+    network by edges (row code 1202).
+    
+    Attributes:
+        latitude (float): Latitude of location in decimal degrees. 
+                         Eight decimal places supported.
+        longitude (float): Longitude of location in decimal degrees. 
+                          Eight decimal places supported.
+        true_hdg (float): Heading (true) of airplane positioned at this location.
+                         Decimal degrees, true heading.
+        stand_type (str): Type of location. Possible values include:
+                         - "gate": Gate position for passenger boarding/disembarking
+                         - "hangar": Hangar position for aircraft maintenance/storage
+                         - "misc": Miscellaneous location type
+                         - "tie-down": Tie-down position for aircraft parking
+        allowed_aircraft_types (str): Airplane types that can use this location.
+                                     Pipe-separated list (e.g., "A320|B737|jets").
+        id (str): Unique name of location. Text string, must be unique within 
+                 a single airport.
+    """
+    latitude: float
+    longitude: float
+    true_hdg: float
+    stand_type: str
+    allowed_aircraft_types: str
+    stand_id: str

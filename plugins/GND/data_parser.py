@@ -1,7 +1,7 @@
 from typing import List
 
 from xplane_airports.AptDat import RowCode
-from models import TaxiEdge, TaxiNode
+from models import TaxiEdge, TaxiNode, Stand
 
 
 class AptDatParser:
@@ -37,7 +37,7 @@ class AptDatParser:
                         nodes[node_id] = TaxiNode (
                             lat=lat,
                             lon=lon,
-                            id=node_id,
+                            node_id=node_id,
                             usage=usage_type,
                             name=name
                         )
@@ -89,9 +89,41 @@ class AptDatParser:
         
     
     def parse_stands(self):
-        """Extract taxi stands"""
-        pass
+        """CODE: 1300 and 1301"""
+
+        stands = []
+        for line in self.raw_data:
+            if line.startswith(str(RowCode.START_LOCATION_NEW)):  # 1300
+                parts = line.strip().split()
+                
+                if len(parts) >= 5: # Check it has all required fields
+                    try:
+
+                        latitude = float(parts[1])
+                        longitude = float(parts[2])
+                        true_hdg = float(parts[3])
+                        stand_type = parts[4]
+                        allowed_aircraft_types = str(parts[5])
+                        stand_name= str(parts[6:])
+                        
+                        # Save stand info
+                        stands.append(Stand(
+                            latitude=latitude,
+                            longitude=longitude,
+                            true_hdg=true_hdg,
+                            stand_type=stand_type,
+                            allowed_aircraft_types=allowed_aircraft_types,
+                            stand_id=stand_name
+                        ))
     
+                    except (ValueError, IndexError) as e:
+                        print(f"Error parsing stand line: {line.strip()} - {e}")
+                        continue
+        return stands
+    
+    def parse_runways(self):
+        pass
+
     def parse_active_zones(self):
         pass
     
@@ -102,21 +134,22 @@ if __name__ == "__main__":
     import json
     from pathlib import Path
 
-    ICAO = "LEBL".upper()  # Change ICAO code here
+    ICAO = "LECO".upper()  # Change ICAO code here
     
     BASE_DIR = Path(__file__).resolve().parents[2]
-    ROUTE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}.dat"
+    INPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}.dat"
     OUTPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}_graph.json"
 
-    parser = AptDatParser(file_path=str(ROUTE))
+    parser = AptDatParser(file_path=str(INPUT_FILE))
     nodes = parser.parse_nodes()
     edges = parser.parse_edges()
+    stands = parser.parse_stands()
 
     # Save to JSON
     graph_data = {
         "nodes": [
             {
-                "id": node.id,
+                "id": node.node_id,
                 "lat": node.lat,
                 "lon": node.lon,
                 "usage": node.usage,
@@ -133,11 +166,25 @@ if __name__ == "__main__":
                 "taxiway_id": edge.taxiway_id
             }
             for edge in edges
+        ],
+        "stands": [
+            {
+                "latitude": stand.latitude,
+                "longitude": stand.longitude,
+                "true_hdg": stand.true_hdg,
+                "stand_type": stand.stand_type,
+                "allowed_aircraft_types": stand.allowed_aircraft_types,
+                "stand_id": stand.stand_id
+            }
+            for stand in stands
         ]
     }
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(graph_data, f, indent=4)
 
-    print(f"Info stored in:  {OUTPUT_FILE}")
-        
+    print(f"Complete airport info stored in: {OUTPUT_FILE}")
+    print(f"Total nodes: {len(nodes)}")
+    print(f"Total edges: {len(edges)}")
+    print(f"Total stands: {len(stands)}")
+
