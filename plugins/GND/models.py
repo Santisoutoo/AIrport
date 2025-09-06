@@ -1,5 +1,18 @@
+"""
+DISCLAIMER: THIS INFORMATION IS NOT INTENDED FOR REAL OPERATIONS.
+THE DATA IS UPDATED BY ENTHUSIASTS WHO VOLUNTEER THEIR TIME TO UPDATE SCENERY'S INFORMATION.
+"""
+
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
+
+@dataclass
+class AirportInfo():
+    """
+    CODES: 1 and 1302
+    """
+
+    metdata: List
 
 @dataclass
 class Runway:
@@ -21,7 +34,6 @@ class Runway:
     runway_2_id: str
     lat_2: float
     lon_2: float
-
 
 @dataclass
 class TaxiNode:
@@ -105,7 +117,10 @@ class Stand:
 @dataclass
 class TrafficPattern():
     """
-    CODE 1101"
+    CODE 1101
+
+    This information in some AD is not reliable and do not reflect
+    real operations
     
     Represents the avaliable traffic patterns for AD rwys
     Attributes:
