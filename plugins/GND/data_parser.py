@@ -5,7 +5,8 @@ from models import (
     TaxiEdge,
     TaxiNode,
     Stand,
-    Runway
+    Runway,
+    TrafficPattern
 )
 
 
@@ -141,81 +142,50 @@ class AptDatParser:
 
     def parse_active_zones(self):
         pass
+
+    def parse_traffic_pattern(self):
+        """CODE 1101"""
+
+        traffic_patterns = []
+        for line in self.raw_data:
+            if line.startswith(str(RowCode.FLOW_PATTERN)):
+                parts = line.strip().split()
+
+                if len(parts) >= 3:
+                    try:
+                        traffic_patterns.append(
+                            TrafficPattern(
+                                runway_id=parts[1],
+                                side=parts[2]
+                            )
+                        )
+                    except(ValueError, IndexError) as e:
+                        print(f"Error parsing runway line: {line.strip()} - {e}")
+                        continue
+        
+        return traffic_patterns
+
+    def parse_airport_info(self):
+        """"CODE: 1"""
+        pass
   
+    def parse_airport_metadata(self):
+        """CODE: 1302"""
+        pass
 
 if __name__ == "__main__":
   
     import json
     from pathlib import Path
 
-    ICAO = "LEBL".upper()  # Change ICAO code here
+    ICAO = "LEST".upper()  # Change ICAO code here
   
     BASE_DIR = Path(__file__).resolve().parents[2]
     INPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}.dat"
-    OUTPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}_complete.json"
+    OUTPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}_graph.json"
 
     parser = AptDatParser(file_path=str(INPUT_FILE))
-    
-    # Parse all data
-    nodes = parser.parse_nodes()
-    edges = parser.parse_edges()
-    stands = parser.parse_stands()
-    runways = parser.parse_runways()
 
-    # Save complete data to JSON
-    complete_data = {
-        "nodes": [
-            {
-                "id": node.node_id,
-                "lat": node.lat,
-                "lon": node.lon,
-                "usage": node.usage,
-                "name": node.name
-            }
-            for node in nodes.values()
-        ],
-        "edges": [
-            {
-                "start_node_id": edge.start_node_id,
-                "end_node_id": edge.end_node_id,
-                "direction": edge.direction,  
-                "atc_restriction": edge.atc_restriction,
-                "taxiway_id": edge.taxiway_id
-            }
-            for edge in edges
-        ],
-        "stands": [
-            {
-                "latitude": stand.latitude,
-                "longitude": stand.longitude,
-                "true_hdg": stand.true_hdg,
-                "stand_type": stand.stand_type,
-                "allowed_aircraft_types": stand.allowed_aircraft_types,
-                "stand_id": stand.stand_id
-            }
-            for stand in stands
-        ],
-        "runways": [
-            {
-                "runway_1_id": runway.runway_1_id,
-                "lat": runway.lat,
-                "lon": runway.lon,
-                "runway_2_id": runway.runway_2_id,
-                "lat_2": runway.lat_2,
-                "lon_2": runway.lon_2
-            }
-            for runway in runways
-        ]
-    }
-
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(complete_data, f, indent=4)
-
-    print(f"Complete airport info stored in: {OUTPUT_FILE}")
-    print(f"Total nodes: {len(nodes)}")
-    print(f"Total edges: {len(edges)}")
-    print(f"Total stands: {len(stands)}")
-    print(f"Total runways: {len(runways)}")
-    print("Runways found:")
-    for runway in runways:
-        print(f"  {runway.runway_1_id} - {runway.runway_2_id}")
+    traffic_patterns = parser.parse_traffic_pattern()
+    print(f"Found {len(traffic_patterns)} traffic patterns")
+    print(json.dumps([p.__dict__ for p in traffic_patterns], indent=2))

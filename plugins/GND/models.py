@@ -101,3 +101,16 @@ class Stand:
     stand_type: str
     allowed_aircraft_types: str
     stand_id: str
+
+@dataclass
+class TrafficPattern():
+    """
+    CODE 1101"
+    
+    Represents the avaliable traffic patterns for AD rwys
+    Attributes:
+        runway_id (str): Identifier of the runways
+        side (str): traffic patterns avalible for the rwy
+    """
+    runway_id: str
+    side: str
