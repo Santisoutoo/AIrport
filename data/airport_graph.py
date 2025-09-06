@@ -218,11 +218,6 @@ class AirportMapVisualizer:
         if not self.airport_center:
             self.airport_center = self._calculate_center()
         
-        if not self.airport_center:
-            # Fallback coordinates for Santiago de Compostela
-            self.airport_center = (42.896388889, -8.415277778)
-            print("Using official Santiago de Compostela (LEST) coordinates")
-        
         print(f"Creating map centered at: {self.airport_center}")
         
         # Create base map
