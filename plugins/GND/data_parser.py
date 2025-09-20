@@ -195,7 +195,7 @@ if __name__ == "__main__":
     import json
     from pathlib import Path
 
-    ICAO = "LECO".upper()  # Change ICAO code here
+    ICAO = "LEBL".upper()  # Change ICAO code here
 
     BASE_DIR = Path(__file__).resolve().parents[2]
     INPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}.dat"

@@ -511,7 +511,7 @@ class AirportMapVisualizer:
 
 if __name__ == "__main__":
 
-    AIRPORT = 'LEST'.upper()
+    AIRPORT = 'LEBL'.upper()
     dat_file = f".\\airport_data\\{AIRPORT}\\{AIRPORT}.dat"
 
     try:
