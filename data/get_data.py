@@ -128,6 +128,6 @@ class XPlaneAirportDownloader:
 
 
 if __name__ == "__main__":
-    # Simple test - download one airport with detailed info
+    
     downloader = XPlaneAirportDownloader("LEBL")
     downloader.download()

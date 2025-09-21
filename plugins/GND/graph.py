@@ -1,7 +1,7 @@
 import json
 import networkx as nx
 import math
-from pathlib import Path
+
 
 class AirportGraph:
     """Create a directed graph to get shortest routes in an airport"""
@@ -138,12 +138,14 @@ class AirportGraph:
             print(f"❌ {result['error']}")
             return
         
-        print(f"\nRoute found:")
+        print("\nRoute found:")
         print(f"Distance: {result['total_distance']:.1f}m")
         print(f"Taxiways: {result['taxiway_sequence']}")
         print(f"Path: {result['start_node']} → {result['end_node']} ({len(result['path'])} nodes)")
 
 if __name__ == "__main__":
+    
+    from pathlib import Path
 
     ICAO = "LEBL"
     BASE_DIR = Path(__file__).resolve().parents[2]

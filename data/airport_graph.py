@@ -16,7 +16,7 @@ class AirportMapVisualizer:
     
     def __init__(
         self, 
-        dat_file_path: str, 
+        dat_file_path: str,
         zoom_start: int = 16
     ):
         """
@@ -486,11 +486,11 @@ class AirportMapVisualizer:
     
     def show_summary(self):
         """Show summary of found elements"""
-        print(f"\n=== AIRPORT SUMMARY ===")
+        print("\n=== AIRPORT SUMMARY ===")
         print(f"Name: {self.airport_name}")
         print(f"ICAO Code: {self.icao_code}")
         print(f"Approximate center: {self.airport_center}")
-        print(f"\n=== ELEMENTS FOUND ===")
+        print("\n=== ELEMENTS FOUND ===")
         
         for code, name in self.target_codes.items():
             count = len(self.airport_data.get(code, []))
@@ -511,22 +511,23 @@ class AirportMapVisualizer:
 
 if __name__ == "__main__":
 
+    from pathlib import Path
+
     AIRPORT = 'LEBL'.upper()
-    dat_file = f".\\airport_data\\{AIRPORT}\\{AIRPORT}.dat"
+
+    BASE_DIR = Path(__file__).resolve().parent
+    dat_file = BASE_DIR / "airport_data" / AIRPORT / f"{AIRPORT}.dat"
 
     try:
-        
-        airport_viz = AirportMapVisualizer(dat_file, zoom_start=16)
+        # Initialize the visualizer with the .dat file
+        airport_viz = AirportMapVisualizer(str(dat_file), zoom_start=16)
         
         # Show summary
         airport_viz.show_summary()
         
         # Save map
         airport_viz.save()
-        
-        # For nb
-        # airport_viz.display()
-        
+
     except FileNotFoundError:
         print(f"File not found: {dat_file}")
         print("Make sure the .dat file exists at the specified path")
