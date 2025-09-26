@@ -1,0 +1,41 @@
+[project]
+name = "AIrport-atc-simulator"
+version = "0.1.0"
+description = "AI-powered Air Traffic Control training platform with X-Plane 12 integration"
+readme = "README.md"
+requires-python = "~=3.11.0"
+license = {text = "MIT"}
+authors = [
+    {name = "Santiago Souto Ortega", email = "soutoortegasantiago@gmail.com"}
+]
+keywords = [
+    "aviation",
+    "atc",
+    "air-traffic-control",
+    "x-plane",
+    "flight-simulator",
+    "ai",
+    "training",
+    "airports"
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Topic :: Games/Entertainment :: Simulation",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "xplane-airports",
+    "folium",
+    "networkx",
+    "matplotlib",
+    "jupyter",
+]
+
+[project.urls]
+Homepage = "https://github.com/airport-sim/airport-atc-simulator"
+Repository = "https://github.com/airport-sim/airport-atc-simulator"
