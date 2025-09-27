@@ -53,15 +53,15 @@ X-Plane Movement ← Aircraft Manager ← Command Executor
 
 <div align="center">
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **🎤 Voice Processing** | Whisper + Coqui TTS | ASR/TTS Pipeline |
-| **🧠 AI Framework** | CrewAI + Llama 2 7B | Multi-agent coordination |
-| **📡 Communication** | Mosquitto | Real-time messaging |
-| **💾 Databases** | PostgreSQL + Redis + InfluxDB | Hybrid data storage |
-| **🐳 Orchestration** | Docker Compose | Service management |
-| **✈️ Visualization** | X-Plane 12 | 3D flight simulation |
-| **📊 Analytics** | Grafana + InfluxDB | Performance monitoring |
+| Layer | Technology |
+|-------|------------|
+| **🎤 Voice Processing** | Whisper + Coqui TTS |
+| **🧠 AI Framework** | CrewAI + Llama 2 7B |
+| **📡 Communication** | Mosquitto |
+| **💾 Databases** | PostgreSQL + Redis + InfluxDB |
+| **🐳 Orchestration** | Docker Compose |
+| **✈️ Visualization** | X-Plane 12 |
+| **📊 Analytics** | Grafana + InfluxDB |
 
 </div>
 
