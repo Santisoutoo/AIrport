@@ -8,7 +8,7 @@
 ![MQTT](https://img.shields.io/badge/MQTT-Eclipse%20Mosquitto-red.svg)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)
 
-*Next-generation AI-powered Air Traffic Control training platform with distributed architecture, real-time voice processing, and intelligent multi-agent pilot simulation.*
+*AI-powered Air Traffic Control training platform with distributed architecture, real-time voice processing, and intelligent multi-agent pilot simulation.*
 
 🎯 **Realistic ATC Training** | 🤖 **CrewAI Multi-Agent System** | 📊 **Advanced Analytics** | 🗣️ **Bidirectional Voice Communications**
 
@@ -16,16 +16,15 @@
 
 ---
 
-## 🚀 Key Features v2
+## 🚀 Key Features
 
 ### 🧠 **Advanced AI Communication System**
-- **CrewAI Multi-Agent Pilots**: Specialized agents with distinct personalities and experience levels
+- **Multi-Agent Pilots**: Specialized agents with that has the context of previous conversations
 - **Natural Phraseology Processing**: ICAO-compliant communication with contextual variations
-- **Error Simulation**: AI pilots that make realistic mistakes for enhanced training
 - **Adaptive Difficulty**: Dynamic scenario adjustment based on performance
 
 ### 🎤 **Real-Time Voice Processing**
-- **Bidirectional ASR/TTS**: for natural pilot-controller communications
+- **ASR/TTS**: for natural pilot-controller communications
 - **Multi-Frequency Support**: DEL, GND, TWR
 - **Voice Recognition**: Context-aware command interpretation
 
@@ -40,7 +39,7 @@
 
 ### 📊 **Data Flow Pipeline**
 ```
-Controller Audio → ASR → NLP Parser → MQTT → CrewAI Agents
+Controller Audio → ASR → NLP Parser → MQTT → Pilots Agents
                                               ↓
 Aircraft Response ← TTS ← Response Generator ← Agent Collaboration
                                               ↓
@@ -53,15 +52,15 @@ X-Plane Movement ← Aircraft Manager ← Command Executor
 
 <div align="center">
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **🎤 Voice Processing** | Whisper + Coqui TTS | ASR/TTS Pipeline |
-| **🧠 AI Framework** | CrewAI + Llama 2 7B | Multi-agent coordination |
-| **📡 Communication** | Mosquitto | Real-time messaging |
-| **💾 Databases** | PostgreSQL + Redis + InfluxDB | Hybrid data storage |
-| **🐳 Orchestration** | Docker Compose | Service management |
-| **✈️ Visualization** | X-Plane 12 | 3D flight simulation |
-| **📊 Analytics** | Grafana + InfluxDB | Performance monitoring |
+| Layer | Technology |
+|-------|------------|
+| **🎤 Voice Processing** | Wave2Vec + Coqui-ai |
+| **🧠 AI Framework** | CrewAI + LLM |
+| **📡 Communication** | Mosquitto |
+| **💾 Databases** | PostgreSQL + Redis + InfluxDB |
+| **🐳 Orchestration** | Docker Compose |
+| **✈️ Visualization** | X-Plane 12 |
+| **📊 Analytics** | Grafana + InfluxDB |
 
 </div>
 
@@ -122,23 +121,6 @@ cd airport-atc-simulator
 docker-compose up -d
 
 # TODO: COMPLETE INSTALLATION GUIDE
-```
---- 
-
-## 📊 Analytics & Monitoring
-
-### 📈 **Real-Time Dashboards**
-- **System Performance**: Service health and latency monitoring
-- **Training Progress**: Competency development tracking
-- **Communication Quality**: ASR/TTS accuracy metrics
-- **Scenario Difficulty**: Dynamic adjustment algorithms
-
-### 🎯 **Assessment Metrics**
-- **Communication Efficiency**: Response time and clarity
-- **Safety Compliance**: Adherence to ATC procedures
-- **Traffic Management**: Conflict resolution effectiveness
-- **Phraseology Accuracy**: ICAO standard compliance
-
 ---
 
 <div align="center">
