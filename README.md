@@ -1,52 +1,21 @@
-<<<<<<< HEAD
-# ✈️ AIrport - ATC Training Simulator
-=======
 # ✈️ AIrport - Advanced ATC Training Simulator v2
->>>>>>> dev
 
 <div align="center">
 
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![X-Plane](https://img.shields.io/badge/X--Plane-12-orange.svg)
 ![AI](https://img.shields.io/badge/AI-CrewAI-green.svg)
-<<<<<<< HEAD
-
-*AI-powered Air Traffic Control training platform with X-Plane 12 integration for realistic aviation training scenarios.*
-
-🎯 **Train like a real controller** | 🤖 **AI-powered scenarios** | 📊 **Performance analytics**
-=======
 ![MQTT](https://img.shields.io/badge/MQTT-Eclipse%20Mosquitto-red.svg)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)
 
 *Next-generation AI-powered Air Traffic Control training platform with distributed architecture, real-time voice processing, and intelligent multi-agent pilot simulation.*
 
 🎯 **Realistic ATC Training** | 🤖 **CrewAI Multi-Agent System** | 📊 **Advanced Analytics** | 🗣️ **Bidirectional Voice Communications**
->>>>>>> dev
 
 </div>
 
 ---
 
-<<<<<<< HEAD
-## ✨ Features
-
-🧠 **Multi-Agent AI System**: Intelligent pilot behaviors and weather simulation  
-📈 **Performance Analytics**: AI-powered trainee assessment and progress tracking  
-🎓 **Progressive Training**: Beginner to advanced ATC scenarios  
-🌍 **Realistic 3D Environment**: X-Plane 12's graphics engine
-
-# 🏗️ System Architecture
-```
-AI Agents ↔ Central Coordinator ↔ X-Plane 12 Interface
-    ↕                ↕                    ↕
-Database  ←→  Training Engine       Graphics Engine
-```
-
-<div align="center">
-
-
-</div>
-=======
 ## 🚀 Key Features v2
 
 ### 🧠 **Advanced AI Communication System**
@@ -79,37 +48,11 @@ X-Plane Movement ← Aircraft Manager ← Command Executor
 ```
 
 ---
->>>>>>> dev
 
 ## 🛠️ Technology Stack
 
 <div align="center">
 
-<<<<<<< HEAD
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| 🧠 AI Framework | CrewAI | Multi-agent coordination |
-| ✈️ Flight Simulator | X-Plane 12 | Realistic flight environment |
-| 🔗 Communication | XPPython3 SDK | Simulator integration |
-| 🎤 Speech Recognition | Voice API | Voice command support |
-
-</div>
-
-## 📈 Assessment Features
-
-<div align="center">
-
-```
-🔍 Real-time Monitoring → 🎯 Error Pattern ID → 📊 Progress Tracking → 🏆 Certification Ready
-```
-
-</div>
-
-- **📡 Real-time performance monitoring**: Live feedback during training sessions
-- **🔍 Error pattern identification**: AI-powered analysis of common mistakes
-- **📈 Progress tracking**: Detailed learning curve visualization
-- **🎓 Certification readiness evaluation**: Assessment against industry standards
-=======
 | Layer | Technology | Purpose |
 |-------|------------|---------|
 | **🎤 Voice Processing** | Whisper + Coqui TTS | ASR/TTS Pipeline |
@@ -195,19 +138,13 @@ docker-compose up -d
 - **Safety Compliance**: Adherence to ATC procedures
 - **Traffic Management**: Conflict resolution effectiveness
 - **Phraseology Accuracy**: ICAO standard compliance
->>>>>>> dev
 
 ---
 
 <div align="center">
 
-<<<<<<< HEAD
-**Ready to become an Air Traffic Controller?** 🚀
-</div>
-=======
 **🛫 Ready to master Air Traffic Control with AI-powered training? 🛬**
 
 *Experience the future of ATC education with realistic scenarios, intelligent feedback, and industry-standard procedures.*
 
 </div>
->>>>>>> dev
