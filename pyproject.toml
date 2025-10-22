@@ -34,7 +34,8 @@ dependencies = [
     "networkx",
     "matplotlib",
     "jupyter",
-    "paho-mqtt"
+    "paho-mqtt",
+    "redis"
 ]
 
 [project.urls]

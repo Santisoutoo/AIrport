@@ -6,7 +6,7 @@ services:
     container_name: airport_mqtt
     restart: unless-stopped
     ports:
-      - "1883:1883"      # MQTT port
+      - "1884:1883"      # MQTT port
       - "9001:9001"      # WebSocket port
     volumes:
       - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
@@ -21,6 +21,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+  
+  redis:
+    image: redis:7-alpine
+    container_name: airport_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - airport_network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 
 networks:
   airport_network:
@@ -32,3 +50,5 @@ volumes:
     name: airport_mqtt_data
   mosquitto_logs:
     name: airport_mqtt_logs
+  redis_data:
+    name: airport_redis_data
