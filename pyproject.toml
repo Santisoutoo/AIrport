@@ -35,7 +35,8 @@ dependencies = [
     "matplotlib",
     "jupyter",
     "paho-mqtt",
-    "redis"
+    "redis",
+    "imgui"
 ]
 
 [project.urls]
