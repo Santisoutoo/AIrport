@@ -121,6 +121,7 @@ cd airport-atc-simulator
 docker-compose up -d
 
 # TODO: COMPLETE INSTALLATION GUIDE
+```
 ---
 
 <div align="center">
