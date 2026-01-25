@@ -1,27 +1,6 @@
 version: '3.8'
 
 services:
-  mqtt_broker:
-    image: eclipse-mosquitto:2.0
-    container_name: airport_mqtt
-    restart: unless-stopped
-    ports:
-      - "1884:1883"      # MQTT port
-      - "9001:9001"      # WebSocket port
-    volumes:
-      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_logs:/mosquitto/log
-    networks:
-      - airport_network
-    healthcheck:
-      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-  
   redis:
     image: redis:7-alpine
     container_name: airport_redis
@@ -30,15 +9,54 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
     networks:
       - airport_network
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 5s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: airport_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: airport
+      POSTGRES_USER: airport_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airport_dev_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - airport_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airport_user -d airport"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: airport_influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: 1234
+      DOCKER_INFLUXDB_INIT_ORG: airport
+      DOCKER_INFLUXDB_INIT_BUCKET: metrics
+      DOCKER_INFLUXDB_INIT_RETENTION: 1w
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      - airport_network
 
 networks:
   airport_network:
@@ -46,9 +64,9 @@ networks:
     name: airport_network
 
 volumes:
-  mosquitto_data:
-    name: airport_mqtt_data
-  mosquitto_logs:
-    name: airport_mqtt_logs
   redis_data:
     name: airport_redis_data
+  postgres_data:
+    name: airport_postgres_data
+  influxdb_data:
+    name: airport_influxdb_data
