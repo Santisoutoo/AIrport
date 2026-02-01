@@ -1,7 +1,7 @@
 import imgui
 from pathlib import Path
 
-from ..texture_loader import TextureLoader
+from ...utils.texture_loader import TextureLoader
 from ..components.header import Header
 from ..components.footer import Footer
 from ...utils.constants import Color, ButtonSize, Spacing, FontScale
