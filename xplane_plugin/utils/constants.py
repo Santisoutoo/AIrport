@@ -45,27 +45,43 @@ class Padding(Enum):
     LARGE = 26
 
 class Spacing(Enum):
-    ELEMENTS = 14
-    SEPARATOR = 18
+    SMALL = 10
+    ELEMENTS = 16
+    SEPARATOR = 22
+    LARGE = 30
 
 class Color(Enum):
-    # Primary colors
-    PRIMARY = (0.2, 0.4, 0.8, 1.0)
-    PRIMARY_HOVER = (0.3, 0.5, 0.9, 1.0)
-    PRIMARY_ACTIVE = (0.1, 0.3, 0.7, 1.0)
+    # Primary colors (Login button)
+    PRIMARY = (0.2, 0.45, 0.85, 1.0)
+    PRIMARY_HOVER = (0.3, 0.55, 0.95, 1.0)
+    PRIMARY_ACTIVE = (0.15, 0.35, 0.75, 1.0)
+
+    # Secondary colors (Register button - muted)
+    SECONDARY = (0.3, 0.35, 0.4, 1.0)
+    SECONDARY_HOVER = (0.4, 0.45, 0.5, 1.0)
+    SECONDARY_ACTIVE = (0.25, 0.3, 0.35, 1.0)
 
     # State colors
-    SUCCESS = (0.1, 0.6, 0.3, 1.0)
-    SUCCESS_HOVER = (0.2, 0.7, 0.4, 1.0)
+    SUCCESS = (0.15, 0.65, 0.35, 1.0)
+    SUCCESS_HOVER = (0.25, 0.75, 0.45, 1.0)
     WARNING = (0.9, 0.6, 0.1, 1.0)
     DANGER = (0.8, 0.2, 0.2, 1.0)
 
+    # Status indicator
+    STATUS_ONLINE = (0.2, 0.85, 0.4, 1.0)
+    STATUS_OFFLINE = (0.5, 0.5, 0.5, 1.0)
+
     # Text colors
     TEXT_PRIMARY = (1.0, 1.0, 1.0, 1.0)
-    TEXT_SECONDARY = (0.7, 0.7, 0.7, 1.0)
+    TEXT_TITLE = (0.95, 0.97, 1.0, 1.0)
+    TEXT_SECONDARY = (0.5, 0.52, 0.55, 0.85)
+    TEXT_MUTED = (0.4, 0.42, 0.45, 0.7)
 
-    # Background
-    BACKGROUND = (0.15, 0.15, 0.15, 1.0)
+    # Background & Borders
+    BACKGROUND = (0.12, 0.12, 0.14, 1.0)
+    BACKGROUND_LIGHT = (0.18, 0.18, 0.2, 1.0)
+    BORDER = (0.3, 0.3, 0.35, 0.8)
+    BORDER_LIGHT = (0.4, 0.4, 0.45, 0.5)
 
 class FontScale(Enum):
     SMALL = 0.9
