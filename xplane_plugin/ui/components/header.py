@@ -1,5 +1,5 @@
 import imgui
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ...utils.constants import Color, FontScale, Padding
 
@@ -32,12 +32,14 @@ class Header:
         imgui.text_colored(self.title, *Color.PRIMARY_HOVER.value)
         imgui.set_window_font_scale(FontScale.NORMAL.value)
 
-        # Hora actual a la derecha
+        # hora (Local + UTC)
         imgui.same_line()
-        current_time = datetime.now().strftime("%H:%M:%S")
-        time_width = imgui.calc_text_size(current_time).x
+        utc_time = datetime.now(timezone.utc).strftime("%H:%M:%S") + " Z"
+        local_time = datetime.now().strftime("%H:%M:%S") + " LT"
+        time_text = f"{local_time}  |  {utc_time}"
+        time_width = imgui.calc_text_size(time_text).x
         imgui.set_cursor_pos_x(window_width - time_width - Padding.LARGE.value)
-        imgui.text_colored(current_time, *Color.TEXT_SECONDARY.value)
+        imgui.text_colored(time_text, *Color.TEXT_SECONDARY.value)
 
         # Mover cursor después del header
         imgui.set_cursor_pos_y(header_height + Padding.SMALL.value)
