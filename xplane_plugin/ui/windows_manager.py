@@ -3,6 +3,8 @@ from XPPython3 import xp, xp_imgui
 from XPPython3.xp_typing import XPLMCommandRef
 
 from .screens.welcome_screen import WelcomeScreen
+from .screens.register import RegisterScreen
+from . screens.login_screen import LoginScreen
 from ..utils.constants import MAIN_WINDOW_CONFIG
 
 class WindowManager:
@@ -16,6 +18,8 @@ class WindowManager:
 
         self.screens = {
             'welcome': WelcomeScreen(self),
+            'register': RegisterScreen(self),
+            'login': LoginScreen(self)
         }
 
     def register_plugin(self) -> tuple[str, str, str]:
