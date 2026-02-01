@@ -1,84 +1,92 @@
-# Screen dimensions (standard 1920x1080)
-SCREEN_WIDTH = 1920
-SCREEN_HEIGHT = 1080
+from dataclasses import dataclass
+from enum import Enum
+from typing import Tuple
 
-# Main window dimensions
-MAIN_WINDOW_WIDTH = 900
-MAIN_WINDOW_HEIGHT = 700
-MAIN_WINDOW_MIN_WIDTH = 800
-MAIN_WINDOW_MIN_HEIGHT = 600
+from XPPython3 import xp
 
-# Window offsets from screen edges
-WINDOW_TOP_OFFSET = 100
-WINDOW_LEFT_OFFSET = (SCREEN_WIDTH - MAIN_WINDOW_WIDTH) // 2  # Center horizontally
+@dataclass
+class WindowConfig:
+    """Configuració de dimensions de finestra"""
+    width: int = 800
+    height: int = 600
+    min_width: int = 700
+    min_height: int = 500
 
-# Session setup window
-SETUP_WINDOW_WIDTH = 1000
-SETUP_WINDOW_HEIGHT = 750
+    def get_centered_bounds(self) -> Tuple[int, int, int, int]:
+        """Calcula les coordenades per centrar la finestra a la pantalla.
 
-# Controller tools window (training mode)
-TOOLS_WINDOW_WIDTH = 1400
-TOOLS_WINDOW_HEIGHT = 900
-TOOLS_PANEL_WIDTH = 350  # Side panels width
+        Returns:
+            Tuple (left, top, right, bottom) per a X-Plane
+        """
+        left, top, right, bottom = xp.getScreenBoundsGlobal()
+        screen_width = right - left
+        screen_height = top - bottom
 
-# UI Elements
-BUTTON_HEIGHT = 50
-BUTTON_HEIGHT_LARGE = 80
-BUTTON_WIDTH_SMALL = 120
-BUTTON_WIDTH_MEDIUM = 200
-BUTTON_WIDTH_LARGE = 300
+        win_left = left + (screen_width - self.width) // 2
+        win_top = top - (screen_height - self.height) // 2
+        win_right = win_left + self.width
+        win_bottom = win_top - self.height
 
-# Padding and spacing
-PADDING_SMALL = 10
-PADDING_MEDIUM = 20
-PADDING_LARGE = 30
-SPACING_ELEMENTS = 15
-SEPARATOR_SPACING = 20
+        return win_left, win_top, win_right, win_bottom
 
-# Colors (RGBA normalized 0-1)
-COLOR_PRIMARY = (0.2, 0.4, 0.8, 1.0)  # Blue
-COLOR_PRIMARY_HOVER = (0.3, 0.5, 0.9, 1.0)
-COLOR_PRIMARY_ACTIVE = (0.1, 0.3, 0.7, 1.0)
 
-COLOR_SUCCESS = (0.1, 0.6, 0.3, 1.0)  # Green
-COLOR_SUCCESS_HOVER = (0.2, 0.7, 0.4, 1.0)
+MAIN_WINDOW_CONFIG = WindowConfig()
 
-COLOR_WARNING = (0.9, 0.6, 0.1, 1.0)  # Orange
-COLOR_DANGER = (0.8, 0.2, 0.2, 1.0)   # Red
+class ButtonSize(Enum):
+    HEIGHT = 45
+    HEIGHT_LARGE = 70
+    WIDTH_SMALL = 110
+    WIDTH_MEDIUM = 180
+    WIDTH_LARGE = 280
 
-COLOR_TEXT_PRIMARY = (1.0, 1.0, 1.0, 1.0)
-COLOR_TEXT_SECONDARY = (0.7, 0.7, 0.7, 1.0)
-COLOR_BACKGROUND = (0.15, 0.15, 0.15, 1.0)
+class Padding(Enum):
+    SMALL = 8
+    MEDIUM = 16
+    LARGE = 26
 
-# Font scales
-FONT_SCALE_SMALL = 0.9
-FONT_SCALE_NORMAL = 1.0
-FONT_SCALE_MEDIUM = 1.2
-FONT_SCALE_LARGE = 1.5
-FONT_SCALE_XLARGE = 2.0
-FONT_SCALE_TITLE = 2.5
+class Spacing(Enum):
+    SMALL = 10
+    ELEMENTS = 16
+    SEPARATOR = 22
+    LARGE = 30
 
-# Session configuration defaults
-DEFAULT_AIRCRAFT_COUNT = 5
-MIN_AIRCRAFT = 1
-MAX_AIRCRAFT = 20
+class Color(Enum):
+    # Primary colors (Login button)
+    PRIMARY = (0.2, 0.45, 0.85, 1.0)
+    PRIMARY_HOVER = (0.3, 0.55, 0.95, 1.0)
+    PRIMARY_ACTIVE = (0.15, 0.35, 0.75, 1.0)
 
-# Complexity levels
-COMPLEXITY_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert']
+    # Secondary colors (Register button - muted)
+    SECONDARY = (0.3, 0.35, 0.4, 1.0)
+    SECONDARY_HOVER = (0.4, 0.45, 0.5, 1.0)
+    SECONDARY_ACTIVE = (0.25, 0.3, 0.35, 1.0)
 
-# Weather options
-WEATHER_OPTIONS = ['Clear', 'Few Clouds', 'Scattered', 'Broken', 'Overcast', 'Rain', 'Thunderstorm']
+    # State colors
+    SUCCESS = (0.15, 0.65, 0.35, 1.0)
+    SUCCESS_HOVER = (0.25, 0.75, 0.45, 1.0)
+    WARNING = (0.9, 0.6, 0.1, 1.0)
+    DANGER = (0.8, 0.2, 0.2, 1.0)
 
-# Time options
-TIME_OPTIONS = ['Dawn', 'Morning', 'Noon', 'Afternoon', 'Dusk', 'Night']
+    # Status indicator
+    STATUS_ONLINE = (0.2, 0.85, 0.4, 1.0)
+    STATUS_OFFLINE = (0.5, 0.5, 0.5, 1.0)
 
-# Airport ICAO codes (common training airports)
-TRAINING_AIRPORTS = {
-    'LEBL': 'Aeropuerto Josep Tarradellas Barcelona-El Prat'
-}
+    # Text colors
+    TEXT_PRIMARY = (1.0, 1.0, 1.0, 1.0)
+    TEXT_TITLE = (0.95, 0.97, 1.0, 1.0)
+    TEXT_SECONDARY = (0.5, 0.52, 0.55, 0.85)
+    TEXT_MUTED = (0.4, 0.42, 0.45, 0.7)
 
-# Plugin info
-PLUGIN_NAME = "AIrport ATC Trainer"
-PLUGIN_SIG = "com.airport.atc"
-PLUGIN_DESC = "AI-Powered ATC Training Simulator"
-PLUGIN_VERSION = "1.0.0"
+    # Background & Borders
+    BACKGROUND = (0.12, 0.12, 0.14, 1.0)
+    BACKGROUND_LIGHT = (0.18, 0.18, 0.2, 1.0)
+    BORDER = (0.3, 0.3, 0.35, 0.8)
+    BORDER_LIGHT = (0.4, 0.4, 0.45, 0.5)
+
+class FontScale(Enum):
+    SMALL = 0.9
+    NORMAL = 1.0
+    MEDIUM = 1.2
+    LARGE = 1.5
+    XLARGE = 2.0
+    TITLE = 2.4

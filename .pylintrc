@@ -1,0 +1,2 @@
+[MASTER]
+init-hook="import sys;sys.path.extend(['C:\\X-Plane 12\\Resources\\plugins', 'C:\\X-Plane 12\\Resources\\plugins\\XPPython3'])"
