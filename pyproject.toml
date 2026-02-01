@@ -36,7 +36,8 @@ dependencies = [
     "paho-mqtt",
     "redis",
     "imgui",
-    "ipykernel"
+    "ipykernel",
+    "psycopg2-binary"
 ]
 
 [project.urls]
