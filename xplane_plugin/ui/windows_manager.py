@@ -3,48 +3,44 @@ from XPPython3 import xp, xp_imgui
 from XPPython3.xp_typing import XPLMCommandRef
 
 from .screens.welcome_screen import WelcomeScreen
+from ..utils.constants import MAIN_WINDOW_CONFIG
 
 class WindowManager:
     """Gestiona ventanas ImGui y navegación entre pantallas"""
-    
+
     def __init__(self):
         self.windows: Dict[str, Dict] = {}
         self.current_screen: str = 'welcome'
         self.cmd: Optional[XPLMCommandRef] = None
         self.cmdRef = None
-        
-        # Instanciar screens aquí
+
         self.screens = {
             'welcome': WelcomeScreen(),
         }
-        
+
     def register_plugin(self) -> tuple[str, str, str]:
         """Registra solo comandos y menú en X-Plane"""
         self.cmd = xp.createCommand(
-            'xppython3/airport/openUI',
-            'Open AIrport Interface'
+            'xppython3/airport/openUI', # Nombre comando
+            'Open AIrport Interface'    # Descripción
         )
         xp.registerCommandHandler(self.cmd, self._commandHandler, 1, self.cmdRef)
         xp.appendMenuItemWithCommand(xp.findPluginsMenu(), 'AIrport', self.cmd)
-        
+
         return 'PI_AIrport_v1.0', 'com.airport.atc', 'AIrport ATC Simulator'
-    
+
     def createWindow(self, title: str = 'AIrport'):
         """Crea ventana ImGui"""
         if title in self.windows:
-            return
-        
-        left, top, right, bottom = xp.getScreenBoundsGlobal()
-        width, height = 1200, 933
-        left_offset = (right - left - width) // 2
-        top_offset = 133
-        
+            return None
+
+        left, top, right, bottom = MAIN_WINDOW_CONFIG.get_centered_bounds()
         self.windows[title] = {
             'instance': xp_imgui.Window(
-                left=left + left_offset,
-                top=top - top_offset,
-                right=left + left_offset + width,
-                bottom=top - (top_offset + height),
+                left=left,
+                top=top,
+                right=right,
+                bottom=bottom,
                 visible=1,
                 draw=self._draw,
                 refCon={'title': title}
@@ -52,31 +48,31 @@ class WindowManager:
             'title': title
         }
         self.windows[title]['instance'].setTitle(title)
-    
+
     def _draw(self, windowID: int, refCon: Any):
         """Callback de dibujo"""
         screen = self.screens.get(self.current_screen)
         if screen:
             screen.draw()
-    
+
     def switchScreen(self, screen_name: str):
         """Cambia entre pantallas"""
         if screen_name in self.screens:
             self.current_screen = screen_name
             xp.systemLog(f'AIrport: Switched to {screen_name}')
-    
+
     def _commandHandler(self, cmdRef: XPLMCommandRef, phase: int, refCon: Any) -> int:
         """Maneja comando de menú"""
         if phase == xp.CommandBegin:
             self.createWindow('AIrport')
         return 1
-    
+
     def close_all_windows(self):
         """Cierra todas las ventanas"""
         for window_data in list(self.windows.values()):
             window_data['instance'].delete()
         self.windows.clear()
-    
+
     def cleanup(self):
         """Limpieza al detener"""
         if self.cmd:
