@@ -15,7 +15,7 @@ class WindowManager:
         self.cmdRef = None
 
         self.screens = {
-            'welcome': WelcomeScreen(),
+            'welcome': WelcomeScreen(self),
         }
 
     def register_plugin(self) -> tuple[str, str, str]:
