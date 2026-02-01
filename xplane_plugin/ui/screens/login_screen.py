@@ -80,7 +80,7 @@ class LoginScreen:
 
         # Mensaje de error
         if self.error_message:
-            imgui.text_colored(self.error_message, *Color.ERROR.value)
+            imgui.text_colored(self.error_message, *Color.DANGER.value)
             imgui.dummy(0, Spacing.SMALL.value)
 
         # Botón Login
@@ -129,7 +129,10 @@ class LoginScreen:
 
         self.error_message = ""
         self.is_loading = True
-        # TODO: Implementar lógica de login
+        # TODO: Implementar lógica de login real
+        # Por ahora navegar a session configuration
+        self.is_loading = False
+        self.window_manager.switchScreen('sessionConfiguration')
 
     def _on_go_to_register(self):
         """Navega a la pantalla de registro."""

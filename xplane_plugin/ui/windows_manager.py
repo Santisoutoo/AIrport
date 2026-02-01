@@ -4,8 +4,10 @@ from XPPython3.xp_typing import XPLMCommandRef
 
 from .screens.welcome_screen import WelcomeScreen
 from .screens.register import RegisterScreen
-from . screens.login_screen import LoginScreen
+from .screens.login_screen import LoginScreen
+from .screens.session_configuration_screen import SessionConfigurationScreen
 from ..utils.constants import MAIN_WINDOW_CONFIG
+
 
 class WindowManager:
     """Gestiona ventanas ImGui y navegación entre pantallas"""
@@ -19,7 +21,8 @@ class WindowManager:
         self.screens = {
             'welcome': WelcomeScreen(self),
             'register': RegisterScreen(self),
-            'login': LoginScreen(self)
+            'login': LoginScreen(self),
+            'sessionConfiguration': SessionConfigurationScreen(self)
         }
 
     def register_plugin(self) -> tuple[str, str, str]:
