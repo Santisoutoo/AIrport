@@ -69,14 +69,14 @@ class RegisterScreen:
         # Username
         imgui.text_colored("Username", *Color.TEXT_MUTED.value)
         imgui.set_next_item_width(form_width)
-        changed, self.username = imgui.input_text("", self.username, 64)
+        changed, self.username = imgui.input_text("##username", self.username, 64)
 
         imgui.dummy(0, Spacing.SMALL.value)
 
         # Email
         imgui.text_colored("Email", *Color.TEXT_MUTED.value)
         imgui.set_next_item_width(form_width)
-        changed, self.email = imgui.input_text("", self.email, 128)
+        changed, self.email = imgui.input_text("##email", self.email, 128)
 
         imgui.dummy(0, Spacing.SMALL.value)
 
