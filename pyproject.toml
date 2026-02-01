@@ -35,7 +35,8 @@ dependencies = [
     "jupyter",
     "paho-mqtt",
     "redis",
-    "imgui"
+    "imgui",
+    "ipykernel"
 ]
 
 [project.urls]
