@@ -17,7 +17,7 @@ class WelcomeScreen:
         self.current_airport_name = "Rosalia de Castro"
 
         #cargar img
-        self.image_path = str(Path(__file__).parent.parent.parent / "images" / "image.png")
+        self.image_path = str(Path(__file__).parent.parent.parent / "images" / "LEST.png")
         self.texture_loaded = False
         self.texture_id = None
         self.img_width = 0
