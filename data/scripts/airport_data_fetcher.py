@@ -19,16 +19,17 @@ class XPlaneAirportDownloader:
     ):
 
         self.icao_code = icao_code.strip().upper()
-        
+
         if output_directory is None:
-            # Default: airport_data relative to this module
-            self.base_output_dir = Path(__file__).parent / "airport_data"
+            # Default: airport_data relative to current working directory
+            self.base_output_dir = Path.cwd() / "airport_data"
         else:
             output_path = Path(output_directory)
             if output_path.is_absolute():
                 self.base_output_dir = output_path
             else:
-                self.base_output_dir = Path(__file__).parent / output_path
+                # Resolve relative paths from current working directory
+                self.base_output_dir = Path.cwd() / output_path
         
         # Create specific folder for each airport: base_dir/ICAO_CODE/
         self.output_dir = self.base_output_dir / self.icao_code
