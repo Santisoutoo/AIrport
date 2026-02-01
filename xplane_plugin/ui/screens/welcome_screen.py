@@ -123,10 +123,12 @@ class WelcomeScreen:
         imgui.pop_style_color(3)
 
     def _on_login_clicked(self):
-        pass
+        """Navega a la pantalla de login."""
+        self.window_manager.switchScreen('login')
 
     def _on_register_clicked(self):
-        pass
+        """Navega a la pantalla de registro."""
+        self.window_manager.switchScreen('register')
 
     def show(self):
         """Muestra la pantalla."""
