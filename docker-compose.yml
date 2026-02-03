@@ -58,6 +58,26 @@ services:
     networks:
       - airport_network
 
+  # ============================================
+  # Application Microservices
+  # ============================================
+
+  flight_plan_service:
+    build:
+      context: ./services/flight_plan_service
+      dockerfile: Dockerfile
+    container_name: airport_flight_plan
+    restart: unless-stopped
+    ports:
+      - "8003:8000"
+    networks:
+      - airport_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/flight-plan/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   airport_network:
     driver: bridge
