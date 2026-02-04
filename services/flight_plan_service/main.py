@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import router
+from core.database.connection import engine, Base
+from core.database.models import FlightPlanModel
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Flight Plan Service",
@@ -11,10 +16,9 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS middleware for plugin access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify allowed origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

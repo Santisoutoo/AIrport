@@ -30,3 +30,4 @@ class HealthResponse(BaseModel):
     status: str
     service: str
     version: str
+    db_connected: bool = False

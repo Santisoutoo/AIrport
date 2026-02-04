@@ -1,6 +1,10 @@
 version: '3.8'
 
 services:
+  # ============================================
+  # Infrastructure Services
+  # ============================================
+
   redis:
     image: redis:7-alpine
     container_name: airport_redis
@@ -25,17 +29,19 @@ services:
     restart: unless-stopped
     ports:
       - "5432:5432"
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: airport
-      POSTGRES_USER: airport_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airport_dev_pass}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./config/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - airport_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U airport_user -d airport"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -46,12 +52,14 @@ services:
     restart: unless-stopped
     ports:
       - "8086:8086"
+    env_file:
+      - .env
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: admin
-      DOCKER_INFLUXDB_INIT_PASSWORD: 1234
-      DOCKER_INFLUXDB_INIT_ORG: airport
-      DOCKER_INFLUXDB_INIT_BUCKET: metrics
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${POSTGRES_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET}
       DOCKER_INFLUXDB_INIT_RETENTION: 1w
     volumes:
       - influxdb_data:/var/lib/influxdb2
@@ -70,6 +78,11 @@ services:
     restart: unless-stopped
     ports:
       - "8003:8000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - airport_network
     healthcheck:
