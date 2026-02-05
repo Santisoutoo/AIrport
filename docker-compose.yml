@@ -91,6 +91,27 @@ services:
       timeout: 10s
       retries: 3
 
+  weather_service:
+    build:
+      context: ./services/weather_service
+      dockerfile: Dockerfile
+    container_name: airport_weather
+    restart: unless-stopped
+    ports:
+      - "8004:8000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - airport_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/weather/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   airport_network:
     driver: bridge
