@@ -23,8 +23,6 @@ class SessionConfigurationScreen:
         self.selected_complexity = 1
 
         self.aircraft_number = "5"
-        self.frequencies = "118.10"
-        self.runways = "17/35"
 
         images_dir = Path(__file__).parent.parent.parent / "images"
         self.image_path = str(images_dir / "LEST_MAP.png")
@@ -97,24 +95,6 @@ class SessionConfigurationScreen:
         imgui.set_next_item_width(form_width)
         changed, self.aircraft_number = imgui.input_text(
             "##aircraft_number", self.aircraft_number, 8
-        )
-
-        imgui.dummy(0, Spacing.SMALL.value)
-
-        # Frequencies
-        imgui.text_colored("Frequencies", *Color.TEXT_MUTED.value)
-        imgui.set_next_item_width(form_width)
-        changed, self.frequencies = imgui.input_text(
-            "##frequencies", self.frequencies, 32
-        )
-
-        imgui.dummy(0, Spacing.SMALL.value)
-
-        # Runways
-        imgui.text_colored("Runways", *Color.TEXT_MUTED.value)
-        imgui.set_next_item_width(form_width)
-        changed, self.runways = imgui.input_text(
-            "##runways", self.runways, 32
         )
 
         imgui.dummy(0, Spacing.SMALL.value)
@@ -239,14 +219,6 @@ class SessionConfigurationScreen:
             self.error_message = "Invalid aircraft number"
             return
 
-        if not self.frequencies:
-            self.error_message = "Frequency is required"
-            return
-
-        if not self.runways:
-            self.error_message = "Runways are required"
-            return
-
         self.error_message = ""
         # TODO: Implementar inicio partida
         
@@ -264,8 +236,6 @@ class SessionConfigurationScreen:
             'session_type': self.session_types[self.selected_session_type],
             'weather': self.weather_options[self.selected_weather],
             'aircraft_number': int(self.aircraft_number),
-            'frequencies': self.frequencies,
-            'runways': self.runways,
             'complexity': self.complexity_options[self.selected_complexity]
         }
 
@@ -281,8 +251,6 @@ class SessionConfigurationScreen:
         self.selected_weather = 0
         self.selected_complexity = 1
         self.aircraft_number = "5"
-        self.frequencies = "118.10"
-        self.runways = "17/35"
         self.error_message = ""
         self.texture_loaded = False
         self.texture_id = None
