@@ -3,6 +3,7 @@ from pathlib import Path
 
 from ...utils.constants import Color, ButtonSize, Spacing, FontScale
 from ...utils.texture_loader import TextureLoader
+from ...services.flight_plan_service import FlightPlanService
 from ..components.header import Header
 from ..components.footer import Footer
 
@@ -32,6 +33,8 @@ class SessionConfigurationScreen:
         self.img_height = 0
 
         self.error_message = ""
+
+        self.flight_plan_service = FlightPlanService()
 
         self.header = Header("AIrport")
         self.footer = Footer("v1.0.0")
@@ -220,10 +223,27 @@ class SessionConfigurationScreen:
             return
 
         self.error_message = ""
-        # TODO: Implementar inicio partida
-        
+
+        # Check service connection
+        if not self.flight_plan_service.health_check():
+            self.error_message = "Flight plan service unavailable"
+            return None
+
+        # Clear existing flight plans
+        success, message = self.flight_plan_service.clear_all()
+        if not success:
+            self.error_message = f"Failed to clear flight plans: {message}"
+            return None
+
+        # Generate new flight plans
+        success, result = self.flight_plan_service.generate_multiple(aircraft_count)
+        if not success:
+            self.error_message = f"Failed to generate flight plans: {result}"
+            return None
+
         config = self.get_configuration()
         print(f"Starting session with config: {config}")
+        print(f"Generated {len(result)} flight plans")
 
     def _on_back_to_welcome(self):
         """Vuelve a la pantalla principal."""
