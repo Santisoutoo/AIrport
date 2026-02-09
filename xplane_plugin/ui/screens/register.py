@@ -1,6 +1,7 @@
 import imgui
 
 from ...utils.constants import Color, ButtonSize, Spacing, FontScale
+from ...services.user_service import UserService
 from ..components.header import Header
 from ..components.footer import Footer
 
@@ -14,13 +15,15 @@ class RegisterScreen:
 
         # Campos
         self.username = ""
-        self.email = ""
         self.password = ""
         self.confirm_password = ""
 
         # Estado
         self.error_message = ""
         self.is_loading = False
+
+        # Servicios
+        self.user_service = UserService()
 
         # Componentes
         self.header = Header("AIrport")
@@ -69,14 +72,7 @@ class RegisterScreen:
         # Username
         imgui.text_colored("Username", *Color.TEXT_MUTED.value)
         imgui.set_next_item_width(form_width)
-        changed, self.username = imgui.input_text("", self.username, 64)
-
-        imgui.dummy(0, Spacing.SMALL.value)
-
-        # Email
-        imgui.text_colored("Email", *Color.TEXT_MUTED.value)
-        imgui.set_next_item_width(form_width)
-        changed, self.email = imgui.input_text("", self.email, 128)
+        changed, self.username = imgui.input_text("##username", self.username, 64)
 
         imgui.dummy(0, Spacing.SMALL.value)
 
@@ -100,7 +96,7 @@ class RegisterScreen:
 
         # Mensaje de error
         if self.error_message:
-            imgui.text_colored(self.error_message, *Color.ERROR.value)
+            imgui.text_colored(self.error_message, *Color.DANGER.value)
             imgui.dummy(0, Spacing.SMALL.value)
 
         # Botón Register
@@ -146,7 +142,7 @@ class RegisterScreen:
     def _on_register_clicked(self):
         """Maneja el evento de click en el botón de registro."""
         # Validaciones básicas
-        if not self.username or not self.email or not self.password:
+        if not self.username or not self.password:
             self.error_message = "All fields are required"
             return
 
@@ -160,7 +156,16 @@ class RegisterScreen:
 
         self.error_message = ""
         self.is_loading = True
-        # TODO: Implementar lógica de registro
+
+        # Crear usuario en la base de datos
+        success, message = self.user_service.create_user(self.username, self.password)
+
+        self.is_loading = False
+
+        if success:
+            self.window_manager.switchScreen('sessionConfiguration')
+        else:
+            self.error_message = message
 
     def _on_back_to_login(self):
         """Navega de vuelta a la pantalla de login."""
@@ -183,7 +188,6 @@ class RegisterScreen:
     def reset(self):
         """Resetea el formulario."""
         self.username = ""
-        self.email = ""
         self.password = ""
         self.confirm_password = ""
         self.error_message = ""

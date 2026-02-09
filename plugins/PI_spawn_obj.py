@@ -41,15 +41,15 @@ class PythonInterface:
                 print("ERROR: obj is None")
                 return
             
-            position = xp.worldToLocal(lat=41.292874, lon=2.101557, alt=40)
+            position = xp.worldToLocal(lat=42.897760, lon=-8.416466, alt=375)
             # Add: (pitch, heading, roll)
             position += (0,0,0)
             print(f"Posición calculada: {position}")
   
-            result = xp.createInstance(obj, position)
+            result = xp.createInstance(obj, [])
             print(f"CreateInstance result: {result}")
             
-            xp.instanceSetPosition(result, position, [0,0,0])
+            xp.instanceSetPosition(result, position, [])
 
         except Exception as e:
             print(f"Error in spawnAircraft: {e}")

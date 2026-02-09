@@ -65,7 +65,7 @@ class LoginScreen:
         # Input username
         imgui.text_colored("Username", *Color.TEXT_MUTED.value)
         imgui.set_next_item_width(form_width)
-        _, self.username = imgui.input_text("", self.username, 64)
+        _, self.username = imgui.input_text("##username", self.username, 64)
 
         imgui.dummy(0, Spacing.SMALL.value)
 
@@ -73,14 +73,14 @@ class LoginScreen:
         imgui.text_colored("Password", *Color.TEXT_MUTED.value)
         imgui.set_next_item_width(form_width)
         _, self.password = imgui.input_text(
-            "", self.password, 64, imgui.INPUT_TEXT_PASSWORD
+            "##password", self.password, 64, imgui.INPUT_TEXT_PASSWORD
         )
 
         imgui.dummy(0, Spacing.ELEMENTS.value)
 
         # Mensaje de error
         if self.error_message:
-            imgui.text_colored(self.error_message, *Color.ERROR.value)
+            imgui.text_colored(self.error_message, *Color.DANGER.value)
             imgui.dummy(0, Spacing.SMALL.value)
 
         # Botón Login
@@ -129,7 +129,10 @@ class LoginScreen:
 
         self.error_message = ""
         self.is_loading = True
-        # TODO: Implementar lógica de login
+        # TODO: Implementar lógica de login real
+        # Por ahora navegar a session configuration
+        self.is_loading = False
+        self.window_manager.switchScreen('sessionConfiguration')
 
     def _on_go_to_register(self):
         """Navega a la pantalla de registro."""

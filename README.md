@@ -29,7 +29,6 @@
 - **Voice Recognition**: Context-aware command interpretation
 
 ### 📡 **Distributed Architecture**
-- **MQTT Communication**: Real-time messaging between all system components
 - **Hybrid Database System**: PostgreSQL + Redis + InfluxDB for optimal performance
 - **Docker Orchestration**: Containerized services for scalability and reliability
 - **Microservices Design**: Independent, fault-tolerant service architecture
