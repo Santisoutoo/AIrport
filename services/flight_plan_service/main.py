@@ -1,12 +1,29 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import router
+from api.routes import (
+    api_generator,
+    health_router,
+    api_generation_router,
+    local_generation_router,
+    plans_router,
+    reference_router,
+)
 from core.database.connection import engine, Base
 from core.database.models import FlightPlanModel
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+PREFIX = "/api/v1/flight-plan"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await api_generator.close()
+
 
 app = FastAPI(
     title="Flight Plan Service",
@@ -14,6 +31,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -25,7 +43,11 @@ app.add_middleware(
 )
 
 # Include API routes
-app.include_router(router, prefix="/api/v1/flight-plan", tags=["Flight Plan"])
+app.include_router(health_router, prefix=PREFIX)
+app.include_router(api_generation_router, prefix=PREFIX)
+app.include_router(local_generation_router, prefix=PREFIX)
+app.include_router(plans_router, prefix=PREFIX)
+app.include_router(reference_router, prefix=PREFIX)
 
 
 @app.get("/")
