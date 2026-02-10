@@ -1,12 +1,12 @@
 # Aircraft performance data
 AIRCRAFT_DATA = {
-    "A320": {"speed": 450, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1"},
-    "A321": {"speed": 450, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1"},
-    "B738": {"speed": 460, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1"},
-    "B737": {"speed": 455, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1"},
-    "C172": {"speed": 120, "equipment": "SDFGY", "transponder": "S"},
-    "PA28": {"speed": 110, "equipment": "SDFY", "transponder": "S"},
-    "E190": {"speed": 470, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1"},
+    "A320": {"speed": 450, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1", "wtc": "M"},
+    "A321": {"speed": 450, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1", "wtc": "M"},
+    "B738": {"speed": 460, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1", "wtc": "M"},
+    "B737": {"speed": 455, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1", "wtc": "M"},
+    "C172": {"speed": 120, "equipment": "SDFGY", "transponder": "S", "wtc": "L"},
+    "PA28": {"speed": 110, "equipment": "SDFY", "transponder": "S", "wtc": "L"},
+    "E190": {"speed": 470, "equipment": "SDE2E3FGHIJ1RWXY", "transponder": "LB1D1", "wtc": "M"},
 }
 
 # Spanish airports with alternates

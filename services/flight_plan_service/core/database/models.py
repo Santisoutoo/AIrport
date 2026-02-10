@@ -14,6 +14,7 @@ class FlightPlanModel(Base):
     flight_rules = Column(String(1), nullable=False)  # I or V
     flight_type = Column(String(1), nullable=False)   # G, S, N, M
     aircraft_type = Column(String(10), nullable=False)
+    wake_turbulence_category = Column(String(1))
     equipment = Column(String(50))
     transponder = Column(String(20))
     departure_icao = Column(String(4), nullable=False, index=True)
@@ -28,6 +29,7 @@ class FlightPlanModel(Base):
     other_info = Column(String(500))
     endurance = Column(String(4))
     people_on_board = Column(String(10))
+    remarks = Column(String(500))
     pic_name = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

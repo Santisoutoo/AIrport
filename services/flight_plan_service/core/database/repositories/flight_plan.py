@@ -17,6 +17,7 @@ class FlightPlanRepository:
             flight_rules=flight_plan.flight_rules,
             flight_type=flight_plan.flight_type,
             aircraft_type=flight_plan.aircraft_type,
+            wake_turbulence_category=flight_plan.wake_turbulence_category,
             equipment=flight_plan.equipment,
             transponder=flight_plan.transponder,
             departure_icao=flight_plan.departure_ICAO,
@@ -31,6 +32,7 @@ class FlightPlanRepository:
             other_info=flight_plan.other_info,
             endurance=flight_plan.endurance,
             people_on_board=flight_plan.people_on_board,
+            remarks=flight_plan.remarks,
             pic_name=flight_plan.PIC_name,
         )
         self.db.add(db_flight_plan)
@@ -78,6 +80,7 @@ class FlightPlanRepository:
             flight_rules=model.flight_rules,
             flight_type=model.flight_type,
             aircraft_type=model.aircraft_type,
+            wake_turbulence_category=model.wake_turbulence_category or "",
             equipment=model.equipment,
             transponder=model.transponder,
             departure_ICAO=model.departure_icao,
@@ -92,5 +95,6 @@ class FlightPlanRepository:
             other_info=model.other_info,
             endurance=model.endurance,
             people_on_board=model.people_on_board,
+            remarks=model.remarks or "",
             PIC_name=model.pic_name,
         )

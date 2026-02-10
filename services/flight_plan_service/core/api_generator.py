@@ -106,6 +106,7 @@ class APIFlightPlanGenerator:
             flight_rules=flight_rules,
             flight_type="G",
             aircraft_type=aircraft_type,
+            wake_turbulence_category=aircraft["wtc"],
             equipment=aircraft["equipment"],
             transponder=aircraft["transponder"],
             departure_ICAO=DEPARTURE_ICAO,
@@ -120,6 +121,7 @@ class APIFlightPlanGenerator:
             other_info=f"PBN/B2C2D2S1 DOF/{now.strftime('%y%m%d')} REG/{aircraft_reg}",
             endurance=endurance_str,
             people_on_board=str(passengers),
+            remarks="",
             PIC_name=pic_name,
         )
 
