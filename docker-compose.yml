@@ -122,6 +122,8 @@ services:
       - "8005:8000"
     env_file:
       - .env
+    volumes:
+      - ./services/controller_hmi_service/static:/app/static
     depends_on:
       flight_plan_service:
         condition: service_healthy

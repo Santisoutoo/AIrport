@@ -108,44 +108,227 @@ html, body {
 
 /* --- Main Workstation Layout --- */
 #workstation {
-    display: grid;
-    grid-template-columns: 280px 1fr;
     height: calc(100vh - 48px - 32px); /* header + footer */
     overflow: hidden;
 }
 
-/* --- Weather Panel (Sidebar) --- */
-#weather-panel {
-    background: var(--bg-panel);
-    border-right: 1px solid var(--border-color);
-    padding: 16px;
-    overflow-y: auto;
+#main-area {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
 }
 
-#weather-panel h2 {
-    font-size: 13px;
+/* --- Modules Panel --- */
+#modules-panel {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+
+.module {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.module-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-toolbar);
+    border-radius: 6px 6px 0 0;
+}
+
+.module-title {
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     color: var(--text-secondary);
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border-color);
 }
 
-.wx-loading {
-    color: var(--text-dim);
-    font-style: italic;
-    font-size: 13px;
+/* --- QNH / QFE Module --- */
+.qnh-module {
+    min-width: 160px;
 }
 
-.wx-section {
-    margin-bottom: 12px;
+.qnh-module-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+    align-items: center;
 }
 
-.wx-section label {
-    display: block;
+.qnh-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.qnh-display label {
     font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+}
+
+.qnh-led {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 700;
+    color: #f85149;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 4px 14px;
+    min-width: 120px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.qnh-unit {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+
+.elev-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    border: 1px solid var(--border-color);
+}
+
+/* --- Wind Instrument --- */
+.wind-instrument {
+    width: 420px;
+}
+
+.rwy-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--accent-green);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 1px;
+}
+
+.wind-body {
+    display: flex;
+    padding: 8px;
+    gap: 10px;
+}
+
+.wind-compass-col {
+    flex-shrink: 0;
+}
+
+#wind-compass svg {
+    display: block;
+}
+
+.wind-data-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-width: 130px;
+}
+
+.wind-data-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.wind-data-row label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+}
+
+.led-display {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    padding: 2px 8px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 3px;
+    display: inline-block;
+    min-width: 80px;
+    text-align: center;
+}
+
+.led-green { color: #3fb950; }
+.led-red { color: #f85149; }
+.led-orange { color: #d29922; }
+
+.wind-components {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-color);
+}
+
+.comp-value {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: #111;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+.comp-hw { color: #3fb950; }
+.comp-tw { color: #f85149; }
+.comp-xw { color: #58a6ff; }
+
+/* --- Weather Module --- */
+.wx-module {
+    width: 420px;
+}
+
+.wx-module-body {
+    padding: 8px 10px;
+    overflow-y: auto;
+    max-height: 260px;
+}
+
+.wx-module-section {
+    margin-bottom: 8px;
+}
+
+.wx-module-section:last-child {
+    margin-bottom: 0;
+}
+
+.wx-raw-label {
+    font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -153,51 +336,112 @@ html, body {
     margin-bottom: 2px;
 }
 
-.wx-section span,
-.wx-section code {
+.wx-raw-code {
+    display: block;
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 11px;
+    color: var(--accent-orange);
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 3px;
+    padding: 4px 6px;
+    word-break: break-all;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+.wx-decoded {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-primary);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 8px;
+}
+
+.wx-decoded-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.wx-decoded-item label {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+}
+
+.wx-decoded-item span {
+    font-size: 12px;
     color: var(--text-primary);
 }
 
-.wx-section code {
-    display: block;
-    font-size: 11px;
-    color: var(--accent-orange);
-    word-break: break-all;
-    line-height: 1.4;
-}
-
-.wx-section .cloud-layer {
-    display: inline-block;
-    margin-right: 8px;
-}
-
-.qnh-value {
-    font-size: 16px !important;
+.wx-decoded-item .qnh-value {
+    color: var(--accent-blue);
     font-weight: 700;
-    color: var(--accent-blue) !important;
 }
 
-/* Flight category badges */
-.flight-cat {
+/* Flight category badge in module header */
+.flight-cat-badge {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 3px;
     font-weight: 700;
-    font-size: 12px !important;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    background: var(--bg-secondary);
+    color: var(--text-dim);
 }
 
 .cat-vfr { background: var(--cat-vfr); color: #000; }
 .cat-mvfr { background: var(--cat-mvfr); color: #000; }
 .cat-ifr { background: var(--cat-ifr); color: #fff; }
-.cat-lifr { background: var(--cat-magenta); color: #fff; }
+.cat-lifr { background: var(--cat-lifr); color: #fff; }
+
+/* TAF validity badge */
+.taf-validity-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* TAF decoded groups */
+.wx-decoded-taf {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+
+.taf-group {
+    border-left: 3px solid var(--border-color);
+    padding-left: 8px;
+}
+
+.taf-group-label {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-blue);
+    margin-bottom: 2px;
+}
 
 /* --- Strips Area --- */
 #strips-area {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    flex: 1;
+    min-height: 0;
 }
 
 /* --- Toolbar --- */

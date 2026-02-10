@@ -71,6 +71,23 @@ async def get_weather():
             )
 
 
+@router.get("/taf")
+async def get_taf():
+    """Proxy: fetch raw TAF for LEST"""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(
+                f"{WEATHER_URL}/api/v1/weather/taf/{AIRPORT_ICAO}/raw"
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error("Failed to fetch TAF: %s", e)
+            raise HTTPException(
+                status_code=502, detail="Weather service unavailable"
+            )
+
+
 @router.get("/atis")
 async def get_atis():
     """Proxy: fetch latest ATIS for LEST"""

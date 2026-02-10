@@ -11,12 +11,15 @@ var currentSort = 'departure_time';
 // ---- Initialization ----
 document.addEventListener('DOMContentLoaded', function() {
     startUTCClock();
+    initWindInstruments();
     loadFlightStrips();
     loadWeather();
+    loadTaf();
 
     // Auto-refresh
     setInterval(loadFlightStrips, STRIP_REFRESH_MS);
     setInterval(loadWeather, WEATHER_REFRESH_MS);
+    setInterval(loadTaf, WEATHER_REFRESH_MS);
 
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(function(btn) {
@@ -63,12 +66,28 @@ function loadWeather() {
             return resp.json();
         })
         .then(function(data) {
-            renderWeatherPanel(data);
+            renderWeatherModule(data);
+            updateWindInstruments(data);
         })
         .catch(function(err) {
             console.error('Failed to load weather:', err);
-            document.getElementById('metar-display').innerHTML =
-                '<div class="wx-loading">Weather unavailable</div>';
+            var rawEl = document.getElementById('wx-raw-metar');
+            if (rawEl) rawEl.textContent = 'Weather unavailable';
+        });
+}
+
+function loadTaf() {
+    fetch(API_BASE + '/taf')
+        .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+        })
+        .then(function(data) {
+            renderTafModule(data.raw_taf);
+        })
+        .catch(function(err) {
+            console.error('Failed to load TAF:', err);
+            renderTafModule('TAF unavailable');
         });
 }
 
