@@ -50,7 +50,8 @@ html, body {
     font-family: var(--font-sans);
     background: var(--bg-primary);
     color: var(--text-primary);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 /* --- Header --- */
@@ -117,6 +118,56 @@ html, body {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+}
+
+/* --- Bottom area: Strips + Chart side by side --- */
+#bottom-area {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* --- Airport Chart Panel --- */
+#chart-panel {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+}
+
+.chart-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-dim);
+}
+
+.chart-icon {
+    opacity: 0.25;
+}
+
+.chart-title {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.chart-subtitle {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    padding: 4px 16px;
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
 }
 
 /* --- Modules Panel --- */
@@ -442,6 +493,7 @@ html, body {
     overflow: hidden;
     flex: 1;
     min-height: 0;
+    min-width: 0;
 }
 
 /* --- Toolbar --- */
@@ -740,4 +792,175 @@ html, body {
 .status-indicator.disconnected {
     background: var(--accent-red);
     color: #fff;
+}
+
+/* ============================================
+   Responsive Layout
+   ============================================ */
+
+/* --- Modules panel: fluid width --- */
+#modules-panel {
+    flex-wrap: wrap;
+}
+
+.wx-module,
+.wind-instrument {
+    width: auto;
+    min-width: 280px;
+    flex: 1 1 280px;
+    max-width: 420px;
+}
+
+.qnh-module {
+    flex: 0 1 auto;
+}
+
+/* --- Strips grid: responsive columns --- */
+#strips-header,
+.flight-strip {
+    grid-template-columns: 42px 100px 52px 28px 58px 1fr 62px 52px 58px 52px;
+}
+
+/* --- Medium screens (tablets / narrow windows) --- */
+@media (max-width: 1200px) {
+    .wx-module,
+    .wind-instrument {
+        min-width: 240px;
+        flex: 1 1 240px;
+    }
+
+    #strips-header,
+    .flight-strip {
+        grid-template-columns: 38px 90px 48px 26px 52px 1fr 58px 48px 52px 48px;
+    }
+
+    .callsign { font-size: 12px; }
+    .altitude { font-size: 13px; }
+}
+
+/* --- Small screens (< 900px) --- */
+@media (max-width: 900px) {
+    #workstation {
+        height: auto;
+        min-height: calc(100vh - 40px - 28px);
+        overflow: auto;
+    }
+
+    #bottom-area {
+        flex-direction: column;
+    }
+
+    #chart-panel {
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+    }
+
+    #header {
+        padding: 6px 12px;
+        height: auto;
+        min-height: 40px;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .header-left h1 { font-size: 14px; }
+    .clock { font-size: 16px; }
+
+    #modules-panel {
+        padding: 6px;
+        gap: 6px;
+    }
+
+    .wx-module,
+    .wind-instrument {
+        min-width: 200px;
+        flex: 1 1 200px;
+        max-width: none;
+    }
+
+    .qnh-led {
+        font-size: 24px;
+        min-width: 90px;
+        padding: 3px 10px;
+    }
+
+    .wind-compass-col svg,
+    .wind-compass {
+        width: 100px;
+        height: 100px;
+    }
+
+    #strips-header,
+    .flight-strip {
+        grid-template-columns: 36px 80px 44px 24px 48px 1fr 52px 44px 48px 44px;
+        padding: 4px 8px;
+    }
+
+    #strips-container { padding: 8px; }
+
+    #status-bar {
+        padding: 4px 12px;
+        height: auto;
+        min-height: 28px;
+        font-size: 10px;
+    }
+}
+
+/* --- Extra small screens (< 600px) --- */
+@media (max-width: 600px) {
+    #header {
+        padding: 4px 8px;
+    }
+
+    .header-left h1 {
+        font-size: 12px;
+        letter-spacing: 0.5px;
+    }
+
+    .header-left { gap: 8px; }
+
+    .clock {
+        font-size: 14px;
+        letter-spacing: 1px;
+    }
+
+    .badge { font-size: 10px; padding: 1px 6px; }
+
+    .chart-title { font-size: 13px; }
+    .chart-subtitle { font-size: 10px; }
+    .chart-icon { width: 40px; height: 40px; }
+
+    #modules-panel {
+        padding: 4px;
+        gap: 4px;
+    }
+
+    .wx-module,
+    .wind-instrument {
+        min-width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .wind-body {
+        flex-wrap: wrap;
+    }
+
+    #strips-header,
+    .flight-strip {
+        grid-template-columns: 32px 70px 40px 22px 44px 1fr 48px 40px 44px 40px;
+        font-size: 10px;
+    }
+
+    #strips-header span {
+        font-size: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    .callsign { font-size: 11px; }
+    .altitude { font-size: 12px; }
+
+    #status-bar {
+        padding: 3px 8px;
+        font-size: 9px;
+    }
 }
