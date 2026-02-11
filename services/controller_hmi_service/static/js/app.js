@@ -3,6 +3,7 @@
 var API_BASE = '/api/v1/hmi';
 var STRIP_REFRESH_MS = 15000;   // 15 seconds
 var WEATHER_REFRESH_MS = 60000; // 60 seconds
+var AIRPORT_REFRESH_MS = 30000; // 30 seconds
 
 var flightPlans = [];
 var currentFilter = 'all';
@@ -12,11 +13,13 @@ var currentSort = 'departure_time';
 document.addEventListener('DOMContentLoaded', function() {
     startUTCClock();
     initWindInstruments();
+    loadAirport();
     loadFlightStrips();
     loadWeather();
     loadTaf();
 
     // Auto-refresh
+    setInterval(loadAirport, AIRPORT_REFRESH_MS);
     setInterval(loadFlightStrips, STRIP_REFRESH_MS);
     setInterval(loadWeather, WEATHER_REFRESH_MS);
     setInterval(loadTaf, WEATHER_REFRESH_MS);
@@ -73,6 +76,23 @@ function loadWeather() {
             console.error('Failed to load weather:', err);
             var rawEl = document.getElementById('wx-raw-metar');
             if (rawEl) rawEl.textContent = 'Weather unavailable';
+        });
+}
+
+function loadAirport() {
+    fetch(API_BASE + '/airport')
+        .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+        })
+        .then(function(data) {
+            var badge = document.getElementById('airport-badge');
+            if (badge) badge.textContent = data.icao || '----';
+            var subtitle = document.getElementById('chart-subtitle');
+            if (subtitle) subtitle.textContent = data.icao || '----';
+        })
+        .catch(function(err) {
+            console.error('Failed to load airport:', err);
         });
 }
 
