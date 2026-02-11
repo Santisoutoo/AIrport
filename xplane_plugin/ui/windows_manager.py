@@ -7,6 +7,7 @@ from .screens.register import RegisterScreen
 from .screens.login_screen import LoginScreen
 from .screens.session_configuration_screen import SessionConfigurationScreen
 from ..utils.constants import MAIN_WINDOW_CONFIG
+from ..services.airport_service import AirportService
 
 
 class WindowManager:
@@ -86,3 +87,4 @@ class WindowManager:
             xp.unregisterCommandHandler(self.cmd, self._commandHandler, 1, self.cmdRef)
         xp.clearAllMenuItems(xp.findPluginsMenu())
         self.close_all_windows()
+        AirportService.reset()
