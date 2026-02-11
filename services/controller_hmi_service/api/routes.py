@@ -17,7 +17,20 @@ WEATHER_URL = os.getenv(
     "http://airport_weather:8000"
 )
 
-AIRPORT_ICAO = "LEST"
+current_airport = {"icao": "LEST"}
+
+
+@router.get("/airport")
+async def get_airport():
+    """Return current airport ICAO"""
+    return current_airport
+
+
+@router.post("/airport")
+async def set_airport(data: dict):
+    """Set current airport ICAO (called by X-Plane plugin)"""
+    current_airport['icao'] = data["icao"]
+    return current_airport
 
 
 @router.get("/health")
@@ -56,11 +69,11 @@ async def get_flight_strips():
 
 @router.get("/weather")
 async def get_weather():
-    """Proxy: fetch METAR for LEST"""
+    """Proxy: fetch METAR for current airport"""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             resp = await client.get(
-                f"{WEATHER_URL}/api/v1/weather/metar/{AIRPORT_ICAO}"
+                f"{WEATHER_URL}/api/v1/weather/metar/{current_airport['icao']}"
             )
             resp.raise_for_status()
             return resp.json()
@@ -73,11 +86,11 @@ async def get_weather():
 
 @router.get("/taf")
 async def get_taf():
-    """Proxy: fetch raw TAF for LEST"""
+    """Proxy: fetch raw TAF for current airport"""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             resp = await client.get(
-                f"{WEATHER_URL}/api/v1/weather/taf/{AIRPORT_ICAO}/raw"
+                f"{WEATHER_URL}/api/v1/weather/taf/{current_airport['icao']}/raw"
             )
             resp.raise_for_status()
             return resp.json()
@@ -90,11 +103,11 @@ async def get_taf():
 
 @router.get("/atis")
 async def get_atis():
-    """Proxy: fetch latest ATIS for LEST"""
+    """Proxy: fetch latest ATIS for current airport"""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             resp = await client.get(
-                f"{WEATHER_URL}/api/v1/weather/atis/{AIRPORT_ICAO}/latest"
+                f"{WEATHER_URL}/api/v1/weather/atis/{current_airport['icao']}/latest"
             )
             resp.raise_for_status()
             return resp.json()
