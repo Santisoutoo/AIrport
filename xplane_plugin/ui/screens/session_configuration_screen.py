@@ -5,6 +5,9 @@ from ...utils.constants import Color, ButtonSize, Spacing, FontScale
 from ...utils.texture_loader import TextureLoader
 from ...services.airport_service import AirportService
 from ...services.flight_plan_service import FlightPlanService
+from ...services.aircraft_spawner import AircraftSpawner
+from ....shared.services.airport_data_store import AirportDataStore
+from ....shared.services.stand_assigner import StandAssigner
 from ..components.header import Header
 from ..components.footer import Footer
 
@@ -36,6 +39,9 @@ class SessionConfigurationScreen:
         self.error_message = ""
 
         self.flight_plan_service = FlightPlanService()
+        self.aircraft_spawner = AircraftSpawner()
+        self.stand_assigner = StandAssigner()
+        self.store = AirportDataStore()
 
         self.header = Header("AIrport")
         self.footer = Footer("v1.0.0")
@@ -251,9 +257,25 @@ class SessionConfigurationScreen:
             self.error_message = f"Failed to generate flight plans: {result}"
             return None
 
+        # Assign stands to flight plans
+        stands = self.store.get_stands_with_occupancy()
+        assignments = self.stand_assigner.assign(result, stands)
+
+        if not assignments:
+            self.error_message = "No compatible stands available"
+            return None
+
+        # Mark stands as occupied in Redis
+        for a in assignments:
+            self.store.set_stand_occupied(a["stand_id"], True)
+
+        # Spawn aircraft at assigned stands
+        self.aircraft_spawner.clear()
+        self.aircraft_spawner.spawn(assignments)
+
         config = self.get_configuration()
         print(f"Starting session with config: {config}")
-        print(f"Generated {len(result)} flight plans")
+        print(f"Generated {len(result)} flight plans, spawned {self.aircraft_spawner.count} aircraft")
 
     def _on_back_to_welcome(self):
         """Vuelve a la pantalla principal."""
@@ -284,3 +306,4 @@ class SessionConfigurationScreen:
         self.error_message = ""
         self.texture_loaded = False
         self.texture_id = None
+        self.aircraft_spawner.clear()
