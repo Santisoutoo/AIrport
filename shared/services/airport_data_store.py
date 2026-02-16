@@ -86,6 +86,51 @@ class AirportDataStore:
         """Remove all current airport data from Redis."""
         self._delete_current(self._r)
 
+    # Stand occupancy
+    _OCCUPANCY_KEY = f"{_PREFIX}:stand_occupancy"
+
+    def init_stand_occupancy(self, stands: list) -> None:
+        """Initialize all stands as unoccupied ('0')."""
+        if not stands:
+            return None
+
+        # Borrar ocupación anterior
+        self._r.delete(self._OCCUPANCY_KEY)
+
+        # Marcar cada stand como libre
+        for stand in stands:
+            stand_id = stand["stand_id"]
+            self._r.hset(self._OCCUPANCY_KEY, stand_id, "0")
+
+    def set_stand_occupied(self, stand_id: str, occupied: bool) -> None:
+        """Mark a stand as occupied or free."""
+        self._r.hset(self._OCCUPANCY_KEY, stand_id, "1" if occupied else "0")
+
+    def is_stand_occupied(self, stand_id: str) -> bool:
+        """Return True if the stand is currently occupied."""
+        return self._r.hget(self._OCCUPANCY_KEY, stand_id) == "1"
+
+    def get_stands_with_occupancy(self) -> list:
+        """Return stands list with an 'occupied' bool field added to each."""
+        raw = self._r.get(f"{_PREFIX}:stands")
+        if raw:
+            stands = json.loads(raw)
+        else:
+            stands = []
+
+        occupancy = self._r.hgetall(self._OCCUPANCY_KEY)
+
+        # Añadir campo 'occupied' a cada stand
+        for stand in stands:
+            stand_id = stand["stand_id"]
+            value = occupancy.get(stand_id, "0")
+            if value == "1":
+                stand["occupied"] = True
+            else:
+                stand["occupied"] = False
+
+        return stands
+
     def _delete_current(self, pipe) -> None:
         """Delete all keys under the current airport prefix."""
         keys = self._r.keys(f"{_PREFIX}:*")

@@ -78,6 +78,7 @@ class AirportService:
             if cls._store is None:
                 cls._store = AirportDataStore()
             cls._store.store(icao, airport_data)
+            cls._store.init_stand_occupancy(airport_data["stands"])
 
             cls._last_loaded_icao = icao
             xp.log(f"AIrport: Loaded airport data for {icao} into Redis")
