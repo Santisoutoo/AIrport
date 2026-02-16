@@ -3,6 +3,7 @@ from pathlib import Path
 
 from ...utils.constants import Color, ButtonSize, Spacing, FontScale
 from ...utils.texture_loader import TextureLoader
+from ...services.airport_service import AirportService
 from ...services.flight_plan_service import FlightPlanService
 from ..components.header import Header
 from ..components.footer import Footer
@@ -223,6 +224,15 @@ class SessionConfigurationScreen:
             return
 
         self.error_message = ""
+
+        # Load airport data into Redis
+        icao = AirportService.get_icao()
+        if not icao:
+            self.error_message = "Could not detect current airport"
+            return
+        if not AirportService.load_airport_data(icao):
+            self.error_message = f"Failed to load airport data for {icao}"
+            return
 
         # Check service connection
         if not self.flight_plan_service.health_check():

@@ -11,7 +11,14 @@
 ╚═════════════════════════════════════════════════════════════════════════════════╝
 """
 
+import sys
+from pathlib import Path
 from typing import List
+
+# Allow imports to work both standalone and from XPPython3
+_GND_DIR = str(Path(__file__).resolve().parent)
+if _GND_DIR not in sys.path:
+    sys.path.insert(0, _GND_DIR)
 
 from models import (
     AirportInfo,
@@ -190,49 +197,54 @@ class AptDatParser:
 
         return airport_info
 
+def parse_airport(file_path: str) -> dict:
+    """
+    Parse an airport .dat file and return all data as a plain dict.
+
+    Returns:
+        Dict with keys: nodes, edges, stands, runways,
+        traffic_patterns, airport_info.  Each value is a list of dicts.
+    """
+    parser = AptDatParser(file_path=file_path)
+    return {
+        "nodes": [n.__dict__ for n in parser.parse_nodes()],
+        "edges": [e.__dict__ for e in parser.parse_edges()],
+        "stands": [s.__dict__ for s in parser.parse_stands()],
+        "runways": [r.__dict__ for r in parser.parse_runways()],
+        "traffic_patterns": [p.__dict__ for p in parser.parse_traffic_pattern()],
+        "airport_info": [i.__dict__ for i in parser.parse_airport_info()],
+    }
+
+
 if __name__ == "__main__":
 
     import json
     from pathlib import Path
 
-    ICAO = "LEBL".upper()  # Change ICAO code here
+    ICAO = "LEBL".upper()
 
     BASE_DIR = Path(__file__).resolve().parents[2]
     INPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}.dat"
     OUTPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}_graph.json"
 
-    parser = AptDatParser(
-        file_path=INPUT_FILE
-    )
+    airport_data = parse_airport(str(INPUT_FILE))
 
-    test_nodes = parser.parse_nodes()
-    test_edges = parser.parse_edges()
-    test_stands = parser.parse_stands()
-    test_runways = parser.parse_runways()
-    test_traffic_patterns = parser.parse_traffic_pattern()
-    test_airport_info = parser.parse_airport_info()
-
-    print(f"\nParsing results for {ICAO}:")
-    print(f"Found {len(test_nodes)} taxi nodes")
-    print(f"Found {len(test_edges)} taxi edges")
-    print(f"Found {len(test_stands)} stands")
-    print(f"Found {len(test_runways)} runways")
-    print(f"Found {len(test_traffic_patterns)} traffic patterns")
-    print(f"Found {len(test_airport_info)} airport info records")
-
-    # Create a dictionary with all data  
-    # .__dict__ to change the objects into a dictionary
-    airport_data = {
-        "nodes": [node.__dict__ for node in test_nodes],  
-        "edges": [edge.__dict__ for edge in test_edges],
-        "stands": [stand.__dict__ for stand in test_stands],
-        "runways": [runway.__dict__ for runway in test_runways],
-        "traffic_patterns": [pattern.__dict__ for pattern in test_traffic_patterns],
-        "airport_info": [info.__dict__ for info in test_airport_info]
-    }
+    for section, items in airport_data.items():
+        print(f"Found {len(items)} {section}")
 
     # Save to JSON file
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(airport_data, indent=2, fp=f)
-
     print(f"\nData saved to {OUTPUT_FILE}")
+
+    # Store in Redis for microservices access
+    try:
+        import sys
+        sys.path.insert(0, str(BASE_DIR / "shared"))
+        from services.airport_data_store import AirportDataStore
+
+        store = AirportDataStore()
+        store.store(ICAO, airport_data)
+        print(f"Data stored in Redis under airport:current:*")
+    except Exception as e:
+        print(f"Redis storage skipped: {e}")
