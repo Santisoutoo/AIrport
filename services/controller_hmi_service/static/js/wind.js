@@ -13,13 +13,14 @@ var windGlobal = {
 function initWindInstruments() {
     var instruments = document.querySelectorAll('.wind-instrument');
     instruments.forEach(function (el) {
-        renderWindCompass(el.querySelector('.wind-compass'));
+        var rwyHdg = parseInt(el.dataset.rwyHeading) || 0;
+        renderWindCompass(el.querySelector('.wind-compass'), rwyHdg);
     });
 }
 
 // ---- SVG Compass Rose ----
 
-function renderWindCompass(container) {
+function renderWindCompass(container, rwyHdg) {
     if (!container) return;
 
     var size = 220;
@@ -33,6 +34,46 @@ function renderWindCompass(container) {
     // Outer ring
     svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r +
         '" fill="none" stroke="#555" stroke-width="2"/>';
+
+    // Runway strip (drawn early so it sits behind labels and arrow)
+    if (rwyHdg !== undefined && rwyHdg !== null) {
+        var rwyLen = 65;   // half-length of the runway strip
+        var rwyW = 8;      // half-width
+        var rwyRad = (rwyHdg - 90) * Math.PI / 180;
+        var perpRad = rwyRad + Math.PI / 2;
+
+        // Four corners of the runway rectangle
+        var dx = rwyLen * Math.cos(rwyRad);
+        var dy = rwyLen * Math.sin(rwyRad);
+        var px = rwyW * Math.cos(perpRad);
+        var py = rwyW * Math.sin(perpRad);
+
+        var c1x = cx + dx + px, c1y = cy + dy + py;
+        var c2x = cx + dx - px, c2y = cy + dy - py;
+        var c3x = cx - dx - px, c3y = cy - dy - py;
+        var c4x = cx - dx + px, c4y = cy - dy + py;
+
+        svg += '<polygon points="' +
+            c1x + ',' + c1y + ' ' +
+            c2x + ',' + c2y + ' ' +
+            c3x + ',' + c3y + ' ' +
+            c4x + ',' + c4y +
+            '" fill="rgba(88,166,255,0.35)" stroke="#58a6ff" stroke-width="1.5"/>';
+
+        // Center dashed line along runway
+        var dashCount = 5;
+        var dashGap = rwyLen * 2 / (dashCount * 2 - 1);
+        for (var d = 0; d < dashCount; d++) {
+            var t = -rwyLen + d * dashGap * 2;
+            var dsx = cx + t * Math.cos(rwyRad);
+            var dsy = cy + t * Math.sin(rwyRad);
+            var dex = cx + (t + dashGap) * Math.cos(rwyRad);
+            var dey = cy + (t + dashGap) * Math.sin(rwyRad);
+            svg += '<line x1="' + dsx + '" y1="' + dsy +
+                '" x2="' + dex + '" y2="' + dey +
+                '" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-dasharray="2,2"/>';
+        }
+    }
 
     // Tick marks & labels
     for (var deg = 0; deg < 360; deg += 10) {
