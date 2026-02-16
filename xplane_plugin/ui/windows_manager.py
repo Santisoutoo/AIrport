@@ -7,6 +7,8 @@ from .screens.register import RegisterScreen
 from .screens.login_screen import LoginScreen
 from .screens.session_configuration_screen import SessionConfigurationScreen
 from ..utils.constants import MAIN_WINDOW_CONFIG
+from ..services.airport_service import AirportService
+from ..services.hmi_service import HmiService
 
 
 class WindowManager:
@@ -17,6 +19,7 @@ class WindowManager:
         self.current_screen: str = 'welcome'
         self.cmd: Optional[XPLMCommandRef] = None
         self.cmdRef = None
+        self.flight_loop_id = None
 
         self.screens = {
             'welcome': WelcomeScreen(self),
@@ -33,6 +36,10 @@ class WindowManager:
         )
         xp.registerCommandHandler(self.cmd, self._commandHandler, 1, self.cmdRef)
         xp.appendMenuItemWithCommand(xp.findPluginsMenu(), 'AIrport', self.cmd)
+
+        # Flight loop: envia ICAO al HMI service cada ~30s
+        self.flight_loop_id = xp.createFlightLoop(self._sync_airport_callback, phase=1)
+        xp.scheduleFlightLoop(self.flight_loop_id, interval=30.0)
 
         return 'PI_AIrport_v1.0', 'com.airport.atc', 'AIrport ATC Simulator'
 
@@ -74,6 +81,13 @@ class WindowManager:
             self.createWindow('AIrport')
         return 1
 
+    def _sync_airport_callback(self, sinceLast, elapsedTime, counter, refCon):
+        """Flight loop: envia el ICAO actual al HMI service."""
+        icao = AirportService.get_icao()
+        if icao:
+            HmiService.send_airport(icao)
+        return 30.0  # volver a llamar en 30s
+
     def close_all_windows(self):
         """Cierra todas las ventanas"""
         for window_data in list(self.windows.values()):
@@ -82,7 +96,11 @@ class WindowManager:
 
     def cleanup(self):
         """Limpieza al detener"""
+        if self.flight_loop_id:
+            xp.destroyFlightLoop(self.flight_loop_id)
+            self.flight_loop_id = None
         if self.cmd:
             xp.unregisterCommandHandler(self.cmd, self._commandHandler, 1, self.cmdRef)
         xp.clearAllMenuItems(xp.findPluginsMenu())
         self.close_all_windows()
+        AirportService.reset()

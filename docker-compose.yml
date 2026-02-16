@@ -112,6 +112,31 @@ services:
       timeout: 10s
       retries: 3
 
+  controller_hmi_service:
+    build:
+      context: ./services/controller_hmi_service
+      dockerfile: Dockerfile
+    container_name: airport_controller_hmi
+    restart: unless-stopped
+    ports:
+      - "8005:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./services/controller_hmi_service/static:/app/static
+    depends_on:
+      flight_plan_service:
+        condition: service_healthy
+      weather_service:
+        condition: service_healthy
+    networks:
+      - airport_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/hmi/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   airport_network:
     driver: bridge

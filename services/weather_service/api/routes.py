@@ -98,10 +98,9 @@ async def get_metar_data(icao_code: str):
 
         # Visibility
         visib = metar.get("visib")
-        if visib == "10+":
-            vis_m = 9999
-        elif visib:
-            vis_m = min(int(float(visib) * 1609.34), 9999)
+        if visib:
+            visib_clean = str(visib).replace("+", "")
+            vis_m = min(int(float(visib_clean) * 1609.34), 9999)
         else:
             vis_m = 9999
 
@@ -116,9 +115,9 @@ async def get_metar_data(icao_code: str):
                 if cover in ["BKN", "OVC"] and (ceiling is None or int(base) < ceiling):
                     ceiling = int(base)
 
-        # Pressure
+        # Pressure (altim from aviationweather.gov is already in hPa)
         altim = metar.get("altim")
-        qnh = int(float(altim) * 33.8639) if altim else 1013
+        qnh = int(float(altim)) if altim else 1013
 
         # Flight category
         flight_cat = _determine_flight_category(ceiling, vis_m)

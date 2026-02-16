@@ -5,6 +5,7 @@ from ...utils.texture_loader import TextureLoader
 from ..components.header import Header
 from ..components.footer import Footer
 from ...utils.constants import Color, ButtonSize, Spacing, FontScale
+from ...services.airport_service import AirportService
 
 
 class WelcomeScreen:
@@ -13,8 +14,8 @@ class WelcomeScreen:
     def __init__(self, window_manager):
         self.window_manager = window_manager
         self.is_visible = True
-        self.current_icao = "LEST"
-        self.current_airport_name = "Rosalia de Castro"
+        self.current_icao = ""
+        self.current_airport_name = ""
 
         #cargar img
         self.image_path = str(Path(__file__).parent.parent.parent / "images" / "LEST.png")
@@ -36,8 +37,16 @@ class WelcomeScreen:
         self._draw_content()
         self.footer.draw()
 
+    def _update_airport(self):
+        """Actualiza el aeropuerto actual desde X-Plane."""
+        airport = AirportService.get_current_airport()
+        if airport:
+            self.current_icao = airport.icao
+            self.current_airport_name = airport.name
+
     def _draw_content(self):
         """Dibuja el contenido principal de la pantalla."""
+        self._update_airport()
         window_width = imgui.get_window_width()
         draw_list = imgui.get_window_draw_list()
 
