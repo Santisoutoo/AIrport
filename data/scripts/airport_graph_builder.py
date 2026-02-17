@@ -15,16 +15,18 @@ class AirportMapVisualizer:
     """
     
     def __init__(
-        self, 
+        self,
         dat_file_path: str,
-        zoom_start: int = 16
+        zoom_start: int = 16,
+        parse_only: bool = False
     ):
         """
         Initialize the visualizer with a .dat file and create map immediately
-        
+
         Args:
             dat_file_path: Path to the airport .dat file
             zoom_start: Initial zoom level for the map
+            parse_only: If True, only parse data without creating Folium map
         """
         self.dat_file_path = Path (dat_file_path)
         self.airport_data = {}
@@ -32,17 +34,18 @@ class AirportMapVisualizer:
         self.airport_name = ""
         self.icao_code = ""
         self.zoom_start = zoom_start
-        
+
         # Elements we want to visualize
         self.target_codes = {
             '100': 'Runways',
             '102': 'Helipads',
             '1200': 'Taxi Network Header',
-            '1302': 'Airport Metadata', 
+            '1302': 'Airport Metadata',
             '1201': 'Taxi Route Nodes',
             '1202': 'Taxi Route Edges',
             '1205': 'Taxi Route Controls',
-            '1206': 'Ground Vehicle Routes'
+            '1206': 'Ground Vehicle Routes',
+            '1300': 'Stands/Gates'
         }
         
         # Colors for each element type
@@ -54,12 +57,16 @@ class AirportMapVisualizer:
             '1201': '#800080', # Purple for taxi nodes
             '1202': '#FFC0CB', # Pink for taxi routes
             '1205': '#FF69B4', # Hot pink for controls
-            '1206': '#A52A2A'  # Brown for ground vehicles
+            '1206': '#A52A2A',  # Brown for ground vehicles
+            '1300': '#00BFFF'   # Cyan for stands/gates
         }
-        
-        # Parse file and create map automatically
+
+        # Parse file and optionally create map
         self._parse_dat_file()
-        self.map = self._create_map()
+        if not parse_only:
+            self.map = self._create_map()
+        else:
+            self.map = None
     
     def _parse_dat_file(self):
         """Parse the .dat file and extract relevant information"""
@@ -204,7 +211,20 @@ class AirportMapVisualizer:
                 'name': ' '.join(parts[5:]) if len(parts) > 5 else 'Unnamed edge',
                 'raw': full_line
             }
-        
+
+        elif code == '1300':  # Stand / Gate / Parking
+            if len(parts) >= 7:
+                return {
+                    'type': 'stand',
+                    'lat': float(parts[1]),
+                    'lon': float(parts[2]),
+                    'heading': float(parts[3]),
+                    'stand_type': parts[4],  # gate, tie_down, hangar, misc
+                    'size_cats': parts[5],   # jets, heavy|jets, turboprops|props, helos, etc.
+                    'name': ' '.join(parts[6:]),
+                    'raw': full_line
+                }
+
         return None
     
     def _create_map(self) -> folium.Map:
@@ -461,6 +481,47 @@ class AirportMapVisualizer:
                     popup=f"{self.target_codes[code]}<br>{element['raw']}"
                 ).add_to(feature_group)
     
+    def get_graph_data(self) -> dict:
+        """Return parsed airport data as a plain dict (no Folium dependency)"""
+        nodes = {}
+        for n in self.airport_data.get('1201', []):
+            nodes[n['node_id']] = {
+                'lat': n['lat'], 'lon': n['lon'], 'name': n['name']
+            }
+
+        edges = []
+        for e in self.airport_data.get('1202', []):
+            edges.append({
+                'from': e['node1'], 'to': e['node2'],
+                'category': e['category'], 'name': e['name']
+            })
+
+        runways = []
+        for r in self.airport_data.get('100', []):
+            runways.append({
+                'end1': {'designator': r['runway_end1'], 'lat': r['lat1'], 'lon': r['lon1']},
+                'end2': {'designator': r['runway_end2'], 'lat': r['lat2'], 'lon': r['lon2']},
+                'width': r['width']
+            })
+
+        stands = []
+        for s in self.airport_data.get('1300', []):
+            stands.append({
+                'lat': s['lat'], 'lon': s['lon'], 'name': s['name'],
+                'type': s['stand_type'], 'size_cats': s['size_cats'],
+                'heading': s['heading']
+            })
+
+        return {
+            'icao': self.icao_code,
+            'name': self.airport_name,
+            'center': list(self.airport_center) if self.airport_center else None,
+            'nodes': nodes,
+            'edges': edges,
+            'runways': runways,
+            'stands': stands,
+        }
+
     def save(self, filename: str = None, output_dir: str = None):
         """
         Save the map to an HTML file

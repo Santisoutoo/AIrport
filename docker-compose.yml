@@ -124,6 +124,8 @@ services:
       - .env
     volumes:
       - ./services/controller_hmi_service/static:/app/static
+      - ./services/controller_hmi_service/api:/app/api
+      - ./data/scripts:/app/data_scripts
     depends_on:
       flight_plan_service:
         condition: service_healthy

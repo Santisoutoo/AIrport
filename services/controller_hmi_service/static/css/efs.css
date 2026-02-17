@@ -899,7 +899,7 @@ html, body {
 /* SMR aircraft labels */
 .smr-aircraft {
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: 2px;
     font-weight: 700;
     fill: var(--hmi-cyan);
 }

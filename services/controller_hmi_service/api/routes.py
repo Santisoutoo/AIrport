@@ -1,5 +1,7 @@
 import os
+import sys
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 import httpx
@@ -7,6 +9,21 @@ import httpx
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Locate data/scripts dir: Docker mount or local dev path
+_DOCKER_SCRIPTS = Path("/app/data_scripts")
+if _DOCKER_SCRIPTS.exists():
+    _SCRIPTS_DIR = _DOCKER_SCRIPTS
+else:
+    _SCRIPTS_DIR = Path(__file__).resolve().parents[3] / "data" / "scripts"
+
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from airport_graph_builder import AirportMapVisualizer
+
+# Cache parsed airport graphs: { "ICAO": graph_data_dict }
+_airport_graph_cache: dict = {}
 
 FLIGHT_PLAN_URL = os.getenv(
     "FLIGHT_PLAN_SERVICE_URL",
@@ -141,6 +158,29 @@ async def update_strip_state(aircraft_reg: str, data: dict):
     column = column_map.get(phase, "PRE_TAXI")
     strip_states[aircraft_reg] = {"phase": phase, "column": column}
     return strip_states[aircraft_reg]
+
+
+@router.get("/airport/graph")
+async def get_airport_graph():
+    """Return parsed airport graph (nodes, edges, stands, runways) for SMR map"""
+    icao = current_airport["icao"]
+
+    # Return cached data if available
+    if icao in _airport_graph_cache:
+        return _airport_graph_cache[icao]
+
+    dat_path = _SCRIPTS_DIR / "airport_data" / icao / f"{icao}.dat"
+    if not dat_path.exists():
+        raise HTTPException(status_code=404, detail=f"No data file for {icao}")
+
+    try:
+        viz = AirportMapVisualizer(str(dat_path), parse_only=True)
+        graph_data = viz.get_graph_data()
+        _airport_graph_cache[icao] = graph_data
+        return graph_data
+    except Exception as e:
+        logger.error("Failed to parse airport data for %s: %s", icao, e)
+        raise HTTPException(status_code=500, detail=f"Failed to parse airport data: {e}")
 
 
 async def _check_upstream(url: str) -> bool:
