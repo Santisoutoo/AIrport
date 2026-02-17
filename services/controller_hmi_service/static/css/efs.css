@@ -692,11 +692,19 @@ html, body {
 /* ============================================
    Wind & Safety Widget
    ============================================ */
-#wind-safety-widget {
+#bottom-bar {
     flex-shrink: 0;
-    background: var(--bg-secondary);
+    display: flex;
     border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+#wind-safety-widget {
+    flex: 0 0 auto;
+    background: var(--bg-secondary);
     padding: 6px 8px;
+    border-right: 1px solid var(--border-color);
+    min-width: 0;
 }
 
 .wind-widget-header {
@@ -831,6 +839,151 @@ html, body {
 }
 
 /* ============================================
+   Runway Sequence Monitor
+   ============================================ */
+#rwy-sequence-panel {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.rwy-seq-header {
+    margin-bottom: 4px;
+}
+
+.rwy-seq-body {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+}
+
+.rwy-seq-section {
+    flex: 1;
+    min-width: 0;
+}
+
+.rwy-seq-section-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.arr-title {
+    color: var(--hmi-cyan);
+}
+
+.dep-title {
+    color: var(--hmi-green);
+}
+
+.rwy-seq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.rwy-seq-empty {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    padding: 4px 0;
+}
+
+.rwy-seq-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 5px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+}
+
+.rwy-seq-item .seq-pos {
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--text-dim);
+    min-width: 10px;
+}
+
+.rwy-seq-item .seq-callsign {
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 55px;
+}
+
+.rwy-seq-item .seq-type {
+    color: var(--text-secondary);
+    font-size: 9px;
+    min-width: 35px;
+}
+
+.rwy-seq-item .seq-dist {
+    color: var(--hmi-cyan);
+    font-weight: 700;
+    font-size: 9px;
+}
+
+.rwy-seq-item .seq-speed {
+    color: var(--text-secondary);
+    font-size: 9px;
+}
+
+.rwy-seq-item .seq-wtc {
+    font-size: 8px;
+    font-weight: 900;
+    padding: 1px 3px;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+}
+
+.wtc-h {
+    background: rgba(255, 23, 68, 0.2);
+    color: var(--hmi-red);
+    border: 1px solid rgba(255, 23, 68, 0.4);
+}
+
+.wtc-m {
+    background: rgba(255, 145, 0, 0.15);
+    color: var(--hmi-orange);
+    border: 1px solid rgba(255, 145, 0, 0.3);
+}
+
+.wtc-l {
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--hmi-cyan);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.rwy-seq-item.seq-arr {
+    border-left: 2px solid var(--hmi-cyan);
+}
+
+.rwy-seq-item.seq-dep {
+    border-left: 2px solid var(--hmi-green);
+}
+
+.seq-freq {
+    color: var(--hmi-amber);
+    font-size: 9px;
+    font-weight: 700;
+}
+
+/* ============================================
    SMR Panel (Right Side)
    ============================================ */
 #smr-panel {
@@ -945,6 +1098,66 @@ html, body {
     padding: 6px 10px;
     background: var(--bg-toolbar);
     border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* LVP Indicator */
+.lvp-indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border: 2px solid;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-image: repeating-linear-gradient(
+        -45deg,
+        #cc0000, #cc0000 3px,
+        #fff 3px, #fff 6px
+    ) 4;
+}
+
+.lvp-indicator.lvp-off {
+    opacity: 0.4;
+}
+
+.lvp-indicator.lvp-on {
+    opacity: 1;
+    animation: lvp-flash 1.2s infinite;
+}
+
+.lvp-light {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #440000;
+    border: 1px solid #660000;
+    transition: all 0.2s;
+}
+
+.lvp-on .lvp-light {
+    background: #ff1744;
+    box-shadow: 0 0 6px #ff1744, 0 0 12px rgba(255, 23, 68, 0.4);
+}
+
+.lvp-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 900;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+}
+
+.lvp-on .lvp-label {
+    color: #ff1744;
+}
+
+@keyframes lvp-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 .lighting-controls {

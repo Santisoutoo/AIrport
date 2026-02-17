@@ -36,10 +36,10 @@ function initRwySelector() {
 function renderWindDial(container, rwyHdg) {
     if (!container) return;
 
-    var size = 180;
+    var size = 130;
     var cx = size / 2;
     var cy = size / 2;
-    var r = 72;
+    var r = 52;
 
     var svg = '<svg width="' + size + '" height="' + size +
         '" viewBox="0 0 ' + size + ' ' + size + '">';
@@ -165,7 +165,7 @@ function updateWindDisplay() {
     var svgEl = dialEl.querySelector('svg');
     if (!svgEl) return;
 
-    var cx = 90, cy = 90, r = 72;
+    var cx = 65, cy = 65, r = 52;
     var dir = windState.direction;
     var speed = windState.speed;
     var gust = windState.gust;
@@ -257,7 +257,7 @@ function updateWindDisplay() {
     var alertEl = document.getElementById('rwy-change-alert');
     if (alertEl) {
         if (tailwind > windState.TW_LIMIT) {
-            var suggestedRwy = rwyHdg === 170 ? '35' : '17';
+            var suggestedRwy = findOppositeRunway(rwyHdg);
             alertEl.textContent = 'TAILWIND ' + tailwind + 'kt > LIMIT ' + windState.TW_LIMIT + 'kt | SUGGEST: CHANGE TO RWY ' + suggestedRwy;
             alertEl.classList.remove('hidden');
         } else if (crosswind > windState.XW_LIMIT) {
@@ -285,4 +285,18 @@ function updateLimitBar(prefix, value, limit) {
     } else {
         fill.style.backgroundColor = 'var(--hmi-green)';
     }
+}
+
+function findOppositeRunway(currentHdg) {
+    // Find the opposite runway from the selector buttons
+    var btns = document.querySelectorAll('.rwy-btn');
+    for (var i = 0; i < btns.length; i++) {
+        var hdg = parseInt(btns[i].dataset.rwy);
+        if (hdg !== currentHdg) {
+            return btns[i].textContent.replace('RWY ', '');
+        }
+    }
+    // Fallback: calculate reciprocal
+    var opp = (currentHdg + 180) % 360;
+    return String(Math.round(opp / 10)).padStart(2, '0');
 }

@@ -53,6 +53,7 @@ function loadFlightStrips() {
 function rerenderStrips() {
     renderFlightStrips(flightPlans);
     updateSMRAircraft(flightPlans);
+    updateRunwaySequence(flightPlans);
     checkRIMCAS();
 }
 
@@ -153,6 +154,7 @@ function initSMRMap() {
             smrGraph = data;
             computeSMRBounds();
             renderSMRFromData();
+            updateRunwaySelector();
         })
         .catch(function (err) {
             console.error('Failed to load airport graph:', err);
@@ -611,6 +613,15 @@ function initLightingControls() {
     initToggleButton('stopbar-btn');
     initToggleButton('rwy-lights-btn');
     initToggleButton('approach-lights-btn');
+
+    // LVP toggle
+    var lvp = document.getElementById('lvp-indicator');
+    if (lvp) {
+        lvp.addEventListener('click', function () {
+            lvp.classList.toggle('lvp-on');
+            lvp.classList.toggle('lvp-off');
+        });
+    }
 }
 
 function initToggleButton(id) {
@@ -629,4 +640,157 @@ function initToggleButton(id) {
             btn.textContent = 'ON';
         }
     });
+}
+
+// ============================================
+// Dynamic Runway Selector
+// ============================================
+
+function updateRunwaySelector() {
+    var container = document.getElementById('rwy-selector');
+    if (!container || !smrGraph || !smrGraph.runways) return;
+
+    container.innerHTML = '';
+
+    // Collect all runway designators from the graph data
+    var designators = [];
+    smrGraph.runways.forEach(function (rwy) {
+        designators.push({
+            label: rwy.end1.designator,
+            hdg: parseInt(rwy.end1.designator) * 10
+        });
+        designators.push({
+            label: rwy.end2.designator,
+            hdg: parseInt(rwy.end2.designator) * 10
+        });
+    });
+
+    if (designators.length === 0) return;
+
+    designators.forEach(function (d, i) {
+        var btn = document.createElement('button');
+        btn.className = 'rwy-btn' + (i === 0 ? ' active' : '');
+        btn.dataset.rwy = d.hdg;
+        btn.textContent = 'RWY ' + d.label;
+        container.appendChild(btn);
+    });
+
+    // Set first runway as active in wind state
+    windState.activeRwy = designators[0].hdg;
+
+    // Re-init the selector click handlers
+    initRwySelector();
+
+    // Update wind display with new runway
+    updateWindDisplay();
+}
+
+// ============================================
+// Runway Sequence Monitor
+// ============================================
+
+// WTC lookup by aircraft type prefix
+var WTC_MAP = {
+    'A388': 'J', 'A380': 'J', 'B748': 'H', 'B744': 'H', 'B77W': 'H',
+    'B772': 'H', 'B773': 'H', 'A346': 'H', 'A345': 'H', 'A343': 'H',
+    'A332': 'H', 'A333': 'H', 'A339': 'H', 'A359': 'H', 'A35K': 'H',
+    'B789': 'H', 'B788': 'H', 'B787': 'H', 'B763': 'H', 'B764': 'H',
+    'A321': 'M', 'A320': 'M', 'A319': 'M', 'A318': 'M', 'B738': 'M',
+    'B737': 'M', 'B739': 'M', 'E195': 'M', 'E190': 'M', 'B752': 'M',
+    'CRJ9': 'M', 'CRJ7': 'M', 'E170': 'M', 'E75L': 'M', 'AT76': 'M',
+    'AT75': 'M', 'DH8D': 'M', 'C172': 'L', 'PA28': 'L', 'C152': 'L',
+    'P28A': 'L', 'BE20': 'L', 'C208': 'L', 'PC12': 'L'
+};
+
+function getWTC(acType) {
+    if (!acType) return 'M';
+    var code = acType.toUpperCase().replace(/-/g, '');
+    if (WTC_MAP[code]) return WTC_MAP[code];
+    // Guess from prefix
+    if (code.indexOf('A3') === 0 && parseInt(code.charAt(2)) >= 3) return 'H';
+    if (code.indexOf('B7') === 0 && parseInt(code.charAt(2)) >= 4) return 'H';
+    return 'M';
+}
+
+function updateRunwaySequence(plans) {
+    var arrContainer = document.getElementById('rwy-seq-arrivals');
+    var depContainer = document.getElementById('rwy-seq-departures');
+    if (!arrContainer || !depContainer) return;
+
+    var arrivals = [];
+    var departures = [];
+
+    if (plans && plans.length > 0) {
+        plans.forEach(function (plan) {
+            var reg = plan.aircraft_registration || '';
+            var col = getStripColumn(reg);
+            var phase = getStripPhase(reg);
+            var type = plan.aircraft_type || '';
+            var wtc = getWTC(type);
+
+            if (plan.flight_type === 'arrival' || plan.arrival_airport === currentICAO) {
+                arrivals.push({
+                    callsign: reg,
+                    type: type,
+                    wtc: wtc,
+                    phase: phase,
+                    column: col
+                });
+            } else {
+                departures.push({
+                    callsign: reg,
+                    type: type,
+                    wtc: wtc,
+                    phase: phase,
+                    column: col
+                });
+            }
+        });
+    }
+
+    // Render arrivals (max 3)
+    if (arrivals.length === 0) {
+        arrContainer.innerHTML = '<div class="rwy-seq-empty">No traffic</div>';
+    } else {
+        var arrHtml = '';
+        var prevWtc = null;
+        arrivals.slice(0, 3).forEach(function (a, i) {
+            var wtcClass = 'wtc-' + a.wtc.toLowerCase();
+            var wtcWarn = (prevWtc === 'H' || prevWtc === 'J') ? ' title="Wake turbulence caution"' : '';
+            arrHtml += '<div class="rwy-seq-item seq-arr"' + wtcWarn + '>' +
+                '<span class="seq-pos">' + (i + 1) + '</span>' +
+                '<span class="seq-callsign">' + escapeHtml(a.callsign) + '</span>' +
+                '<span class="seq-type">' + escapeHtml(a.type || '--') + '</span>' +
+                '<span class="seq-wtc ' + wtcClass + '">' + a.wtc + '</span>';
+            if (prevWtc === 'H' || prevWtc === 'J') {
+                arrHtml += '<span class="seq-wtc wtc-h" style="font-size:7px">WK!</span>';
+            }
+            arrHtml += '</div>';
+            prevWtc = a.wtc;
+        });
+        arrContainer.innerHTML = arrHtml;
+    }
+
+    // Render departures (max 3)
+    if (departures.length === 0) {
+        depContainer.innerHTML = '<div class="rwy-seq-empty">No traffic</div>';
+    } else {
+        var depHtml = '';
+        departures.slice(0, 3).forEach(function (d, i) {
+            var wtcClass = 'wtc-' + d.wtc.toLowerCase();
+            var statusLabel = '';
+            if (d.phase === 'CLEARED') statusLabel = '<span class="seq-freq">CLR</span>';
+            else if (d.phase === 'LINEUP') statusLabel = '<span class="seq-freq">L/U</span>';
+            else if (d.column === 'TAXI') statusLabel = '<span class="seq-freq">TAXI</span>';
+
+            depHtml += '<div class="rwy-seq-item seq-dep">' +
+                '<span class="seq-pos">' + (i + 1) + '</span>' +
+                '<span class="seq-callsign">' + escapeHtml(d.callsign) + '</span>' +
+                '<span class="seq-type">' + escapeHtml(d.type || '--') + '</span>' +
+                '<span class="seq-wtc ' + wtcClass + '">' + d.wtc + '</span>' +
+                statusLabel +
+                '</div>';
+        });
+        depContainer.innerHTML = depHtml;
+    }
 }
