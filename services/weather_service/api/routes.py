@@ -97,8 +97,11 @@ async def get_metar_data(icao_code: str):
         wind_dir = 0 if wdir == "VRB" or wdir is None else int(wdir)
 
         # Visibility
+        raw_ob = metar.get("rawOb", "")
         visib = metar.get("visib")
-        if visib:
+        if " 9999 " in f" {raw_ob} ":
+            vis_m = 9999
+        elif visib:
             visib_clean = str(visib).replace("+", "")
             vis_m = min(int(float(visib_clean) * 1609.34), 9999)
         else:

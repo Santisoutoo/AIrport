@@ -1,34 +1,140 @@
-// efs.js -- Electronic Flight Strip rendering
+// efs.js -- TWR HMI: 3-Column Electronic Flight Strips with Action Buttons
 
-function renderFlightStrips(plans, container) {
-    container.innerHTML = '';
+var API_BASE = '/api/v1/hmi';
 
-    if (!plans || plans.length === 0) {
-        container.innerHTML =
-            '<div class="strips-empty">' +
-                '<div class="strips-empty-icon">&#9992;</div>' +
-                '<div>No flight plans loaded</div>' +
-                '<div style="font-size:12px;margin-top:4px;">Generate plans via the Flight Plan Service</div>' +
-            '</div>';
-        return;
-    }
+// Client-side strip states: { "registration": { phase, column } }
+var stripStates = {};
 
-    plans.forEach(function(plan) {
-        var strip = createStripElement(plan);
-        container.appendChild(strip);
+// Phase -> Column mapping
+var PHASE_COLUMN = {
+    'PRE_TAXI': 'PRE_TAXI',
+    'PUSHBACK': 'PRE_TAXI',
+    'TAXI': 'TAXI',
+    'LINEUP': 'RUNWAY',
+    'CLEARED': 'RUNWAY'
+};
+
+// ---- Load strip states from server ----
+
+function loadStripStates(callback) {
+    fetch(API_BASE + '/strips/states')
+        .then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+        })
+        .then(function (data) {
+            stripStates = data || {};
+            if (callback) callback();
+        })
+        .catch(function () {
+            if (callback) callback();
+        });
+}
+
+// ---- Get/Set strip phase ----
+
+function getStripPhase(reg) {
+    if (stripStates[reg]) return stripStates[reg].phase;
+    return 'PRE_TAXI';
+}
+
+function getStripColumn(reg) {
+    var phase = getStripPhase(reg);
+    return PHASE_COLUMN[phase] || 'PRE_TAXI';
+}
+
+function setStripPhase(reg, phase) {
+    var column = PHASE_COLUMN[phase] || 'PRE_TAXI';
+    stripStates[reg] = { phase: phase, column: column };
+
+    // Persist to server
+    fetch(API_BASE + '/strips/' + encodeURIComponent(reg) + '/state', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phase: phase })
+    }).catch(function (err) {
+        console.error('Failed to save strip state:', err);
     });
 }
 
-function createStripElement(plan) {
+// ---- Render strips into 3 columns ----
+
+function renderFlightStrips(plans) {
+    var preTaxiContainer = document.getElementById('strips-pretaxi');
+    var taxiContainer = document.getElementById('strips-taxi');
+    var runwayContainer = document.getElementById('strips-runway');
+
+    if (!preTaxiContainer || !taxiContainer || !runwayContainer) return;
+
+    preTaxiContainer.innerHTML = '';
+    taxiContainer.innerHTML = '';
+    runwayContainer.innerHTML = '';
+
+    var counts = { PRE_TAXI: 0, TAXI: 0, RUNWAY: 0 };
+
+    if (!plans || plans.length === 0) {
+        preTaxiContainer.innerHTML = emptyState();
+        updateColumnCounts(counts);
+        return;
+    }
+
+    plans.forEach(function (plan) {
+        var reg = plan.aircraft_registration;
+        var column = getStripColumn(reg);
+        var phase = getStripPhase(reg);
+        var strip = createStripElement(plan, phase);
+
+        if (column === 'TAXI') {
+            taxiContainer.appendChild(strip);
+            counts.TAXI++;
+        } else if (column === 'RUNWAY') {
+            runwayContainer.appendChild(strip);
+            counts.RUNWAY++;
+        } else {
+            preTaxiContainer.appendChild(strip);
+            counts.PRE_TAXI++;
+        }
+    });
+
+    if (counts.PRE_TAXI === 0) preTaxiContainer.innerHTML = emptyState();
+    if (counts.TAXI === 0) taxiContainer.innerHTML = emptyState();
+    if (counts.RUNWAY === 0) runwayContainer.innerHTML = emptyState();
+
+    updateColumnCounts(counts);
+}
+
+function updateColumnCounts(counts) {
+    var el;
+    el = document.getElementById('count-pretaxi');
+    if (el) el.textContent = counts.PRE_TAXI;
+    el = document.getElementById('count-taxi');
+    if (el) el.textContent = counts.TAXI;
+    el = document.getElementById('count-runway');
+    if (el) el.textContent = counts.RUNWAY;
+}
+
+function emptyState() {
+    return '<div class="strips-empty">' +
+        '<div class="strips-empty-icon">&#9992;</div>' +
+        '<div>Empty</div></div>';
+}
+
+// ---- Create Strip Card ----
+
+function createStripElement(plan, phase) {
     var strip = document.createElement('div');
-    strip.className = 'flight-strip' + (plan.flight_rules === 'V' ? ' vfr' : '');
+    strip.className = 'flight-strip phase-' + phase.toLowerCase();
     strip.dataset.registration = plan.aircraft_registration;
 
-    // Format departure time as HH:MM
-    var depTime = String(plan.departure_time).padStart(4, '0');
-    var depFormatted = depTime.slice(0, 2) + ':' + depTime.slice(2);
+    var isIFR = plan.flight_rules === 'I';
+    var rulesClass = isIFR ? 'ifr' : 'vfr';
+    var rulesText = isIFR ? 'IFR' : 'VFR';
 
-    // Format altitude (FL or feet)
+    // WTC
+    var wtcClasses = { 'H': 'wtc-heavy', 'M': 'wtc-medium', 'L': 'wtc-light', 'J': 'wtc-super' };
+    var wtcClass = wtcClasses[plan.wake_turbulence_category] || 'wtc-medium';
+
+    // Altitude display
     var altDisplay;
     if (plan.cruising_altitude >= 10000) {
         altDisplay = 'FL' + Math.round(plan.cruising_altitude / 100);
@@ -36,57 +142,74 @@ function createStripElement(plan) {
         altDisplay = plan.cruising_altitude + 'ft';
     }
 
-    // Wake turbulence category class
-    var wtcClasses = {
-        'H': 'wtc-heavy',
-        'M': 'wtc-medium',
-        'L': 'wtc-light',
-        'J': 'wtc-super'
-    };
-    var wtcClass = wtcClasses[plan.wake_turbulence_category] || 'wtc-medium';
+    // Squawk (generate from registration if not available)
+    var squawk = plan.squawk || generateSquawk(plan.aircraft_registration);
 
-    // Rules badge
-    var rulesClass = plan.flight_rules === 'I' ? 'ifr-badge' : 'vfr-badge';
-    var rulesText = plan.flight_rules === 'I' ? 'IFR' : 'VFR';
+    // SID (extract first waypoint from route or use route)
+    var sid = plan.route ? truncateRoute(plan.route, 12) : 'DCT';
 
+    // Build strip HTML
     strip.innerHTML =
-        '<div class="cell">' +
-            '<span class="rules-badge ' + rulesClass + '">' + rulesText + '</span>' +
+        // Top row: rules, callsign, type, WTC
+        '<div class="strip-info-row">' +
+            '<span class="strip-rules ' + rulesClass + '">' + rulesText + '</span>' +
+            '<span class="strip-callsign">' + escapeHtml(plan.aircraft_registration) + '</span>' +
+            '<span class="strip-type">' + escapeHtml(plan.aircraft_type) + '</span>' +
+            '<span class="strip-wtc ' + wtcClass + '">' + escapeHtml(plan.wake_turbulence_category) + '</span>' +
         '</div>' +
-        '<div class="cell">' +
-            '<span class="callsign">' + escapeHtml(plan.aircraft_registration) + '</span>' +
-            '<span class="pic-name">' + escapeHtml(plan.PIC_name) + '</span>' +
+        // Detail row: SID, SQ, Alt, Dest
+        '<div class="strip-details-row">' +
+            '<span><span class="strip-detail-label">SID:</span> <span class="strip-sid">' + escapeHtml(sid) + '</span></span>' +
+            '<span><span class="strip-detail-label">SQ:</span> <span class="strip-sq">' + squawk + '</span></span>' +
+            '<span class="strip-alt">' + altDisplay + '</span>' +
+            '<span class="strip-dest">' + escapeHtml(plan.destination_ICAO) + '</span>' +
         '</div>' +
-        '<div class="cell">' +
-            '<span class="acft-type">' + escapeHtml(plan.aircraft_type) + '</span>' +
-        '</div>' +
-        '<div class="cell">' +
-            '<span class="wtc-badge ' + wtcClass + '">' + escapeHtml(plan.wake_turbulence_category) + '</span>' +
-        '</div>' +
-        '<div class="cell">' +
-            '<span class="icao dep-icao">' + escapeHtml(plan.departure_ICAO) + '</span>' +
-            '<span class="time">' + depFormatted + 'Z</span>' +
-        '</div>' +
-        '<div class="cell">' +
-            '<span class="route" title="' + escapeHtml(plan.route) + '">' +
-                escapeHtml(truncateRoute(plan.route, 40)) +
-            '</span>' +
-        '</div>' +
-        '<div class="cell">' +
-            '<span class="altitude">' + altDisplay + '</span>' +
-        '</div>' +
-        '<div class="cell">' +
-            '<span class="speed">' + plan.cruising_speed + 'kt</span>' +
-        '</div>' +
-        '<div class="cell">' +
-            '<span class="icao dest-icao">' + escapeHtml(plan.destination_ICAO) + '</span>' +
-            '<span class="alt-icao">' + escapeHtml(plan.alternate_ICAO || '-') + '</span>' +
-        '</div>' +
-        '<div class="cell">' +
-            '<span class="eet">' + escapeHtml(plan.total_EET) + '</span>' +
+        // Action buttons
+        '<div class="strip-actions">' +
+            actionBtn('PUSH', 'btn-push', plan.aircraft_registration, phase, 'PUSHBACK') +
+            actionBtn('TAXI', 'btn-taxi', plan.aircraft_registration, phase, 'TAXI') +
+            actionBtn('LINE-UP', 'btn-lineup', plan.aircraft_registration, phase, 'LINEUP') +
+            actionBtn('CLEARED', 'btn-cleared', plan.aircraft_registration, phase, 'CLEARED') +
         '</div>';
 
+    // Attach button event listeners
+    strip.querySelectorAll('.strip-action-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var targetPhase = btn.dataset.phase;
+            var reg = btn.dataset.reg;
+            setStripPhase(reg, targetPhase);
+            // Re-render all strips
+            if (typeof rerenderStrips === 'function') rerenderStrips();
+        });
+    });
+
     return strip;
+}
+
+function actionBtn(label, cssClass, reg, currentPhase, targetPhase) {
+    var activeClass = currentPhase === targetPhase ? ' active-phase' : '';
+    return '<button class="strip-action-btn ' + cssClass + activeClass +
+        '" data-phase="' + targetPhase +
+        '" data-reg="' + escapeHtml(reg) + '">' + label + '</button>';
+}
+
+function generateSquawk(reg) {
+    // Simple hash-based squawk code from registration
+    var hash = 0;
+    for (var i = 0; i < reg.length; i++) {
+        hash = ((hash << 5) - hash) + reg.charCodeAt(i);
+        hash |= 0;
+    }
+    var code = Math.abs(hash) % 7000 + 1000;
+    // Ensure valid squawk (digits 0-7 only)
+    var str = String(code);
+    var result = '';
+    for (var j = 0; j < 4; j++) {
+        var d = parseInt(str[j]) || 0;
+        result += Math.min(d, 7);
+    }
+    return result;
 }
 
 function truncateRoute(route, maxLen) {
@@ -96,7 +219,7 @@ function truncateRoute(route, maxLen) {
 }
 
 function sortFlightPlans(plans, sortBy) {
-    return plans.slice().sort(function(a, b) {
+    return plans.slice().sort(function (a, b) {
         switch (sortBy) {
             case 'departure_time':
                 return a.departure_time - b.departure_time;

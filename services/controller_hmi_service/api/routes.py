@@ -1,5 +1,7 @@
 import os
+import sys
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 import httpx
@@ -7,6 +9,22 @@ import httpx
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Locate data/scripts dir: Docker mount or local dev path
+_DOCKER_SCRIPTS = Path("/app/data_scripts")
+if _DOCKER_SCRIPTS.exists():
+    _SCRIPTS_DIR = _DOCKER_SCRIPTS
+else:
+    _SCRIPTS_DIR = Path(__file__).resolve().parents[3] / "data" / "scripts"
+
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from airport_graph_builder import AirportMapVisualizer
+from airport_data_fetcher import XPlaneAirportDownloader
+
+# Cache parsed airport graphs: { "ICAO": graph_data_dict }
+_airport_graph_cache: dict = {}
 
 FLIGHT_PLAN_URL = os.getenv(
     "FLIGHT_PLAN_SERVICE_URL",
@@ -18,6 +36,9 @@ WEATHER_URL = os.getenv(
 )
 
 current_airport = {"icao": "LEST"}
+
+# In-memory strip states: { "aircraft_reg": { "phase": "PRE_TAXI|PUSHBACK|TAXI|LINEUP|CLEARED", "column": "PRE_TAXI|TAXI|RUNWAY" } }
+strip_states: dict = {}
 
 
 @router.get("/airport")
@@ -116,6 +137,61 @@ async def get_atis():
             raise HTTPException(
                 status_code=502, detail="Weather service unavailable"
             )
+
+
+@router.get("/strips/states")
+async def get_strip_states():
+    """Return all strip states"""
+    return strip_states
+
+
+@router.patch("/strips/{aircraft_reg}/state")
+async def update_strip_state(aircraft_reg: str, data: dict):
+    """Update a strip's phase and column assignment"""
+    phase = data.get("phase", "PRE_TAXI")
+    column_map = {
+        "PRE_TAXI": "PRE_TAXI",
+        "PUSHBACK": "PRE_TAXI",
+        "TAXI": "TAXI",
+        "LINEUP": "RUNWAY",
+        "CLEARED": "RUNWAY",
+    }
+    column = column_map.get(phase, "PRE_TAXI")
+    strip_states[aircraft_reg] = {"phase": phase, "column": column}
+    return strip_states[aircraft_reg]
+
+
+@router.get("/airport/graph")
+async def get_airport_graph():
+    """Return parsed airport graph (nodes, edges, stands, runways) for SMR map"""
+    icao = current_airport["icao"]
+
+    # Return cached data if available
+    if icao in _airport_graph_cache:
+        return _airport_graph_cache[icao]
+
+    dat_path = _SCRIPTS_DIR / "airport_data" / icao / f"{icao}.dat"
+    if not dat_path.exists():
+        logger.info("Downloading airport data for %s ...", icao)
+        try:
+            dl = XPlaneAirportDownloader(icao, output_directory=_SCRIPTS_DIR / "airport_data")
+            result = dl.download(verbose=True)
+            if result is None:
+                raise HTTPException(status_code=404, detail=f"Airport {icao} not found in gateway")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error("Failed to download airport data for %s: %s", icao, e)
+            raise HTTPException(status_code=502, detail=f"Failed to download airport data: {e}")
+
+    try:
+        viz = AirportMapVisualizer(str(dat_path), parse_only=True)
+        graph_data = viz.get_graph_data()
+        _airport_graph_cache[icao] = graph_data
+        return graph_data
+    except Exception as e:
+        logger.error("Failed to parse airport data for %s: %s", icao, e)
+        raise HTTPException(status_code=500, detail=f"Failed to parse airport data: {e}")
 
 
 async def _check_upstream(url: str) -> bool:
