@@ -238,8 +238,11 @@ class ATISGenerator:
         result["wind_gust"] = int(metar_data.get("wgst")) if metar_data.get("wgst") else None
 
         # Visibility
+        raw_ob = metar_data.get("rawOb", "")
         visib = metar_data.get("visib")
-        if visib:
+        if " 9999 " in f" {raw_ob} ":
+            result["visibility_m"] = 9999
+        elif visib:
             visib_clean = str(visib).replace("+", "")
             result["visibility_m"] = min(int(float(visib_clean) * 1609.34), 9999)
         else:

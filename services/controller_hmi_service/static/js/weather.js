@@ -79,8 +79,9 @@ function renderMetarIcons(metar) {
     var visEl = document.getElementById('metar-vis-text');
     var visBar = document.getElementById('metar-vis-bar');
     if (visEl && metar.visibility_m !== undefined) {
+        var rawHas9999 = metar.raw_metar && /\b9999\b/.test(metar.raw_metar);
         var visKm = metar.visibility_m / 1000;
-        visEl.textContent = visKm.toFixed(1) + ' km';
+        visEl.textContent = rawHas9999 ? '+10 km' : visKm.toFixed(1) + ' km';
 
         if (visBar) {
             var pct = Math.min(100, (visKm / 10) * 100);
