@@ -1,13 +1,6 @@
-"""
-Store and retrieve parsed airport data from Redis.
-
-Used by both the X-Plane plugin and the microservices to share
-airport data (nodes, edges, stands, runways, etc.) for the
-currently loaded airport.
-"""
-
 import json
 import os
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 import redis
@@ -130,6 +123,31 @@ class AirportDataStore:
                 stand["occupied"] = False
 
         return stands
+
+    # Session management
+    _SESSION_KEY = "session:current"
+
+    def start_session(self, airport_icao: str, aircraft_count: int = 0) -> str:
+        """
+        Create a new training session and store its metadata in Redis.
+        """
+        session_id = str(uuid.uuid4())
+        self._r.hset(self._SESSION_KEY, mapping={
+            "session_id": session_id,
+            "airport_icao": airport_icao.upper(),
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "aircraft_count": str(aircraft_count),
+        })
+        return session_id
+
+    def end_session(self) -> None:
+        """Mark the current session as ended and clean up."""
+        self._r.delete(self._SESSION_KEY)
+
+    def get_session(self) -> Optional[dict]:
+        """Return the current session metadata, or None."""
+        data = self._r.hgetall(self._SESSION_KEY)
+        return data if data else None
 
     def _delete_current(self, pipe) -> None:
         """Delete all keys under the current airport prefix."""

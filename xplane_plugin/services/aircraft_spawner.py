@@ -6,19 +6,13 @@ class AircraftSpawner:
     """Loads .obj models and places them at stand positions."""
 
     def __init__(self):
-        self._instances = []
+        self._instances = []   # (instance, obj)
+        self._registry = {}    # {instance, obj, latitude, longitude, true_hdg, aircraft_type}
         self._probe = None
 
     def spawn(self, assignments: list) -> int:
         """
         Spawn static aircraft at their assigned stands.
-
-        Args:
-            assignments: List of dicts from StandAssigner.assign(), each with:
-                aircraft_type, latitude, longitude, true_hdg.
-
-        Returns:
-            Number of aircraft successfully spawned.
         """
         # Probe gives the elevation of the current airfield
         # It is done to know the altitude of the .obj in the scenary
@@ -54,6 +48,18 @@ class AircraftSpawner:
             xp.instanceSetPosition(instance, position, [])
 
             self._instances.append((instance, obj))
+
+            # Track by registration for future position queries
+            reg = a.get("aircraft_registration", f"AI-{count}")
+            self._registry[reg] = {
+                "instance": instance,
+                "obj": obj,
+                "latitude": a["latitude"],
+                "longitude": a["longitude"],
+                "true_hdg": a["true_hdg"],
+                "aircraft_type": a["aircraft_type"],
+            }
+
             count += 1
 
         xp.log(f"AIrport: Spawned {count} aircraft")
@@ -61,10 +67,16 @@ class AircraftSpawner:
 
     def clear(self):
         """Destroy all spawned aircraft instances."""
-        for instance, obj in self._instances:
+        for instance, _ in self._instances:
             xp.destroyInstance(instance)
         self._instances.clear()
+        self._registry.clear()
         xp.log("AIrport: Cleared all spawned aircraft")
+
+    @property
+    def registry(self) -> dict:
+        """Return the registration → aircraft info mapping."""
+        return self._registry
 
     @property
     def count(self) -> int:
