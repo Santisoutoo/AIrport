@@ -13,7 +13,9 @@ RUN pip install --no-cache-dir \
     uvicorn[standard]==0.27.0 \
     pydantic==2.5.3 \
     httpx==0.26.0 \
-    folium==0.15.1
+    folium==0.15.1 \
+    xplane-airports==4.0.1 \
+    requests>=2.31.0
 
 # Copy application code
 COPY . .

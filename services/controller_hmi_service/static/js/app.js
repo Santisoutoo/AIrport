@@ -71,6 +71,8 @@ function loadWeather() {
         });
 }
 
+var currentICAO = '';
+
 function loadAirport() {
     fetch('/api/v1/hmi/airport')
         .then(function (resp) {
@@ -78,10 +80,19 @@ function loadAirport() {
             return resp.json();
         })
         .then(function (data) {
+            var icao = data.icao || '----';
             var badge = document.getElementById('airport-badge');
-            if (badge) badge.textContent = data.icao || '----';
+            if (badge) badge.textContent = icao;
             var smrLabel = document.getElementById('smr-airport');
-            if (smrLabel) smrLabel.textContent = data.icao || '----';
+            if (smrLabel) smrLabel.textContent = icao;
+
+            // Reload map, weather & TAF when airport changes
+            if (icao !== currentICAO && icao !== '----') {
+                currentICAO = icao;
+                initSMRMap();
+                loadWeather();
+                loadTaf();
+            }
         })
         .catch(function (err) {
             console.error('Failed to load airport:', err);
@@ -223,10 +234,10 @@ function renderSMRFromData() {
 
     // Background grid
     for (var gx = 0; gx <= 100; gx += 10) {
-        svg += '<line x1="' + gx + '" y1="0" x2="' + gx + '" y2="100" stroke="#0d1520" stroke-width="0.15"/>';
+        svg += '<line x1="' + gx + '" y1="0" x2="' + gx + '" y2="100" stroke="#0d1520" stroke-width="0.15" vector-effect="non-scaling-stroke"/>';
     }
     for (var gy = 0; gy <= 100; gy += 10) {
-        svg += '<line x1="0" y1="' + gy + '" x2="100" y2="' + gy + '" stroke="#0d1520" stroke-width="0.15"/>';
+        svg += '<line x1="0" y1="' + gy + '" x2="100" y2="' + gy + '" stroke="#0d1520" stroke-width="0.15" vector-effect="non-scaling-stroke"/>';
     }
 
     // --- Runways ---
@@ -246,10 +257,10 @@ function renderSMRFromData() {
 
         // Designators
         svg += '<text x="' + p1.x + '" y="' + (p1.y - 1.5) +
-            '" text-anchor="middle" fill="#3a6a3a" font-size="2.5" font-family="monospace" font-weight="700">' +
+            '" text-anchor="middle" fill="#3a6a3a" data-base-fs="2.5" font-size="2.5" font-family="monospace" font-weight="700">' +
             rwy.end1.designator + '</text>';
         svg += '<text x="' + p2.x + '" y="' + (p2.y + 3) +
-            '" text-anchor="middle" fill="#3a6a3a" font-size="2.5" font-family="monospace" font-weight="700">' +
+            '" text-anchor="middle" fill="#3a6a3a" data-base-fs="2.5" font-size="2.5" font-family="monospace" font-weight="700">' +
             rwy.end2.designator + '</text>';
     });
 
@@ -288,7 +299,7 @@ function renderSMRFromData() {
     Object.keys(taxiwayLabels).forEach(function (name) {
         var pos = taxiwayLabels[name];
         svg += '<text x="' + (pos.x - 2) + '" y="' + pos.y +
-            '" text-anchor="middle" dominant-baseline="central" fill="#2a5a8a" font-size="2" font-family="monospace" font-weight="700">' +
+            '" text-anchor="middle" dominant-baseline="central" fill="#2a5a8a" data-base-fs="2" font-size="2" font-family="monospace" font-weight="700">' +
             name + '</text>';
     });
 
@@ -300,11 +311,12 @@ function renderSMRFromData() {
         var isGA = stand.size_cats && (stand.size_cats.indexOf('helos') !== -1 || stand.size_cats.indexOf('props') !== -1);
         var dotColor = isMil ? '#4a5568' : isGA ? '#2a5a8a' : '#00e5ff';
 
-        svg += '<rect x="' + (p.x - 0.6) + '" y="' + (p.y - 0.6) +
-            '" width="1.2" height="1.2" fill="' + dotColor + '" opacity="0.5" rx="0.2"/>';
+        svg += '<rect class="smr-stand" data-cx="' + p.x + '" data-cy="' + p.y +
+            '" x="' + (p.x - 0.6) + '" y="' + (p.y - 0.6) +
+            '" width="1.2" height="1.2" data-base-size="1.2" fill="' + dotColor + '" opacity="0.5" rx="0.2"/>';
 
         svg += '<text x="' + p.x + '" y="' + (p.y + 1.8) +
-            '" text-anchor="middle" fill="' + dotColor + '" font-size="1.2" font-family="monospace" opacity="0.7">' +
+            '" text-anchor="middle" fill="' + dotColor + '" data-base-fs="2" data-base-dy="2.2" font-size="2" font-family="monospace" opacity="0.8">' +
             stand.name + '</text>';
     });
 
@@ -312,7 +324,7 @@ function renderSMRFromData() {
     Object.keys(smrGraph.nodes).forEach(function (id) {
         var n = smrGraph.nodes[id];
         var p = geoToSVG(n.lat, n.lon);
-        svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="0.3" fill="#1a2a3a" opacity="0.4"/>';
+        svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="0.3" data-base-r="0.3" fill="#1a2a3a" opacity="0.4"/>';
     });
 
     // Aircraft overlay group (on top)
@@ -322,6 +334,59 @@ function renderSMRFromData() {
     container.innerHTML = svg;
 
     initSMRInteraction();
+}
+
+// --- Rescale elements to keep constant visual size at any zoom level ---
+
+function rescaleSMRElements() {
+    var svgEl = document.getElementById('smr-svg');
+    if (!svgEl) return;
+
+    var s = smrViewBox.w / 100; // zoom scale: 1 = no zoom, 0.1 = zoomed 10x
+
+    // Rescale all text with data-base-fs
+    var texts = svgEl.querySelectorAll('text[data-base-fs]');
+    for (var i = 0; i < texts.length; i++) {
+        var base = parseFloat(texts[i].getAttribute('data-base-fs'));
+        texts[i].setAttribute('font-size', base * s);
+        // Adjust stand label Y offset
+        var baseDy = texts[i].getAttribute('data-base-dy');
+        if (baseDy) {
+            var cx = parseFloat(texts[i].getAttribute('x'));
+            texts[i].setAttribute('y', cx ? parseFloat(texts[i].getAttribute('y')) : 0);
+        }
+    }
+
+    // Rescale stand rects
+    var rects = svgEl.querySelectorAll('rect.smr-stand');
+    for (var j = 0; j < rects.length; j++) {
+        var cx = parseFloat(rects[j].getAttribute('data-cx'));
+        var cy = parseFloat(rects[j].getAttribute('data-cy'));
+        var baseSize = parseFloat(rects[j].getAttribute('data-base-size'));
+        var sz = baseSize * s;
+        rects[j].setAttribute('x', cx - sz / 2);
+        rects[j].setAttribute('y', cy - sz / 2);
+        rects[j].setAttribute('width', sz);
+        rects[j].setAttribute('height', sz);
+        rects[j].setAttribute('rx', 0.2 * s);
+    }
+
+    // Rescale node circles
+    var circles = svgEl.querySelectorAll('circle[data-base-r]');
+    for (var k = 0; k < circles.length; k++) {
+        var baseR = parseFloat(circles[k].getAttribute('data-base-r'));
+        circles[k].setAttribute('r', baseR * s);
+    }
+
+    // Rescale aircraft dots and labels
+    var acDots = svgEl.querySelectorAll('.smr-aircraft-dot');
+    for (var m = 0; m < acDots.length; m++) {
+        acDots[m].setAttribute('r', 0.6 * s);
+    }
+    var acLabels = svgEl.querySelectorAll('.smr-aircraft');
+    for (var n = 0; n < acLabels.length; n++) {
+        acLabels[n].setAttribute('font-size', 1 * s);
+    }
 }
 
 // --- Pan & Zoom interaction ---
@@ -421,6 +486,7 @@ function applySMRViewBox() {
     if (!svgEl) return;
     svgEl.setAttribute('viewBox',
         smrViewBox.x + ' ' + smrViewBox.y + ' ' + smrViewBox.w + ' ' + smrViewBox.h);
+    rescaleSMRElements();
 }
 
 // --- Place aircraft on SMR based on strip phase ---
@@ -493,7 +559,7 @@ function updateSMRAircraft(plans) {
         }
 
         group.innerHTML +=
-            '<circle class="' + dotClass + '" cx="' + pos.x + '" cy="' + pos.y + '" r="1.2"/>' +
+            '<circle class="' + dotClass + '" cx="' + pos.x + '" cy="' + pos.y + '" r="0.6"/>' +
             '<text class="smr-aircraft" x="' + (pos.x + 2) + '" y="' + (pos.y + 0.5) +
             '" dominant-baseline="central">' + escapeHtml(reg.slice(-4)) + '</text>';
     });

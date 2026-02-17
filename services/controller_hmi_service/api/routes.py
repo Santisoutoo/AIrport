@@ -21,6 +21,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from airport_graph_builder import AirportMapVisualizer
+from airport_data_fetcher import XPlaneAirportDownloader
 
 # Cache parsed airport graphs: { "ICAO": graph_data_dict }
 _airport_graph_cache: dict = {}
@@ -171,7 +172,17 @@ async def get_airport_graph():
 
     dat_path = _SCRIPTS_DIR / "airport_data" / icao / f"{icao}.dat"
     if not dat_path.exists():
-        raise HTTPException(status_code=404, detail=f"No data file for {icao}")
+        logger.info("Downloading airport data for %s ...", icao)
+        try:
+            dl = XPlaneAirportDownloader(icao, output_directory=_SCRIPTS_DIR / "airport_data")
+            result = dl.download(verbose=True)
+            if result is None:
+                raise HTTPException(status_code=404, detail=f"Airport {icao} not found in gateway")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error("Failed to download airport data for %s: %s", icao, e)
+            raise HTTPException(status_code=502, detail=f"Failed to download airport data: {e}")
 
     try:
         viz = AirportMapVisualizer(str(dat_path), parse_only=True)
