@@ -37,7 +37,8 @@ dependencies = [
     "redis",
     "imgui",
     "ipykernel",
-    "psycopg2-binary"
+    "psycopg2-binary",
+    "transformers"
 ]
 
 [project.urls]

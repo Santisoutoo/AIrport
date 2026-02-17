@@ -1,9 +1,18 @@
 import imgui
+import traceback
 from pathlib import Path
+from XPPython3 import xp
 
 from ...utils.constants import Color, ButtonSize, Spacing, FontScale
 from ...utils.texture_loader import TextureLoader
+from ...services.airport_service import AirportService
 from ...services.flight_plan_service import FlightPlanService
+from ...services.aircraft_spawner import AircraftSpawner
+from ....shared.services.airport_data_store import AirportDataStore
+from ....shared.services.stand_assigner import StandAssigner
+from ....shared.models.aircraft_state import AircraftState
+from ....shared.services.aircraft_state_store import AircraftStateStore
+from ....shared.services.aircraft_tracker import AircraftTracker
 from ..components.header import Header
 from ..components.footer import Footer
 
@@ -35,6 +44,11 @@ class SessionConfigurationScreen:
         self.error_message = ""
 
         self.flight_plan_service = FlightPlanService()
+        self.aircraft_spawner = AircraftSpawner()
+        self.stand_assigner = StandAssigner()
+        self.store = AirportDataStore()
+        self.state_store = AircraftStateStore()
+        self.tracker = AircraftTracker(self.state_store)
 
         self.header = Header("AIrport")
         self.footer = Footer("v1.0.0")
@@ -224,6 +238,15 @@ class SessionConfigurationScreen:
 
         self.error_message = ""
 
+        # Load airport data into Redis
+        icao = AirportService.get_icao()
+        if not icao:
+            self.error_message = "Could not detect current airport"
+            return
+        if not AirportService.load_airport_data(icao):
+            self.error_message = f"Failed to load airport data for {icao}"
+            return
+
         # Check service connection
         if not self.flight_plan_service.health_check():
             self.error_message = "Flight plan service unavailable"
@@ -241,9 +264,67 @@ class SessionConfigurationScreen:
             self.error_message = f"Failed to generate flight plans: {result}"
             return None
 
+        # Assign stands to flight plans
+        stands = self.store.get_stands_with_occupancy()
+        assignments = self.stand_assigner.assign(result, stands)
+
+        if not assignments:
+            self.error_message = "No compatible stands available"
+            return None
+
+        # Mark stands as occupied in Redis
+        for a in assignments:
+            self.store.set_stand_occupied(a["stand_id"], True)
+
+        # Spawn aircraft at assigned stands
+        self.aircraft_spawner.clear()
+        self.aircraft_spawner.spawn(assignments)
+        xp.log(f"AIrport: Spawned {self.aircraft_spawner.count} aircraft")
+
+        # Start tracking session
+        try:
+            session_id = self.store.start_session(icao, aircraft_count)
+            xp.log(f"AIrport: Session created: {session_id}")
+
+            self.tracker.set_session(session_id)
+            self.tracker.set_user_info(
+                registration="USER",
+                aircraft_type="UNKN",
+                callsign="USER",
+            )
+            # Register static aircraft initial state in Redis
+            for reg, info in self.aircraft_spawner.registry.items():
+                state = AircraftState(
+                    session_id=session_id,
+                    registration=reg,
+                    aircraft_type=info["aircraft_type"],
+                    callsign=reg,
+                    latitude=info["latitude"],
+                    longitude=info["longitude"],
+                    altitude_msl=0.0,
+                    altitude_agl=0.0,
+                    heading=info["true_hdg"],
+                    pitch=0.0,
+                    roll=0.0,
+                    ground_speed=0.0,
+                    indicated_airspeed=0.0,
+                    vertical_speed=0.0,
+                    on_ground=True,
+                    squawk=0,
+                    phase="parked",
+                )
+                self.state_store.update(state)
+            xp.log(f"AIrport: Registered {len(self.aircraft_spawner.registry)} aircraft states in Redis")
+
+            self.tracker.start()
+            xp.log(f"AIrport: Tracker started at 2Hz")
+        except Exception as e:
+            xp.log(f"AIrport: TRACKER ERROR: {e}")
+            xp.log(f"AIrport: {traceback.format_exc()}")
+
         config = self.get_configuration()
-        print(f"Starting session with config: {config}")
-        print(f"Generated {len(result)} flight plans")
+        xp.log(f"AIrport: Session started - config: {config}")
+        xp.log(f"AIrport: Generated {len(result)} flight plans, spawned {self.aircraft_spawner.count} aircraft")
 
     def _on_back_to_welcome(self):
         """Vuelve a la pantalla principal."""
@@ -267,6 +348,10 @@ class SessionConfigurationScreen:
 
     def reset(self):
         """Resetea la configuración."""
+        self.tracker.stop()
+        self.state_store.clear_all()
+        self.store.end_session()
+
         self.selected_session_type = 0
         self.selected_weather = 0
         self.selected_complexity = 1
@@ -274,3 +359,4 @@ class SessionConfigurationScreen:
         self.error_message = ""
         self.texture_loaded = False
         self.texture_id = None
+        self.aircraft_spawner.clear()

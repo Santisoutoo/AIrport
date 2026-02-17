@@ -239,8 +239,9 @@ class ATISGenerator:
 
         # Visibility
         visib = metar_data.get("visib")
-        if visib and visib != "10+":
-            result["visibility_m"] = min(int(float(visib)), 9999)
+        if visib:
+            visib_clean = str(visib).replace("+", "")
+            result["visibility_m"] = min(int(float(visib_clean) * 1609.34), 9999)
         else:
             result["visibility_m"] = 9999
 
@@ -270,10 +271,10 @@ class ATISGenerator:
         result["temperature_c"] = int(metar_data.get("temp", 15))
         result["dewpoint_c"] = int(metar_data.get("dewp", 10))
 
-        # Pressure
+        # Pressure (altim from aviationweather.gov is already in hPa)
         altim = metar_data.get("altim")
         if altim:
-            result["qnh_hpa"] = int(float(altim) * 33.8639)
+            result["qnh_hpa"] = int(float(altim))
         else:
             result["qnh_hpa"] = 1013
 

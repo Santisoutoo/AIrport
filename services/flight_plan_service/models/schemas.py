@@ -8,6 +8,7 @@ class FlightPlanResponse(BaseModel):
     flight_rules: str
     flight_type: str
     aircraft_type: str
+    wake_turbulence_category: str = ""
     equipment: str
     transponder: str
     departure_ICAO: str
@@ -22,6 +23,7 @@ class FlightPlanResponse(BaseModel):
     other_info: str
     endurance: str
     people_on_board: str
+    remarks: str = ""
     PIC_name: str
 
 
