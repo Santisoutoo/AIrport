@@ -19,6 +19,9 @@ WEATHER_URL = os.getenv(
 
 current_airport = {"icao": "LEST"}
 
+# In-memory strip states: { "aircraft_reg": { "phase": "PRE_TAXI|PUSHBACK|TAXI|LINEUP|CLEARED", "column": "PRE_TAXI|TAXI|RUNWAY" } }
+strip_states: dict = {}
+
 
 @router.get("/airport")
 async def get_airport():
@@ -116,6 +119,28 @@ async def get_atis():
             raise HTTPException(
                 status_code=502, detail="Weather service unavailable"
             )
+
+
+@router.get("/strips/states")
+async def get_strip_states():
+    """Return all strip states"""
+    return strip_states
+
+
+@router.patch("/strips/{aircraft_reg}/state")
+async def update_strip_state(aircraft_reg: str, data: dict):
+    """Update a strip's phase and column assignment"""
+    phase = data.get("phase", "PRE_TAXI")
+    column_map = {
+        "PRE_TAXI": "PRE_TAXI",
+        "PUSHBACK": "PRE_TAXI",
+        "TAXI": "TAXI",
+        "LINEUP": "RUNWAY",
+        "CLEARED": "RUNWAY",
+    }
+    column = column_map.get(phase, "PRE_TAXI")
+    strip_states[aircraft_reg] = {"phase": phase, "column": column}
+    return strip_states[aircraft_reg]
 
 
 async def _check_upstream(url: str) -> bool:
