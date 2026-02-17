@@ -552,10 +552,10 @@ function updateSMRAircraft(plans) {
         }
 
         var dotClass = 'smr-aircraft-dot';
-        if (column === 'RUNWAY' && phase !== 'CLEARED') {
-            dotClass += ' incursion';
-        } else if (column === 'RUNWAY') {
+        if (column === 'RUNWAY' && (phase === 'CLEARED' || phase === 'LINEUP')) {
             dotClass += ' cleared';
+        } else if (column === 'RUNWAY') {
+            dotClass += ' incursion';
         } else if (column === 'TAXI') {
             dotClass += ' on-runway';
         }
@@ -577,8 +577,8 @@ function checkRIMCAS() {
         var column = getStripColumn(reg);
         var phase = getStripPhase(reg);
 
-        // Incursion: aircraft in RUNWAY column but only at LINEUP phase (not yet CLEARED)
-        if (column === 'RUNWAY' && phase === 'LINEUP') {
+        // Incursion: aircraft in RUNWAY column without authorization (not LINEUP nor CLEARED)
+        if (column === 'RUNWAY' && phase !== 'LINEUP' && phase !== 'CLEARED') {
             hasIncursion = true;
         }
     });
