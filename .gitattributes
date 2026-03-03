@@ -1,0 +1,5 @@
+# Strip notebook outputs before committing so file size reflects actual code
+*.ipynb filter=nbstripout
+
+# Tell GitHub Linguist to ignore Jupyter Notebooks in language stats
+*.ipynb linguist-detectable=false
