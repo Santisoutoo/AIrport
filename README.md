@@ -1,16 +1,15 @@
-# ✈️ AIrport - Advanced ATC Training Simulator v2
+# ✈️ AIrport - Advanced ATC Training Simulator
 
 <div align="center">
 
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![X-Plane](https://img.shields.io/badge/X--Plane-12-orange.svg)
-![AI](https://img.shields.io/badge/AI-CrewAI-green.svg)
-![MQTT](https://img.shields.io/badge/MQTT-Eclipse%20Mosquitto-red.svg)
+![AI](https://img.shields.io/badge/AI-Google%20ADK-green.svg)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)
 
 *AI-powered Air Traffic Control training platform with distributed architecture, real-time voice processing, and intelligent multi-agent pilot simulation.*
 
-🎯 **Realistic ATC Training** | 🤖 **CrewAI Multi-Agent System** | 📊 **Advanced Analytics** | 🗣️ **Bidirectional Voice Communications**
+🎯 **Realistic ATC Training** | 🤖 **Google ADK Multi-Agent System** | 📊 **Advanced Analytics** | 🗣️ **Bidirectional Voice Communications**
 
 </div>
 
@@ -38,7 +37,7 @@
 
 ### 📊 **Data Flow Pipeline**
 ```
-Controller Audio → ASR → NLP Parser → MQTT → Pilots Agents
+Controller Audio → ASR → NLP Parser → Agent Router → Pilots Agents
                                               ↓
 Aircraft Response ← TTS ← Response Generator ← Agent Collaboration
                                               ↓
@@ -54,8 +53,7 @@ X-Plane Movement ← Aircraft Manager ← Command Executor
 | Layer | Technology |
 |-------|------------|
 | **🎤 Voice Processing** | Wave2Vec + Coqui-ai |
-| **🧠 AI Framework** | CrewAI + LLM |
-| **📡 Communication** | Mosquitto |
+| **🧠 AI Framework** | Google ADK + LLM |
 | **💾 Databases** | PostgreSQL + Redis + InfluxDB |
 | **🐳 Orchestration** | Docker Compose |
 | **✈️ Visualization** | X-Plane 12 |
@@ -70,7 +68,7 @@ X-Plane Movement ← Aircraft Manager ← Command Executor
 ### 🏃‍♂️ **Progressive Learning System**
 - **Beginner Level**: Basic clearances and simple traffic patterns
 - **Intermediate Level**: Complex routing and conflict resolution
-- **Advanced Level**: Emergency procedures and high-density traffic
+- **Advanced Level**: High-density traffic and complex sequencing
 - **Expert Level**: Multi-runway operations and weather challenges
 
 ### 📈 **AI-Powered Assessment**
@@ -98,29 +96,6 @@ X-Plane Movement ← Aircraft Manager ← Command Executor
 - **🚚 GROUND (GND)**: Taxi instructions and ramp coordination
 - **🏗️ TOWER (TWR)**: Takeoff/landing clearances and traffic advisories
 
----
-
-## 🔧 Quick Start
-
-### 📋 **Prerequisites**
-```bash
-# Required Software
-- Python 3.11+
-- Docker & Docker Compose
-- X-Plane 12
-```
-
-### 🚀 **Installation**
-```bash
-# Clone repository
-git clone https://github.com/your-username/airport-atc-simulator.git
-cd airport-atc-simulator
-
-# Start infrastructure services
-docker-compose up -d
-
-# TODO: COMPLETE INSTALLATION GUIDE
-```
 ---
 
 <div align="center">
