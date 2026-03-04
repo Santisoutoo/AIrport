@@ -87,6 +87,22 @@ html, body {
     gap: 16px;
 }
 
+#end-session-btn {
+    background: #7a1a1a;
+    color: #ffcccc;
+    border: 1px solid #cc3333;
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.15s;
+}
+
+#end-session-btn:hover:not(:disabled) { background: #cc3333; color: #fff; }
+#end-session-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .clock {
     font-family: var(--font-mono);
     font-size: 24px;

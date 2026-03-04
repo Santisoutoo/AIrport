@@ -1,0 +1,330 @@
+/* ============================================
+   AIrport TWR - Setup / Login Theme
+   Matches Controller HMI v2.0
+   ============================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg-primary:    #0a0e14;
+    --bg-secondary:  #111820;
+    --bg-panel:      #161d27;
+    --bg-toolbar:    #1a2230;
+    --border:        #263040;
+    --border-active: #00e5ff44;
+    --text-primary:  #e6edf3;
+    --text-secondary:#8b949e;
+    --text-dim:      #5a6672;
+    --cyan:          #00e5ff;
+    --cyan-dim:      #00e5ff33;
+    --green:         #00e676;
+    --red:           #ff1744;
+    --red-dim:       #ff174422;
+    --orange:        #ff9100;
+    --font-mono:     'Courier New', 'Consolas', monospace;
+    --font-sans:     -apple-system, 'Segoe UI', 'Arial', sans-serif;
+}
+
+html, body {
+    height: 100%;
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+/* ---- Layout ---- */
+
+#app {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+}
+
+.screen { display: none; width: 100%; justify-content: center; }
+.screen.active { display: flex; }
+
+/* ---- Card ---- */
+
+.card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 400px;
+    overflow: hidden;
+}
+
+.card-wide { max-width: 700px; }
+
+/* ---- Card Header ---- */
+
+.card-header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.card-title {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cyan);
+}
+
+.card-subtitle {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+/* ---- Card Body ---- */
+
+.card-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* ---- Airport Info Block ---- */
+
+.airport-block {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.icao-display {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    color: var(--cyan);
+    flex-shrink: 0;
+    min-width: 100px;
+}
+
+.airport-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.airport-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+}
+
+.status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+.status-text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+/* ---- Buttons ---- */
+
+.btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn {
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-align: center;
+    width: 100%;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: var(--cyan);
+    border-color: var(--cyan);
+    color: var(--bg-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #33eeff;
+    border-color: #33eeff;
+}
+
+.btn-secondary {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    border-color: var(--cyan);
+    color: var(--cyan);
+}
+
+.btn-success {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--bg-primary);
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #33ff8a;
+    border-color: #33ff8a;
+}
+
+/* ---- Form Fields ---- */
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.input {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.1s;
+}
+
+.input:focus {
+    border-color: var(--cyan);
+    background: var(--bg-toolbar);
+}
+
+select.input { cursor: pointer; appearance: none; }
+
+/* ---- Two-col layout (session config) ---- */
+
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 20px;
+}
+
+.col-form { display: flex; flex-direction: column; gap: 14px; }
+.col-chart { display: flex; flex-direction: column; gap: 5px; }
+
+.chart-box {
+    flex: 1;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---- Divider ---- */
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+}
+
+/* ---- Error / Misc ---- */
+
+.error-msg {
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    border-radius: 3px;
+    color: var(--red);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    text-align: center;
+}
+
+.hidden { display: none !important; }
+
+.link-row {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+}
+
+.link {
+    color: var(--cyan);
+    cursor: pointer;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.1s;
+}
+
+.link:hover { border-bottom-color: var(--cyan); }
+
+.footer-text {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
