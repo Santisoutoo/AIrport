@@ -1,0 +1,254 @@
+/* ============================================
+   AIrport — ASR Config Screen Styles
+   Gear button, section cards, VU meter,
+   PTT key, status LED, backend layout.
+   ============================================ */
+
+/* ---- Gear button (session header) ---- */
+
+.btn-gear {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-3);
+    cursor: pointer;
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+    flex-shrink: 0;
+}
+.btn-gear:hover { color: var(--cyan); }
+
+/* ---- ASR card-body overrides ---- */
+
+.asr-body {
+    gap: 12px;
+    padding: 16px;
+}
+
+/* ---- Section cards ---- */
+
+.asr-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.asr-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.asr-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--cyan);
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.asr-card-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cyan);
+}
+
+/* ---- VU Meter ---- */
+
+.vu-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vu-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-3);
+    flex-shrink: 0;
+    width: 32px;
+}
+
+.vu-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-4);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.vu-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--green) 0%, var(--cyan) 70%, var(--red) 100%);
+    border-radius: 3px;
+    transition: width 0.05s linear;
+}
+
+.vu-hint {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-3);
+    flex-shrink: 0;
+    width: 28px;
+    text-align: right;
+}
+
+/* ---- PTT key capture button ---- */
+
+.ptt-key {
+    background: var(--bg-2);
+    border: 1px solid var(--border-hi);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 16px;
+    min-width: 110px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    text-align: center;
+    letter-spacing: 1px;
+}
+.ptt-key:hover { border-color: var(--cyan-soft); color: var(--cyan); }
+.ptt-key.listening {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* ---- AI Backend toggle ---- */
+
+.asr-toggle-row {
+    display: flex;
+    gap: 24px;
+}
+
+.asr-toggle-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    color: var(--text-2);
+    cursor: pointer;
+}
+.asr-toggle-opt input[type=radio] { accent-color: var(--cyan); cursor: pointer; }
+
+.asr-backend-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ---- Ollama refresh row ---- */
+
+.asr-refresh-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Status LED */
+.status-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-3);
+    flex-shrink: 0;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+.status-led.ok {
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+}
+.status-led.err {
+    background: var(--red);
+    box-shadow: 0 0 6px var(--red);
+}
+.status-led.checking {
+    background: var(--cyan-soft);
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* Subtle refresh button */
+.btn-refresh {
+    background: transparent;
+    border: 1px solid var(--border-hi);
+    border-radius: 4px;
+    color: var(--text-3);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+.btn-refresh:hover {
+    border-color: var(--cyan-soft);
+    color: var(--cyan);
+}
+
+/* ---- Screen layout ---- */
+
+/* Top row: Audio (left) + PTT (right) */
+.asr-top-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* Backend card: radio column (left) + fields (right) */
+.asr-backend-layout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.asr-backend-left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 2px;
+}
+
+.asr-backend-left .asr-toggle-row {
+    flex-direction: column;
+    gap: 10px;
+}
+
+.asr-backend-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Inline row: two fields side by side */
+.asr-inline-row {
+    display: flex;
+    gap: 12px;
+}
+
+@media (max-width: 560px) {
+    .asr-top-grid       { grid-template-columns: 1fr; }
+    .asr-backend-layout { grid-template-columns: 1fr; }
+    .asr-inline-row     { flex-direction: column; }
+}

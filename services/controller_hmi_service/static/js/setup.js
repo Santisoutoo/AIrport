@@ -38,6 +38,11 @@ const App = (() => {
         showScreen('session');
     }
 
+    async function showAsr() {
+        showScreen('asr');
+        await Asr.initScreen();
+    }
+
     // --- Helpers ---
 
     function showError(id, msg) {
@@ -223,6 +228,6 @@ const App = (() => {
         setInterval(refreshStatus, 30000);
     });
 
-    return { showWelcome, showLogin, showRegister, showSession, submitLogin, submitRegister, submitStartSession };
+    return { showWelcome, showLogin, showRegister, showSession, showAsr, submitLogin, submitRegister, submitStartSession };
 
 })();

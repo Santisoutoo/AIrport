@@ -1,29 +1,32 @@
-/* ============================================
-   AIrport TWR — Setup / Login
-   ============================================ */
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-    --bg:         #0a0e14;
-    --bg-2:       #111820;
-    --bg-3:       #161d27;
-    --bg-4:       #1a2230;
-    --border:     #1e2d3d;
-    --border-hi:  #2a3f55;
-    --cyan:       #00e5ff;
-    --cyan-soft:  #00b8cc;
-    --green:      #00e676;
-    --green-soft: #00b85c;
-    --red:        #ff1744;
-    --text:       #cdd9e5;
-    --text-2:     #768a9e;
-    --text-3:     #4a5a6a;
-    --mono:       'Courier New', 'Consolas', monospace;
-    --sans:       -apple-system, 'Segoe UI', sans-serif;
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-html, body {
+:root {
+    --bg: #0a0e14;
+    --bg-2: #111820;
+    --bg-3: #161d27;
+    --bg-4: #1a2230;
+    --border: #1e2d3d;
+    --border-hi: #2a3f55;
+    --cyan: #00e5ff;
+    --cyan-soft: #00b8cc;
+    --green: #00e676;
+    --green-soft: #00b85c;
+    --red: #ff1744;
+    --text: #cdd9e5;
+    --text-2: #768a9e;
+    --text-3: #4a5a6a;
+    --mono: 'Courier New', 'Consolas', monospace;
+    --sans: -apple-system, 'Segoe UI', sans-serif;
+}
+
+html,
+body {
     height: 100%;
     background: var(--bg);
     color: var(--text);
@@ -49,10 +52,24 @@ html, body {
 
 /* ---- Layout ---- */
 
-#app { position: relative; z-index: 1; width: 100%; display: flex; justify-content: center; padding: 32px 16px; }
+#app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+}
 
-.screen { display: none; width: 100%; justify-content: center; }
-.screen.active { display: flex; }
+.screen {
+    display: none;
+    width: 100%;
+    justify-content: center;
+}
+
+.screen.active {
+    display: flex;
+}
 
 /* ---- Card ---- */
 
@@ -63,10 +80,12 @@ html, body {
     border: 1px solid var(--border);
     border-radius: 6px;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
-.card-wide { max-width: 680px; }
+.card-wide {
+    max-width: 680px;
+}
 
 /* ---- Card Header ---- */
 
@@ -101,7 +120,10 @@ html, body {
     transition: color 0.15s;
     flex-shrink: 0;
 }
-.btn-back:hover { color: var(--cyan); }
+
+.btn-back:hover {
+    color: var(--cyan);
+}
 
 .card-title {
     font-family: var(--mono);
@@ -185,8 +207,15 @@ html, body {
 }
 
 @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 4px var(--green); }
-    50%       { box-shadow: 0 0 10px var(--green), 0 0 20px rgba(0,230,118,0.3); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 4px var(--green);
+    }
+
+    50% {
+        box-shadow: 0 0 10px var(--green), 0 0 20px rgba(0, 230, 118, 0.3);
+    }
 }
 
 .status-text {
@@ -199,7 +228,11 @@ html, body {
 
 /* ---- Buttons ---- */
 
-.btn-group { display: flex; flex-direction: column; gap: 8px; }
+.btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
 .btn {
     padding: 11px 16px;
@@ -216,17 +249,21 @@ html, body {
     width: 100%;
 }
 
-.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
 
 .btn-primary {
     background: var(--cyan-soft);
     border-color: var(--cyan-soft);
     color: var(--bg);
 }
+
 .btn-primary:hover:not(:disabled) {
     background: var(--cyan);
     border-color: var(--cyan);
-    box-shadow: 0 0 16px rgba(0,229,255,0.25);
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
 }
 
 .btn-secondary {
@@ -234,6 +271,7 @@ html, body {
     border-color: var(--border-hi);
     color: var(--text-2);
 }
+
 .btn-secondary:hover:not(:disabled) {
     border-color: var(--cyan-soft);
     color: var(--cyan);
@@ -244,15 +282,20 @@ html, body {
     border-color: var(--green-soft);
     color: var(--bg);
 }
+
 .btn-success:hover:not(:disabled) {
     background: var(--green);
     border-color: var(--green);
-    box-shadow: 0 0 16px rgba(0,230,118,0.25);
+    box-shadow: 0 0 16px rgba(0, 230, 118, 0.25);
 }
 
 /* ---- Form Fields ---- */
 
-.field { display: flex; flex-direction: column; gap: 6px; }
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
 
 .label {
     font-family: var(--mono);
@@ -299,23 +342,46 @@ select.input {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a5a6a'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
+    background-size: 10px 6px;
     padding-right: 32px;
 }
 
 select.input:focus {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300b8cc'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 10px 6px;
 }
 
 /* Hide number input spinners */
 input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
-input[type=number] { -moz-appearance: textfield; }
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
 
 /* ---- Two-col layout ---- */
 
-.two-col { display: grid; grid-template-columns: 1fr 240px; gap: 18px; }
-.col-form { display: flex; flex-direction: column; gap: 14px; }
-.col-chart { display: flex; flex-direction: column; gap: 6px; }
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 18px;
+}
+
+.col-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.col-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
 
 .chart-box {
     flex: 1;
@@ -334,11 +400,14 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* ---- Misc ---- */
 
-.divider { border: none; border-top: 1px solid var(--border); }
+.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+}
 
 .error-msg {
-    background: rgba(255,23,68,0.08);
-    border: 1px solid rgba(255,23,68,0.4);
+    background: rgba(255, 23, 68, 0.08);
+    border: 1px solid rgba(255, 23, 68, 0.4);
     border-radius: 4px;
     color: var(--red);
     font-family: var(--mono);
@@ -348,7 +417,9 @@ input[type=number] { -moz-appearance: textfield; }
     text-align: center;
 }
 
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
 
 .link-row {
     text-align: center;
@@ -364,7 +435,10 @@ input[type=number] { -moz-appearance: textfield; }
     text-decoration: none;
     transition: color 0.15s;
 }
-.link:hover { color: var(--cyan); }
+
+.link:hover {
+    color: var(--cyan);
+}
 
 .footer-text {
     text-align: center;
@@ -374,3 +448,5 @@ input[type=number] { -moz-appearance: textfield; }
     text-transform: uppercase;
     color: var(--text-3);
 }
+
+/* ASR-specific styles live in asr.css */

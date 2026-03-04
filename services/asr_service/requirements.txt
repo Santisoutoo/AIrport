@@ -1,0 +1,6 @@
+fastapi>=0.111
+uvicorn[standard]
+redis
+httpx
+openai
+python-multipart
