@@ -213,3 +213,6 @@ __marimo__/
 *.dat
 *.json
 *.iso
+
+# custom
+*.DS_Store
