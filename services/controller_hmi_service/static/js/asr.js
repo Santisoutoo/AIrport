@@ -50,6 +50,17 @@ const Asr = (() => {
         } catch {
             _cfg = {};
         }
+        // api_key: DB (user profile) is the canonical source
+        const username = localStorage.getItem('airport_username');
+        if (username) {
+            try {
+                const r2 = await fetch(`/api/v1/plugin/user/${encodeURIComponent(username)}/api-key`);
+                if (r2.ok) {
+                    const d2 = await r2.json();
+                    if (d2.success) _cfg.api_key = d2.api_key || _cfg.api_key || '';
+                }
+            } catch { /* keep whatever Redis had */ }
+        }
     }
 
     async function saveConfig() {
@@ -57,6 +68,7 @@ const Asr = (() => {
         teardown();
 
         const backend = document.querySelector('input[name="asr-backend"]:checked')?.value || 'ollama';
+        const apiKey  = document.getElementById('asr-api-key').value.trim();
         const payload = {
             input_device:  document.getElementById('asr-input-device').value,
             output_device: document.getElementById('asr-output-device').value,
@@ -64,7 +76,7 @@ const Asr = (() => {
             backend,
             ollama_url:    document.getElementById('asr-ollama-url').value.trim(),
             ollama_model:  document.getElementById('asr-ollama-model').value,
-            api_key:       document.getElementById('asr-api-key').value.trim(),
+            api_key:       apiKey,
             api_base_url:  document.getElementById('asr-api-base').value.trim(),
             api_model:     document.getElementById('asr-api-model').value.trim(),
         };
@@ -75,15 +87,26 @@ const Asr = (() => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            if (res.ok) {
-                _cfg = payload;
-                App.showSession();
-            } else {
-                _showError('Failed to save settings');
-            }
+            if (!res.ok) { _showError('Failed to save settings'); return; }
         } catch {
             _showError('Cannot reach ASR service — is it running?');
+            return;
         }
+
+        // Persist api_key in user profile (DB)
+        const username = localStorage.getItem('airport_username');
+        if (username) {
+            try {
+                await fetch(`/api/v1/plugin/user/${encodeURIComponent(username)}/api-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey }),
+                });
+            } catch { /* non-fatal */ }
+        }
+
+        _cfg = payload;
+        App.showSession();
     }
 
     // ------------------------------------------------------------------
@@ -163,13 +186,14 @@ const Asr = (() => {
         const deviceId = document.getElementById('asr-input-device')?.value;
         const constraints = {
             audio: deviceId && deviceId !== 'default'
-                ? { deviceId: { exact: deviceId } }
+                ? { deviceId: { ideal: deviceId } }
                 : true,
         };
 
         try {
             _micStream = await navigator.mediaDevices.getUserMedia(constraints);
             _audioCtx  = new AudioContext();
+            if (_audioCtx.state === 'suspended') await _audioCtx.resume();
             _analyser  = _audioCtx.createAnalyser();
             _analyser.fftSize = 256;
             _analyser.smoothingTimeConstant = 0.6;

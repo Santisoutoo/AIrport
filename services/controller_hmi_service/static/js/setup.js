@@ -134,6 +134,7 @@ const App = (() => {
             });
             const data = await res.json();
             if (data.success) {
+                localStorage.setItem('airport_username', data.username);
                 showSession();
             } else {
                 showError('login-error', data.message || 'Login failed');
