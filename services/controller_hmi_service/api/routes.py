@@ -139,6 +139,36 @@ async def get_atis():
             )
 
 
+@router.post("/atis/generate")
+async def generate_atis(data: dict):
+    """Generate a new ATIS for the current airport with ATC-provided parameters"""
+    arrival_runway = data.get("arrival_runway") or None
+    departure_runway = data.get("departure_runway") or None
+    approach = data.get("approach") or None
+
+    params = {}
+    if arrival_runway:
+        params["arrival_runway"] = arrival_runway
+    if departure_runway:
+        params["departure_runway"] = departure_runway
+    if approach:
+        params["approach"] = approach
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            resp = await client.get(
+                f"{WEATHER_URL}/api/v1/weather/atis/{current_airport['icao']}",
+                params=params,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error("Failed to generate ATIS: %s", e)
+            raise HTTPException(
+                status_code=502, detail="Weather service unavailable"
+            )
+
+
 @router.get("/strips/states")
 async def get_strip_states():
     """Return all strip states"""

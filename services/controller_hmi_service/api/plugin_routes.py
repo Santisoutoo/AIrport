@@ -2,6 +2,7 @@ import os
 
 import redis as redis_lib
 from fastapi import APIRouter
+from pydantic import BaseModel
 
 from api.auth import get_db, hash_password, verify_password
 from api.models import AuthRequest, StartSessionRequest
@@ -10,6 +11,25 @@ from api.routes import current_airport
 router = APIRouter(prefix="/api/v1/plugin", tags=["plugin"])
 
 _r = redis_lib.from_url(os.getenv("REDIS_URL", "redis://redis:6379"))
+_ASR_REDIS_KEY = "airport:asr_config"
+
+
+# ---- DB migration (runs once at startup, idempotent) ----
+
+def _migrate():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_api_key TEXT NOT NULL DEFAULT ''"
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception:
+        pass
+
+_migrate()
 
 
 # ---- Auth
@@ -20,7 +40,9 @@ def login(req: AuthRequest):
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
-            "SELECT password_hash FROM users WHERE username = %s", (req.username,))
+            "SELECT password_hash, openai_api_key FROM users WHERE username = %s",
+            (req.username,),
+        )
         row = cur.fetchone()
         cur.close()
         conn.close()
@@ -31,7 +53,11 @@ def login(req: AuthRequest):
         return {"success": False, "message": "Invalid username or password"}
 
     if verify_password(req.password, row[0]):
-        return {"success": True, "username": req.username}
+        api_key = row[1] or ""
+        # Push api_key into ASR Redis config so the ASR service uses it immediately
+        if api_key:
+            _r.hset(_ASR_REDIS_KEY, "api_key", api_key)
+        return {"success": True, "username": req.username, "api_key": api_key}
     return {"success": False, "message": "Invalid username or password"}
 
 
@@ -101,3 +127,44 @@ def session_status():
         }
     except Exception:
         return {"status": "idle", "session_id": None, "icao": current_airport.get("icao")}
+
+
+# ---- User settings
+
+class ApiKeyRequest(BaseModel):
+    api_key: str
+
+
+@router.get("/user/{username}/api-key")
+def get_user_api_key(username: str):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT openai_api_key FROM users WHERE username = %s", (username,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        return {"success": False, "message": f"Database error: {e}"}
+    if not row:
+        return {"success": False, "message": "User not found"}
+    return {"success": True, "api_key": row[0] or ""}
+
+
+@router.post("/user/{username}/api-key")
+def set_user_api_key(username: str, req: ApiKeyRequest):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET openai_api_key = %s WHERE username = %s",
+            (req.api_key, username),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        return {"success": False, "message": f"Database error: {e}"}
+    # Keep Redis in sync so the ASR service picks it up immediately
+    _r.hset(_ASR_REDIS_KEY, "api_key", req.api_key)
+    return {"success": True}
