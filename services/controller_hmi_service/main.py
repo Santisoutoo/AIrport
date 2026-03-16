@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.routes import router
+from api.plugin_routes import router as plugin_router
 
 PREFIX = "/api/v1/hmi"
 
@@ -22,10 +24,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# API routes (proxy endpoints)
+# API routes
 app.include_router(router, prefix=PREFIX, tags=["HMI"])
+app.include_router(plugin_router)
 
-# Serve static frontend files -- mount AFTER API routes so /api/* takes precedence
+
+@app.get("/setup", include_in_schema=False)
+async def setup_page():
+    return FileResponse("static/setup.html")
+
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 

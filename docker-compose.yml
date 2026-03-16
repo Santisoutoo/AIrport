@@ -112,6 +112,32 @@ services:
       timeout: 10s
       retries: 3
 
+  asr_service:
+    build:
+      context: ./services/asr_service
+      dockerfile: Dockerfile
+    container_name: airport_asr
+    restart: unless-stopped
+    ports:
+      - "8006:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - asr_hf_cache:/root/.cache/huggingface
+      - ./services/asr_service:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - airport_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/asr/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   controller_hmi_service:
     build:
       context: ./services/controller_hmi_service
@@ -122,11 +148,22 @@ services:
       - "8005:8000"
     env_file:
       - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASS=${POSTGRES_PASSWORD}
     volumes:
       - ./services/controller_hmi_service/static:/app/static
       - ./services/controller_hmi_service/api:/app/api
       - ./data/scripts:/app/data_scripts
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       flight_plan_service:
         condition: service_healthy
       weather_service:
@@ -151,3 +188,5 @@ volumes:
     name: airport_postgres_data
   influxdb_data:
     name: airport_influxdb_data
+  asr_hf_cache:
+    name: airport_asr_hf_cache

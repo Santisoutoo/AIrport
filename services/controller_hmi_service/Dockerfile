@@ -15,7 +15,9 @@ RUN pip install --no-cache-dir \
     httpx==0.26.0 \
     folium==0.15.1 \
     xplane-airports==4.0.1 \
-    requests>=2.31.0
+    requests>=2.31.0 \
+    psycopg2-binary \
+    redis
 
 # Copy application code
 COPY . .

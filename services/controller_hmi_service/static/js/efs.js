@@ -14,6 +14,15 @@ var PHASE_COLUMN = {
     'CLEARED': 'RUNWAY'
 };
 
+// Column body ID -> default phase when a strip is dropped there
+var COLUMN_DEFAULT_PHASE = {
+    'strips-pretaxi': 'PRE_TAXI',
+    'strips-taxi':    'TAXI',
+    'strips-runway':  'LINEUP'
+};
+
+var _dropZonesInited = false;
+
 // ---- Load strip states from server ----
 
 function loadStripStates(callback) {
@@ -101,6 +110,11 @@ function renderFlightStrips(plans) {
     if (counts.RUNWAY === 0) runwayContainer.innerHTML = emptyState();
 
     updateColumnCounts(counts);
+
+    if (!_dropZonesInited) {
+        _initDropZones();
+        _dropZonesInited = true;
+    }
 }
 
 function updateColumnCounts(counts) {
@@ -125,6 +139,15 @@ function createStripElement(plan, phase) {
     var strip = document.createElement('div');
     strip.className = 'flight-strip phase-' + phase.toLowerCase();
     strip.dataset.registration = plan.aircraft_registration;
+    strip.draggable = true;
+    strip.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('text/plain', plan.aircraft_registration);
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(function () { strip.classList.add('dragging'); }, 0);
+    });
+    strip.addEventListener('dragend', function () {
+        strip.classList.remove('dragging');
+    });
 
     var isIFR = plan.flight_rules === 'I';
     var rulesClass = isIFR ? 'ifr' : 'vfr';
@@ -178,6 +201,10 @@ function createStripElement(plan, phase) {
             e.stopPropagation();
             var targetPhase = btn.dataset.phase;
             var reg = btn.dataset.reg;
+            // PUSH toggles: click again while already in PUSHBACK → revert to PRE_TAXI
+            if (targetPhase === 'PUSHBACK' && getStripPhase(reg) === 'PUSHBACK') {
+                targetPhase = 'PRE_TAXI';
+            }
             setStripPhase(reg, targetPhase);
             // Re-render all strips
             if (typeof rerenderStrips === 'function') rerenderStrips();
@@ -216,6 +243,38 @@ function truncateRoute(route, maxLen) {
     if (!route) return 'DCT';
     if (route.length <= maxLen) return route;
     return route.substring(0, maxLen) + '...';
+}
+
+function _initDropZones() {
+    Object.keys(COLUMN_DEFAULT_PHASE).forEach(function (colId) {
+        var col = document.getElementById(colId);
+        if (!col) return;
+
+        col.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            col.classList.add('drag-over');
+        });
+
+        col.addEventListener('dragleave', function (e) {
+            // Only remove if leaving the column itself, not entering a child
+            if (!col.contains(e.relatedTarget)) {
+                col.classList.remove('drag-over');
+            }
+        });
+
+        col.addEventListener('drop', function (e) {
+            e.preventDefault();
+            col.classList.remove('drag-over');
+            var reg = e.dataTransfer.getData('text/plain');
+            if (!reg) return;
+            var newPhase = COLUMN_DEFAULT_PHASE[colId];
+            if (newPhase && getStripPhase(reg) !== newPhase) {
+                setStripPhase(reg, newPhase);
+                if (typeof rerenderStrips === 'function') rerenderStrips();
+            }
+        });
+    });
 }
 
 function sortFlightPlans(plans, sortBy) {

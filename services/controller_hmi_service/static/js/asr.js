@@ -1,0 +1,373 @@
+/* ============================================
+   AIrport — ASR Config Module
+   ASR settings screen: audio devices,
+   VU meter, PTT key binding, AI backend.
+   ============================================ */
+
+const ASR_API = 'http://localhost:8006/api/v1/asr';
+
+const Asr = (() => {
+
+    let _cfg = {};
+    let _capturingPtt = false;
+    let _pttCaptureHandler = null;
+
+    // VU meter state
+    let _audioCtx = null;
+    let _analyser = null;
+    let _micStream = null;
+    let _vuRafId = null;
+
+    // ------------------------------------------------------------------
+    // Screen init (called by App.showAsr)
+    // ------------------------------------------------------------------
+
+    async function initScreen() {
+        _clearError();
+        await _loadConfig();
+        await _populateDevices();
+        _applyConfigToUI();
+        if (_cfg.backend === 'ollama') {
+            await _checkOllamaStatus();
+        }
+        _startVuMeter();
+    }
+
+    // Called when App navigates away — stop mic
+    function teardown() {
+        _stopVuMeter();
+        _stopPttCapture();
+    }
+
+    // ------------------------------------------------------------------
+    // Config load / save
+    // ------------------------------------------------------------------
+
+    async function _loadConfig() {
+        try {
+            const res = await fetch(`${ASR_API}/config`);
+            if (res.ok) _cfg = await res.json();
+        } catch {
+            _cfg = {};
+        }
+        // api_key: DB (user profile) is the canonical source
+        const username = localStorage.getItem('airport_username');
+        if (username) {
+            try {
+                const r2 = await fetch(`/api/v1/plugin/user/${encodeURIComponent(username)}/api-key`);
+                if (r2.ok) {
+                    const d2 = await r2.json();
+                    if (d2.success) _cfg.api_key = d2.api_key || _cfg.api_key || '';
+                }
+            } catch { /* keep whatever Redis had */ }
+        }
+    }
+
+    async function saveConfig() {
+        _clearError();
+        teardown();
+
+        const backend = document.querySelector('input[name="asr-backend"]:checked')?.value || 'ollama';
+        const apiKey  = document.getElementById('asr-api-key').value.trim();
+        const payload = {
+            input_device:  document.getElementById('asr-input-device').value,
+            output_device: document.getElementById('asr-output-device').value,
+            ptt_key:       document.getElementById('asr-ptt-btn').dataset.key || 'Space',
+            backend,
+            ollama_url:    document.getElementById('asr-ollama-url').value.trim(),
+            ollama_model:  document.getElementById('asr-ollama-model').value,
+            api_key:       apiKey,
+            api_base_url:  document.getElementById('asr-api-base').value.trim(),
+            api_model:     document.getElementById('asr-api-model').value.trim(),
+        };
+
+        try {
+            const res = await fetch(`${ASR_API}/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) { _showError('Failed to save settings'); return; }
+        } catch {
+            _showError('Cannot reach ASR service — is it running?');
+            return;
+        }
+
+        // Persist api_key in user profile (DB)
+        const username = localStorage.getItem('airport_username');
+        if (username) {
+            try {
+                await fetch(`/api/v1/plugin/user/${encodeURIComponent(username)}/api-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey }),
+                });
+            } catch { /* non-fatal */ }
+        }
+
+        _cfg = payload;
+        App.showSession();
+    }
+
+    // ------------------------------------------------------------------
+    // Populate UI from _cfg
+    // ------------------------------------------------------------------
+
+    function _applyConfigToUI() {
+        const backend = _cfg.backend || 'ollama';
+
+        const radio = document.querySelector(`input[name="asr-backend"][value="${backend}"]`);
+        if (radio) radio.checked = true;
+        switchBackend(backend);
+
+        const pttKey = _cfg.ptt_key || 'Space';
+        const pttBtn = document.getElementById('asr-ptt-btn');
+        pttBtn.textContent = pttKey;
+        pttBtn.dataset.key = pttKey;
+
+        if (_cfg.ollama_url)   document.getElementById('asr-ollama-url').value   = _cfg.ollama_url;
+        if (_cfg.ollama_model) document.getElementById('asr-ollama-model').value = _cfg.ollama_model;
+        if (_cfg.api_key)      document.getElementById('asr-api-key').value      = _cfg.api_key;
+        if (_cfg.api_base_url) document.getElementById('asr-api-base').value     = _cfg.api_base_url;
+        if (_cfg.api_model)    document.getElementById('asr-api-model').value    = _cfg.api_model;
+
+        if (_cfg.input_device) {
+            const el = document.getElementById('asr-input-device');
+            if ([...el.options].some(o => o.value === _cfg.input_device)) el.value = _cfg.input_device;
+        }
+        if (_cfg.output_device) {
+            const el = document.getElementById('asr-output-device');
+            if ([...el.options].some(o => o.value === _cfg.output_device)) el.value = _cfg.output_device;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Audio devices
+    // ------------------------------------------------------------------
+
+    async function _populateDevices() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(t => t.stop());
+        } catch { /* labels may be empty without permission */ }
+
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const inputSel  = document.getElementById('asr-input-device');
+            const outputSel = document.getElementById('asr-output-device');
+
+            inputSel.innerHTML  = '<option value="default">Default</option>';
+            outputSel.innerHTML = '<option value="default">Default</option>';
+
+            devices.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.deviceId;
+                opt.textContent = d.label || d.deviceId.slice(0, 24);
+
+                if (d.kind === 'audioinput')  inputSel.appendChild(opt.cloneNode(true));
+                if (d.kind === 'audiooutput') outputSel.appendChild(opt);
+            });
+        } catch { /* no device access */ }
+    }
+
+    // Called when user switches input device — restart VU meter on new device
+    async function onInputDeviceChange() {
+        _stopVuMeter();
+        _startVuMeter();
+    }
+
+    // ------------------------------------------------------------------
+    // VU Meter (Web Audio API)
+    // ------------------------------------------------------------------
+
+    async function _startVuMeter() {
+        _stopVuMeter();
+
+        const deviceId = document.getElementById('asr-input-device')?.value;
+        const constraints = {
+            audio: deviceId && deviceId !== 'default'
+                ? { deviceId: { ideal: deviceId } }
+                : true,
+        };
+
+        try {
+            _micStream = await navigator.mediaDevices.getUserMedia(constraints);
+            _audioCtx  = new AudioContext();
+            if (_audioCtx.state === 'suspended') await _audioCtx.resume();
+            _analyser  = _audioCtx.createAnalyser();
+            _analyser.fftSize = 256;
+            _analyser.smoothingTimeConstant = 0.6;
+
+            const source = _audioCtx.createMediaStreamSource(_micStream);
+            source.connect(_analyser);
+
+            _vuRafId = requestAnimationFrame(_vuTick);
+            _setVuHint('active');
+        } catch {
+            _setVuHint('no mic');
+        }
+    }
+
+    function _stopVuMeter() {
+        if (_vuRafId) { cancelAnimationFrame(_vuRafId); _vuRafId = null; }
+        if (_analyser) { _analyser.disconnect(); _analyser = null; }
+        if (_audioCtx) { _audioCtx.close(); _audioCtx = null; }
+        if (_micStream) {
+            _micStream.getTracks().forEach(t => t.stop());
+            _micStream = null;
+        }
+        const bar = document.getElementById('asr-vu-bar');
+        if (bar) bar.style.width = '0%';
+        _setVuHint('—');
+    }
+
+    function _vuTick() {
+        if (!_analyser) return;
+        const data = new Uint8Array(_analyser.frequencyBinCount);
+        _analyser.getByteFrequencyData(data);
+
+        // RMS of frequency bins → 0..1
+        const rms = Math.sqrt(data.reduce((s, v) => s + v * v, 0) / data.length) / 128;
+        const pct = Math.min(100, Math.round(rms * 180));
+
+        const bar = document.getElementById('asr-vu-bar');
+        if (bar) bar.style.width = pct + '%';
+        _setVuHint(pct + '%');
+
+        _vuRafId = requestAnimationFrame(_vuTick);
+    }
+
+    function _setVuHint(text) {
+        const el = document.getElementById('asr-vu-hint');
+        if (el) el.textContent = text;
+    }
+
+    // ------------------------------------------------------------------
+    // Ollama models + status LED
+    // ------------------------------------------------------------------
+
+    async function _checkOllamaStatus() {
+        _setLed('checking');
+        try {
+            const res = await fetch(`${ASR_API}/ollama/models`);
+            if (res.ok) {
+                const data = await res.json();
+                _setLed('ok');
+                return data.models || [];
+            }
+            _setLed('err');
+            return [];
+        } catch {
+            _setLed('err');
+            return [];
+        }
+    }
+
+    async function _populateOllamaModels() {
+        const sel = document.getElementById('asr-ollama-model');
+        const current = sel.value || _cfg.ollama_model || 'whisper';
+        const models = await _checkOllamaStatus();
+        if (models.length === 0) return;
+        sel.innerHTML = '';
+        models.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            if (m === current) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+
+    async function reloadOllamaModels() {
+        await _populateOllamaModels();
+    }
+
+    function _setLed(state) {
+        const led = document.getElementById('asr-ollama-led');
+        if (!led) return;
+        led.className = 'status-led' + (state ? ' ' + state : '');
+    }
+
+    // ------------------------------------------------------------------
+    // Backend toggle
+    // ------------------------------------------------------------------
+
+    function switchBackend(val) {
+        document.getElementById('asr-sec-ollama').classList.toggle('hidden', val !== 'ollama');
+        document.getElementById('asr-sec-api').classList.toggle('hidden', val !== 'api');
+        if (val === 'ollama') _populateOllamaModels();
+        else _setLed('');
+    }
+
+    // ------------------------------------------------------------------
+    // PTT key capture
+    // ------------------------------------------------------------------
+
+    function capturePtt() {
+        if (_capturingPtt) return;
+        _capturingPtt = true;
+
+        const btn = document.getElementById('asr-ptt-btn');
+        btn.textContent = 'Press a key...';
+        btn.classList.add('listening');
+
+        _pttCaptureHandler = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const key = e.code || e.key;
+            btn.textContent = _keyLabel(key);
+            btn.dataset.key = key;
+            _stopPttCapture();
+        };
+
+        window.addEventListener('keydown', _pttCaptureHandler, { capture: true, once: true });
+    }
+
+    function _stopPttCapture() {
+        if (_pttCaptureHandler) {
+            window.removeEventListener('keydown', _pttCaptureHandler, { capture: true });
+            _pttCaptureHandler = null;
+        }
+        _capturingPtt = false;
+        const btn = document.getElementById('asr-ptt-btn');
+        if (btn) btn.classList.remove('listening');
+    }
+
+    function _keyLabel(code) {
+        const map = {
+            Space: 'Space', Enter: 'Enter', Escape: 'Esc',
+            ShiftLeft: 'L-Shift', ShiftRight: 'R-Shift',
+            ControlLeft: 'L-Ctrl', ControlRight: 'R-Ctrl',
+            AltLeft: 'L-Alt', AltRight: 'R-Alt',
+            CapsLock: 'Caps',
+        };
+        if (map[code]) return map[code];
+        if (code.startsWith('Key'))    return code.slice(3);
+        if (code.startsWith('Digit'))  return code.slice(5);
+        if (code.startsWith('Numpad')) return 'NP' + code.slice(6);
+        return code;
+    }
+
+    // ------------------------------------------------------------------
+    // Error helpers
+    // ------------------------------------------------------------------
+
+    function _showError(msg) {
+        const el = document.getElementById('asr-error');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
+
+    function _clearError() {
+        const el = document.getElementById('asr-error');
+        if (!el) return;
+        el.textContent = '';
+        el.classList.add('hidden');
+    }
+
+    return {
+        initScreen, teardown, saveConfig,
+        switchBackend, capturePtt, reloadOllamaModels, onInputDeviceChange,
+    };
+
+})();
