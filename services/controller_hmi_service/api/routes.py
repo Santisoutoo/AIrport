@@ -145,6 +145,12 @@ async def generate_atis(data: dict):
     arrival_runway = data.get("arrival_runway") or None
     departure_runway = data.get("departure_runway") or None
     approach = data.get("approach") or None
+    qfe = data.get("qfe") or None
+    include_tl = data.get("include_tl", True)
+    include_ta = data.get("include_ta", True)
+    remarks = data.get("remarks") or None
+    metar_station = (data.get("metar_station") or "").strip().upper() or current_airport["icao"]
+    preview = bool(data.get("preview", False))
 
     params = {}
     if arrival_runway:
@@ -153,11 +159,19 @@ async def generate_atis(data: dict):
         params["departure_runway"] = departure_runway
     if approach:
         params["approach"] = approach
+    if qfe:
+        params["qfe"] = qfe
+    params["include_tl"] = str(include_tl).lower()
+    params["include_ta"] = str(include_ta).lower()
+    if remarks:
+        params["remarks"] = remarks
+    if preview:
+        params["preview"] = "true"
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
             resp = await client.get(
-                f"{WEATHER_URL}/api/v1/weather/atis/{current_airport['icao']}",
+                f"{WEATHER_URL}/api/v1/weather/atis/{metar_station}",
                 params=params,
             )
             resp.raise_for_status()
