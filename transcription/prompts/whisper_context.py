@@ -1,0 +1,16 @@
+ATC_PROMPT = (
+    "ATC radio communication transcript. "
+    "Vueling three-six-four, cleared to pushback stand Golf seven, QNH one-zero-one-three. "
+    "Iberia five-two-one, taxi to holding point runway two-seven via taxiway Alpha. "
+    "Ryanair four-eight-zero, line up and wait runway two-seven, wind calm. "
+    "Speedbird two-two-three, cleared for takeoff runway two-seven. "
+    "Volotea seven-one-two, contact departure one-two-five decimal three, good day. "
+    "Wizzair eight-four-one, descend flight level one-eight-zero, QNH one-zero-one-three. "
+    "EasyJet three-three-four, squawk four-five-zero-one, radar identified. "
+    "Air Europa two-six-niner, report established ILS runway two-seven. "
+    "Norwegian six-zero-two, hold short of runway two-seven, traffic on final. "
+    "Helvetic nine-zero-six, cleared to land runway two-seven, wind one-eight-zero five knots. "
+    "Phonetic alphabet: Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliet "
+    "Kilo Lima Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey "
+    "X-ray Yankee Zulu."
+)
