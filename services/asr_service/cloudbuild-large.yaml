@@ -1,0 +1,18 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--tag'
+      - 'europe-west1-docker.pkg.dev/airport-490118/airport/asr-service-large:latest'
+      - '--build-arg'
+      - 'ASR_HF_MODEL=jacktol/whisper-large-v3-finetuned-for-ATC'
+      - '.'
+
+images:
+  - 'europe-west1-docker.pkg.dev/airport-490118/airport/asr-service-large:latest'
+
+options:
+  machineType: 'E2_HIGHCPU_32'
+  diskSizeGb: 40
+
+timeout: '3600s'

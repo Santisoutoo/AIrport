@@ -1,80 +1,128 @@
-import io
+import asyncio
+import logging
+import os
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
-import httpx
 from fastapi import HTTPException
 
-from ..core import settings
-from ..core.phonetics import normalize_phonetic
-from ..core.corrections import correct_callsigns
-from ..prompts.whisper_context import ATC_PROMPT
+from core.config import get_settings, get_model_backend
+from core.phonetics import normalize_phonetic
+from core.corrections import correct_callsigns
 
-_GPT4O_MODELS = {
-    "gpt-4o-transcribe",
-    "gpt-4o-mini-transcribe",
-    "gpt-4o-mini-transcribe-2025-12-15",
-    "gpt-4o-transcribe-diarize",
-}
+logger = logging.getLogger(__name__)
+
+_model: Any = None           # faster_whisper.WhisperModel  OR  transformers pipeline
+_loaded_model_id: str = ""   # track which model is currently loaded
+_executor = ThreadPoolExecutor(max_workers=2)
 
 
-async def via_ollama(
-    audio_bytes: bytes,
-    filename: str,
-    content_type: str,
-    *,
-    model: str,
-    ollama_url: str,
-) -> str:
-    """Transcribe audio using Ollama's OpenAI-compatible endpoint."""
+def load_model() -> Any:
+    """Load (or return cached) the configured ATC Whisper model."""
+    global _model, _loaded_model_id
+    cfg = get_settings()
+
+    if _model is not None and _loaded_model_id == cfg.hf_model:
+        return _model
+
+    backend = get_model_backend(cfg.hf_model)
+    logger.info(
+        "Loading model: %s  backend=%s  device=%s",
+        cfg.hf_model, backend, cfg.whisper_device,
+    )
+
+    if backend == "faster-whisper":
+        from faster_whisper import WhisperModel
+        _model = WhisperModel(
+            cfg.hf_model,
+            device=cfg.whisper_device,
+            compute_type=cfg.whisper_compute_type,
+        )
+    else:  # transformers pipeline (large-v3 etc.)
+        import torch
+        from transformers import pipeline
+        device = 0 if cfg.whisper_device == "cuda" and torch.cuda.is_available() else -1
+        _model = pipeline(
+            "automatic-speech-recognition",
+            model=cfg.hf_model,
+            device=device,
+        )
+
+    _loaded_model_id = cfg.hf_model
+    logger.info("Model ready: %s", cfg.hf_model)
+    return _model
+
+
+# ---------------------------------------------------------------------------
+# Sync helpers (run in thread pool so the event loop stays free)
+# ---------------------------------------------------------------------------
+
+def _transcribe_faster_whisper(audio_bytes: bytes, suffix: str) -> str:
+    cfg = get_settings()
+    model = load_model()
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(audio_bytes)
+        tmp_path = f.name
+
     try:
-        async with httpx.AsyncClient(timeout=settings.REQUEST_TIMEOUT) as client:
-            resp = await client.post(
-                f"{ollama_url}/v1/audio/transcriptions",
-                files={"file": (filename, audio_bytes, content_type)},
-                data={"model": model},
-            )
-            resp.raise_for_status()
-            return resp.json().get("text", "")
-    except Exception as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Ollama transcription error: {exc}",
-        ) from exc
+        segments, _ = model.transcribe(
+            tmp_path,
+            language=cfg.whisper_language,
+            beam_size=cfg.whisper_beam_size,
+        )
+        text = " ".join(s.text for s in segments).strip()
+    finally:
+        os.unlink(tmp_path)
+
+    return text
 
 
-async def via_api(
-    audio_bytes: bytes,
-    filename: str,
-    content_type: str,
-    *,
-    model: str,
-    api_key: str,
-    base_url: str,
-) -> str:
-    """Transcribe audio using an OpenAI-compatible API endpoint."""
-    if not api_key:
-        raise HTTPException(status_code=400, detail="API key not configured")
+def _transcribe_transformers(audio_bytes: bytes, suffix: str) -> str:
+    cfg = get_settings()
+    pipe = load_model()
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(audio_bytes)
+        tmp_path = f.name
+
     try:
-        from openai import AsyncOpenAI
+        result = pipe(
+            tmp_path,
+            generate_kwargs={"language": cfg.whisper_language},
+        )
+        text = result.get("text", "").strip()
+    finally:
+        os.unlink(tmp_path)
 
-        client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+    return text
 
-        if model in _GPT4O_MODELS:
-            result = await client.audio.transcriptions.create(
-                model=model,
-                file=(filename, io.BytesIO(audio_bytes), content_type),
-                response_format="json",
-                language=settings.WHISPER_LANGUAGE,
-            )
-        else:
-            result = await client.audio.transcriptions.create(
-                model=model,
-                file=(filename, io.BytesIO(audio_bytes), content_type),
-                language=settings.WHISPER_LANGUAGE,
-                prompt=ATC_PROMPT,
-            )
-        return correct_callsigns(normalize_phonetic(result.text))
+
+def _transcribe_sync(audio_bytes: bytes, suffix: str) -> str:
+    cfg = get_settings()
+    backend = get_model_backend(cfg.hf_model)
+
+    if backend == "faster-whisper":
+        raw = _transcribe_faster_whisper(audio_bytes, suffix)
+    else:
+        raw = _transcribe_transformers(audio_bytes, suffix)
+
+    return correct_callsigns(normalize_phonetic(raw))
+
+
+# ---------------------------------------------------------------------------
+# Public async entry point
+# ---------------------------------------------------------------------------
+
+async def transcribe(audio_bytes: bytes, filename: str) -> str:
+    """Async wrapper — offloads CPU-bound inference to thread pool."""
+    suffix = "." + filename.rsplit(".", 1)[-1] if "." in filename else ".webm"
+    try:
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(_executor, _transcribe_sync, audio_bytes, suffix)
+    except HTTPException:
+        raise
     except Exception as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"API transcription error: {exc}",
-        ) from exc
+        logger.exception("Transcription failed")
+        raise HTTPException(status_code=500, detail=f"Transcription error: {exc}") from exc

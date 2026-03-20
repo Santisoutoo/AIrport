@@ -3,7 +3,17 @@
    Chat-style comms log + inline quick config
    ============================================ */
 
-const ASR_URL      = 'http://localhost:8006/api/v1/asr';
+const ASR_URLS = {
+    medium: 'https://asr-service-300924135267.europe-west1.run.app/api/v1/asr',
+    large:  'LARGE_SERVICE_URL_PLACEHOLDER/api/v1/asr',  // TODO: update after deploying asr-service-large
+};
+
+function getAsrUrl() {
+    try {
+        const cfg = JSON.parse(localStorage.getItem('airport_asr_settings') || '{}');
+        return ASR_URLS[cfg.api_model] || ASR_URLS.medium;
+    } catch { return ASR_URLS.medium; }
+}
 const CHAT_MAX_MSG = 50;
 
 const ROBOT_SVG = `<svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -36,11 +46,11 @@ const Ptt = (() => {
 
     async function init() {
         try {
-            const res = await fetch(`${ASR_URL}/config`);
-            if (res.ok) {
-                const cfg  = await res.json();
-                _pttKey   = cfg.ptt_key      || 'Space';
-                _deviceId = cfg.input_device || 'default';
+            const saved = localStorage.getItem('airport_asr_settings');
+            if (saved) {
+                const cfg = JSON.parse(saved);
+                _pttKey   = cfg.ptt_key       || 'Space';
+                _deviceId = cfg.input_device  || 'default';
                 _outputId = cfg.output_device || 'default';
             }
         } catch (_) {}
@@ -151,7 +161,7 @@ const Ptt = (() => {
         fd.append('audio', blob, `ptt.${ext}`);
 
         try {
-            const res = await fetch(`${ASR_URL}/transcribe`, { method: 'POST', body: fd });
+            const res = await fetch(`${getAsrUrl()}/transcribe`, { method: 'POST', body: fd });
             if (!res.ok) {
                 let detail = 'HTTP ' + res.status;
                 try { detail = (await res.json()).detail || detail; } catch (_) {}
@@ -282,7 +292,7 @@ const Ptt = (() => {
         // Fetch current full config to preserve AI fields
         let full = {};
         try {
-            const r = await fetch(`${ASR_URL}/config`);
+            const r = await fetch(`${getAsrUrl()}/config`);
             if (r.ok) full = await r.json();
         } catch (_) {}
 
@@ -293,7 +303,7 @@ const Ptt = (() => {
         });
 
         try {
-            const res = await fetch(`${ASR_URL}/config`, {
+            const res = await fetch(`${getAsrUrl()}/config`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify(payload),
