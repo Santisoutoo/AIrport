@@ -133,16 +133,21 @@ class ATISGenerator:
         icao_code: str,
         departure_runway = None,
         arrival_runway = None,
-        approach = None
+        approach = None,
+        qfe: Optional[int] = None,
+        include_tl: bool = True,
+        include_ta: bool = True,
+        remarks: Optional[str] = None,
+        preview: bool = False,
     ) -> ATISResponse:
         """
         Generate a complete ATIS broadcast for an airport.
 
         Args:
             icao_code: ICAO airport code
-            departure_runway: Departure runway (set by ATC). If None, not included in ATIS
-            arrival_runway: Arrival runway (set by ATC). If None, not included in ATIS
-            approach: Approach type (set by ATC). If None, not included in ATIS
+            departure_runway: Departure runway (set by ATC). If None, auto-selected from wind.
+            arrival_runway: Arrival runway (set by ATC). If None, auto-selected from wind.
+            approach: Approach type (set by ATC). If None, auto-selected for the chosen runway.
 
         Returns:
             ATISResponse with complete ATIS data
@@ -158,8 +163,22 @@ class ATISGenerator:
         # Get airport data
         airport = self.airports.get(icao_code, self._get_default_airport(icao_code))
 
-        # Get next ATIS letter
-        atis_letter = self._get_next_atis_letter(icao_code)
+        # Auto-select runways from wind when not provided by ATC
+        if arrival_runway is None and not parsed.get("wind_variable"):
+            arrival_runway = self._select_runway_from_wind(
+                parsed["wind_direction"], airport["runways"]
+            )
+        if departure_runway is None and not parsed.get("wind_variable"):
+            departure_runway = self._select_runway_from_wind(
+                parsed["wind_direction"], airport["runways"]
+            )
+
+        # Auto-select approach type for arrival runway when not provided by ATC
+        if approach is None and arrival_runway:
+            approach = self._select_approach_for_runway(arrival_runway, airport)
+
+        # Get next ATIS letter (preview mode: no increment)
+        atis_letter = self._get_next_atis_letter(icao_code, preview=preview)
 
         # Calculate transition level
         transition_level = self._calculate_transition_level(parsed["qnh_hpa"])
@@ -174,7 +193,11 @@ class ATISGenerator:
             approach=approach,
             transition_level=transition_level,
             transition_altitude=airport["transition_altitude"],
-            airport_name=airport.get("name", icao_code)
+            airport_name=airport.get("name", icao_code),
+            qfe=qfe,
+            include_tl=include_tl,
+            include_ta=include_ta,
+            remarks=remarks,
         )
 
         return ATISResponse(
@@ -201,7 +224,7 @@ class ATISGenerator:
             approach_type=approach,
             transition_level=transition_level,
             transition_altitude=airport["transition_altitude"],
-            remarks=parsed.get("remarks"),
+            remarks=remarks,
             raw_metar=parsed["raw_metar"],
             atis_text=atis_text
         )
@@ -283,11 +306,46 @@ class ATISGenerator:
 
         return result
 
-    def _get_next_atis_letter(self, icao_code: str) -> str:
-        """Get the next ATIS letter in sequence for the airport"""
+    def _select_runway_from_wind(self, wind_direction: int, runways: list) -> Optional[str]:
+        """Select the runway that provides the best headwind alignment."""
+        best_rwy = None
+        best_score = -1
+
+        for rwy in runways:
+            # Strip L/R/C suffix to get the numeric heading
+            rwy_num = rwy.rstrip("LRC")
+            try:
+                rwy_hdg = int(rwy_num) * 10
+            except ValueError:
+                continue
+
+            angle_diff = abs(wind_direction - rwy_hdg) % 360
+            if angle_diff > 180:
+                angle_diff = 360 - angle_diff
+            # score: 180 = pure headwind, 0 = pure tailwind
+            score = 180 - angle_diff
+            if score > best_score:
+                best_score = score
+                best_rwy = rwy
+
+        return best_rwy
+
+    def _select_approach_for_runway(self, runway: str, airport: dict) -> Optional[str]:
+        """Select the best available approach type for the given runway (ILS > VOR > RNAV)."""
+        approaches = airport.get("approaches", {})
+        available = approaches.get(runway, [])
+        for preferred in ("ILS", "VOR", "RNAV"):
+            if preferred in available:
+                return preferred
+        return available[0] if available else None
+
+    def _get_next_atis_letter(self, icao_code: str, preview: bool = False) -> str:
+        """Get the next ATIS letter in sequence for the airport.
+        In preview mode the counter is NOT incremented."""
         current = self._atis_counters.get(icao_code, -1)
         next_idx = (current + 1) % 26
-        self._atis_counters[icao_code] = next_idx
+        if not preview:
+            self._atis_counters[icao_code] = next_idx
         return string.ascii_uppercase[next_idx]
 
     def _calculate_transition_level(self, qnh_hpa: int) -> str:
@@ -326,7 +384,11 @@ class ATISGenerator:
         approach: str,
         transition_level: str,
         transition_altitude: int,
-        airport_name: str
+        airport_name: str,
+        qfe: Optional[int] = None,
+        include_tl: bool = True,
+        include_ta: bool = True,
+        remarks: Optional[str] = None,
     ) -> str:
         """Generate the full ATIS broadcast text"""
         phonetic = PHONETIC_ALPHABET[string.ascii_uppercase.index(atis_letter)]
@@ -382,13 +444,22 @@ class ATISGenerator:
         # QNH
         lines.append(f"QNH {parsed['qnh_hpa']} hectopascals.")
 
-        # Transition
-        lines.append(
-            f"Transition level {transition_level}, transition altitude {transition_altitude} feet."
-        )
+        # QFE (only if provided by ATC)
+        if qfe:
+            lines.append(f"QFE {qfe} hectopascals.")
+
+        # Transition level and altitude (conditional)
+        if include_tl:
+            lines.append(f"Transition level {transition_level}.")
+        if include_ta:
+            lines.append(f"Transition altitude {transition_altitude} feet.")
 
         # Time and closing
         lines.append(f"Information {phonetic} recorded at {obs_time} Zulu.")
         lines.append(f"Advise on initial contact you have information {phonetic}.")
+
+        # Remarks
+        if remarks and remarks.strip():
+            lines.append(f"RMK {remarks.strip()}")
 
         return " ".join(lines)

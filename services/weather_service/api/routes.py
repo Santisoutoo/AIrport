@@ -32,6 +32,11 @@ async def generate_atis(
     departure_runway: Optional[str] = Query(None, description="Departure runway"),
     arrival_runway: Optional[str] = Query(None, description="Arrival runway"),
     approach: Optional[str] = Query(None, description="Approach type"),
+    qfe: Optional[int] = Query(None, description="QFE in hPa (set by ATC)"),
+    include_tl: bool = Query(True, description="Include Transition Level in ATIS"),
+    include_ta: bool = Query(True, description="Include Transition Altitude in ATIS"),
+    remarks: Optional[str] = Query(None, description="ATC remarks (appended as RMK)"),
+    preview: bool = Query(False, description="Preview mode: no DB save, letter not incremented"),
     db: Session = Depends(get_db)
 ):
     """Generate ATIS for an airport"""
@@ -40,10 +45,16 @@ async def generate_atis(
             icao_code=icao_code,
             departure_runway=departure_runway,
             arrival_runway=arrival_runway,
-            approach=approach
+            approach=approach,
+            qfe=qfe,
+            include_tl=include_tl,
+            include_ta=include_ta,
+            remarks=remarks,
+            preview=preview,
         )
-        repo = ATISRepository(db)
-        repo.create(atis)
+        if not preview:
+            repo = ATISRepository(db)
+            repo.create(atis)
         return atis
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

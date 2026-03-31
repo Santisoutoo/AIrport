@@ -124,6 +124,9 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
+    volumes:
+      - asr_hf_cache:/root/.cache/huggingface
+      - ./services/asr_service:/app
     depends_on:
       redis:
         condition: service_healthy
@@ -185,3 +188,5 @@ volumes:
     name: airport_postgres_data
   influxdb_data:
     name: airport_influxdb_data
+  asr_hf_cache:
+    name: airport_asr_hf_cache

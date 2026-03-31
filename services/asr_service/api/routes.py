@@ -1,5 +1,8 @@
+import logging
 import httpx
 from fastapi import APIRouter, HTTPException, UploadFile, File
+
+logger = logging.getLogger(__name__)
 
 from . import transcribe_service
 from .config_service import load as load_cfg, save as save_cfg
@@ -46,9 +49,13 @@ async def transcribe(audio: UploadFile = File(...)):
     cfg = load_cfg()
     audio_bytes = await audio.read()
     filename = audio.filename or "audio.webm"
-    content_type = audio.content_type or "audio/webm"
+    # Strip codec parameters (e.g. "audio/webm;codecs=opus" → "audio/webm")
+    content_type = (audio.content_type or "audio/webm").split(";")[0].strip()
+    print(f"[ASR] transcribe: {len(audio_bytes)} bytes, file={filename}, ct={content_type}", flush=True)
 
-    if cfg.get("backend") == "ollama":
+    backend = cfg.get("backend", DEFAULTS["backend"])
+
+    if backend == "ollama":
         text = await transcribe_service.via_ollama(
             audio_bytes, filename, content_type,
             model=cfg.get("ollama_model", DEFAULTS["ollama_model"]),

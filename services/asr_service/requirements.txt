@@ -4,3 +4,7 @@ redis
 httpx
 openai
 python-multipart
+faster-whisper
+transformers
+accelerate
+soundfile
