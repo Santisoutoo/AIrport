@@ -96,10 +96,10 @@ class WindowManager:
             elif status == "stop_pending":
                 self._execute_stop_session()
                 r.delete("airport:session_request")
-        except ImportError:
-            xp.log("AIrport: redis package not installed — pip install redis")
+        except ImportError as e:
+            xp.log(f"AIrport: redis ImportError — {e}")
         except Exception as e:
-            xp.log(f"AIrport: Redis poll error: {e}")
+            xp.log(f"AIrport: Redis poll error: {type(e).__name__}: {e}")
         return 2.0
 
     def _execute_start_from_redis(self, r, data: dict):
