@@ -1,6 +1,8 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from api.routes import router
@@ -27,6 +29,19 @@ app.add_middleware(
 # API routes
 app.include_router(router, prefix=PREFIX, tags=["HMI"])
 app.include_router(plugin_router)
+
+
+@app.get("/config.js", include_in_schema=False)
+async def frontend_config():
+    asr_url         = os.getenv("ASR_URL")
+    orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8007")
+    js = (
+        f"window.HMI_CONFIG = {{\n"
+        f'  ASR_URL: "{asr_url}",\n'
+        f'  ORCHESTRATOR_URL: "{orchestrator_url}"\n'
+        f"}};\n"
+    )
+    return Response(content=js, media_type="application/javascript")
 
 
 @app.get("/setup", include_in_schema=False)

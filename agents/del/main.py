@@ -1,66 +1,63 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import FastAPI, HTTPException
-from google.genai import types
+from fastapi import FastAPI
+from pydantic import BaseModel
 
-from agent import build_runner
 from config import config
-from models import Artifact, ArtifactPart, TaskRequest, TaskResponse, TaskStatus
+from runner import run_agent
 
-runner = None
+_executor = ThreadPoolExecutor(max_workers=4)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    global runner
-    runner = build_runner()
-    print(f"[del_agent] mode={config.AGENT_MODE} model={config.get_litellm_model()}")
+async def lifespan(_app: FastAPI):
+    print(f"[del] starting — model: {config.get_litellm_model()}")
     yield
+    print("[del] shutting down")
 
 
-app = FastAPI(title="DEL Agent", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="AIrport DEL Agent", version="0.1.0", lifespan=lifespan)
 
 
-# ---------- A2A endpoints ----------
-
-@app.get("/.well-known/agent.json")
-async def agent_card():
-    return {
-        "name": "DEL",
-        "description": "Delivery controller — issues flight plan clearances, SID, squawk, and initial altitude",
-        "url": f"http://localhost:{config.PORT}",
-        "version": "0.1.0",
-        "capabilities": {"streaming": False},
-    }
+class RunRequest(BaseModel):
+    session_id: str
+    message: str
+    flight_plan: dict[str, Any] | None = None
+    atis: dict[str, Any] | None = None
 
 
-@app.post("/tasks/send", response_model=TaskResponse)
-async def tasks_send(req: TaskRequest) -> TaskResponse:
-    user_text = " ".join(p.text for p in req.message.parts)
+class RunResponse(BaseModel):
+    session_id: str
+    reply: str
+    clearance_data: dict[str, Any] | None = None
 
-    reply = ""
-    try:
-        content = types.Content(role="user", parts=[types.Part(text=user_text)])
-        async for event in runner.run_async(
-            user_id="default",
-            session_id=req.sessionId,
-            new_message=content,
-        ):
-            if event.is_final_response():
-                if event.content and event.content.parts:
-                    reply = event.content.parts[0].text
-                break
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    return TaskResponse(
-        id=req.id,
-        sessionId=req.sessionId,
-        status=TaskStatus(state="completed"),
-        artifacts=[Artifact(parts=[ArtifactPart(text=reply)])],
+@app.post("/agents/delivery/run", response_model=RunResponse, tags=["delivery"])
+async def run(req: RunRequest) -> RunResponse:
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        _executor, run_agent, req.session_id, req.message, req.flight_plan, req.atis
     )
+    return RunResponse(
+        session_id=req.session_id,
+        reply=result["reply"],
+        clearance_data=result.get("clearance_data"),
+    )
+
+
+@app.get("/agents/delivery/info", tags=["delivery"])
+async def info():
+    return {"name": "DEL", "description": "ATC Delivery controller — issues IFR departure clearances"}
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "agent": "DEL", "mode": config.AGENT_MODE, "model": config.get_litellm_model()}
+    return {"status": "ok", "model": config.get_litellm_model()}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host=config.HOST, port=config.PORT, reload=True)

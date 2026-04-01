@@ -124,6 +124,7 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
+      - ORCHESTRATOR_URL=http://orchestrator_service:8006
     volumes:
       - asr_hf_cache:/root/.cache/huggingface
       - ./services/asr_service:/app
@@ -155,6 +156,8 @@ services:
       - DB_NAME=${POSTGRES_DB}
       - DB_USER=${POSTGRES_USER}
       - DB_PASS=${POSTGRES_PASSWORD}
+      - ASR_URL=${ASR_URL:-https://asr-service-300924135267.europe-west1.run.app/api/v1/asr}
+      - ORCHESTRATOR_URL=${ORCHESTRATOR_URL:-http://localhost:8007}
     volumes:
       - ./services/controller_hmi_service/static:/app/static
       - ./services/controller_hmi_service/api:/app/api
@@ -172,6 +175,48 @@ services:
       - airport_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/hmi/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  orchestrator_service:
+    build:
+      context: ./services/orchestrator_service
+      dockerfile: Dockerfile
+    container_name: airport_orchestrator
+    restart: unless-stopped
+    ports:
+      - "8007:8006"
+    env_file:
+      - .env
+    environment:
+      - FLIGHT_PLAN_SERVICE_URL=http://flight_plan_service:8000/api/v1/flight-plan
+      - WEATHER_SERVICE_URL=http://weather_service:8000/api/v1/weather
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - DEL_AGENT_URL=${DEL_AGENT_URL:-}
+      - GND_AGENT_URL=${GND_AGENT_URL:-}
+      - TWR_AGENT_URL=${TWR_AGENT_URL:-}
+      - VERTEX_PROJECT=${VERTEX_PROJECT:-}
+      - VERTEX_LOCATION=${VERTEX_LOCATION:-global}
+      - VERTEX_MODEL=${VERTEX_MODEL:-gemini-3.0-flash-preview}
+      - VERTEXAI_PROJECT=${VERTEX_PROJECT:-}
+      - VERTEXAI_LOCATION=${VERTEX_LOCATION:-global}
+    volumes:
+      - ${GCLOUD_CREDENTIALS_DIR:-}:/root/.config/gcloud:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      flight_plan_service:
+        condition: service_healthy
+      weather_service:
+        condition: service_healthy
+    networks:
+      - airport_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
       interval: 30s
       timeout: 10s
       retries: 3
