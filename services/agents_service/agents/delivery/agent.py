@@ -1,13 +1,28 @@
-from agents.base.base_agent import BaseAgent
-from agents.delivery.prompts.system import SYSTEM_PROMPT
+from google.adk.agents import Agent
+from google.adk.models.lite_llm import LiteLlm
 
-_DEL = BaseAgent(
+from config import config
+from agents.delivery.prompts.system import SYSTEM_PROMPT
+from agents.delivery.tools.clearance import make_issue_clearance
+
+MODEL_STRING = config.get_litellm_model()
+
+# Module-level singleton — used by /info endpoint only
+DEL_AGENT = Agent(
     name="DEL",
+    model=LiteLlm(model=MODEL_STRING),
     description="Delivery controller agent",
     instruction=SYSTEM_PROMPT,
     tools=[],
 )
 
-# Raw ADK Agent — used by Runner in main.py
-DEL_AGENT = _DEL.get_agent()
-MODEL_STRING = _DEL.model_string
+
+def build_del_agent(context: dict) -> Agent:
+    """Build a fresh DEL agent per-request, binding issue_clearance to context."""
+    return Agent(
+        name="DEL",
+        model=LiteLlm(model=MODEL_STRING),
+        description="Delivery controller agent",
+        instruction=SYSTEM_PROMPT,
+        tools=[make_issue_clearance(context)],
+    )

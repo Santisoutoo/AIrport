@@ -145,6 +145,9 @@ services:
       dockerfile: Dockerfile
     container_name: airport_controller_hmi
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8005:8000"
     env_file:
