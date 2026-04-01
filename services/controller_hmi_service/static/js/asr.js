@@ -4,8 +4,11 @@
    VU meter, PTT key binding, AI backend.
    ============================================ */
 
+const _isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const ASR_URLS = {
-    medium: 'https://asr-service-300924135267.europe-west1.run.app/api/v1/asr',
+    medium: _isLocal
+        ? 'http://localhost:8006/api/v1/asr'
+        : 'https://asr-service-300924135267.europe-west1.run.app/api/v1/asr',
     large:  'LARGE_SERVICE_URL_PLACEHOLDER/api/v1/asr',  // TODO: update after deploying asr-service-large
 };
 

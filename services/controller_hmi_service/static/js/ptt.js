@@ -3,8 +3,8 @@
    Chat-style comms log + inline quick config
    ============================================ */
 
-const ASR_URL = (window.HMI_CONFIG || {}).ASR_URL || '';
-const ORCHESTRATOR_URL = (window.HMI_CONFIG || {}).ORCHESTRATOR_URL || '';
+const ASR_PROXY = '/api/v1/hmi/asr';
+const ORCHESTRATOR_PROXY = '/api/v1/hmi/orchestrator';
 const CHAT_MAX_MSG = 50;
 
 const ROBOT_SVG = `<svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -154,7 +154,7 @@ const Ptt = (() => {
         fd.append('session_id', _sessionId);
 
         try {
-            const res = await fetch(`${getAsrUrl()}/transcribe`, { method: 'POST', body: fd });
+            const res = await fetch(`${ASR_PROXY}/transcribe`, { method: 'POST', body: fd });
             if (!res.ok) {
                 let detail = 'HTTP ' + res.status;
                 try { detail = (await res.json()).detail || detail; } catch (_) { }
@@ -170,7 +170,7 @@ const Ptt = (() => {
                 // Dispatch to local orchestrator → agent reply
                 _showTyping();
                 try {
-                    const orchRes = await fetch(`${ORCHESTRATOR_URL}/dispatch`, {
+                    const orchRes = await fetch(`${ORCHESTRATOR_PROXY}/dispatch`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ session_id: _sessionId, message: text }),
@@ -180,9 +180,15 @@ const Ptt = (() => {
                         const reply = (orch.reply || '').trim();
                         const callsign = orch.aircraft_registration || orch.agent || 'ATC';
                         if (reply) _pushMessage({ type: 'agent', callsign, text: reply });
+                    } else {
+                        let detail = `Orchestrator error ${orchRes.status}`;
+                        try { detail = (await orchRes.json()).detail || detail; } catch (_) { }
+                        _setStatusText('Error ATC: ' + detail);
+                        console.error('[PTT] orchestrator error:', detail);
                     }
                 } catch (orchErr) {
-                    console.warn('[PTT] orchestrator unreachable:', orchErr.message);
+                    _setStatusText('Error ATC: ' + orchErr.message);
+                    console.error('[PTT] orchestrator unreachable:', orchErr.message);
                 } finally {
                     _hideTyping();
                     _setStatusText('Presiona PTT para transmitir...');
@@ -298,44 +304,26 @@ const Ptt = (() => {
         if (btn) btn.classList.remove('capturing');
     }
 
-    async function saveQuickConfig() {
+    function saveQuickConfig() {
         const micVal = document.getElementById('cc-mic')?.value || 'default';
         const outVal = document.getElementById('cc-out')?.value || 'default';
         const keyVal = document.getElementById('cc-ptt-key')?.textContent || _pttKey;
 
-        // Fetch current full config to preserve AI fields
-        let full = {};
+        _pttKey = keyVal;
+        _deviceId = micVal;
+        _outputId = outVal;
+
         try {
-            const r = await fetch(`${getAsrUrl()}/config`);
-            if (r.ok) full = await r.json();
+            localStorage.setItem('airport_asr_settings', JSON.stringify({
+                ptt_key: _pttKey,
+                input_device: _deviceId,
+                output_device: _outputId,
+            }));
         } catch (_) { }
 
-        const payload = Object.assign({}, full, {
-            input_device: micVal,
-            output_device: outVal,
-            ptt_key: keyVal,
-        });
-
-        try {
-            const res = await fetch(`${getAsrUrl()}/config`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            if (res.ok) {
-                _pttKey = keyVal;
-                _deviceId = micVal;
-                _outputId = outVal;
-                _renderKeyBadge();
-                _setStatusText('Configuracion guardada');
-                setTimeout(() => _setStatusText('Presiona PTT para transmitir...'), 2000);
-            } else {
-                _setStatusText('Error al guardar');
-            }
-        } catch (_) {
-            _setStatusText('No se pudo conectar con el servicio ASR');
-        }
+        _renderKeyBadge();
+        _setStatusText('Configuracion guardada');
+        setTimeout(() => _setStatusText('Presiona PTT para transmitir...'), 2000);
 
         toggleConfig();
     }

@@ -3,7 +3,7 @@ import sys
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -236,6 +236,58 @@ async def get_airport_graph():
     except Exception as e:
         logger.error("Failed to parse airport data for %s: %s", icao, e)
         raise HTTPException(status_code=500, detail=f"Failed to parse airport data: {e}")
+
+
+@router.post("/asr/transcribe")
+async def proxy_asr_transcribe(request: Request):
+    """Proxy: forward raw multipart body to the ASR service (Cloud Run or local)."""
+    asr_url = os.getenv("ASR_URL", "")
+    if not asr_url:
+        raise HTTPException(status_code=503, detail="ASR_URL not configured")
+
+    body = await request.body()
+    content_type = request.headers.get("content-type", "")
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            resp = await client.post(
+                f"{asr_url}/transcribe",
+                content=body,
+                headers={"content-type": content_type},
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+        except httpx.RequestError as e:
+            logger.error("ASR proxy error: %s", e)
+            raise HTTPException(status_code=502, detail="ASR service unreachable")
+
+
+@router.post("/orchestrator/dispatch")
+async def proxy_orchestrator_dispatch(request: Request):
+    """Proxy: forward dispatch request to the orchestrator service."""
+    orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://orchestrator_service:8006")
+    body = await request.body()
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            resp = await client.post(
+                f"{orchestrator_url}/dispatch",
+                content=body,
+                headers={"content-type": "application/json"},
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            detail = f"Orchestrator error {e.response.status_code}"
+            try:
+                detail = e.response.json().get("detail", detail)
+            except Exception:
+                pass
+            logger.error("Orchestrator proxy error: %s", e)
+            raise HTTPException(status_code=e.response.status_code, detail=detail)
+        except httpx.RequestError as e:
+            logger.error("Orchestrator proxy error: %s", e)
+            raise HTTPException(status_code=502, detail="Orchestrator service unreachable")
 
 
 async def _check_upstream(url: str) -> bool:
