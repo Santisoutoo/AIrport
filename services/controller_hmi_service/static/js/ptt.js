@@ -3,8 +3,9 @@
    Chat-style comms log + inline quick config
    ============================================ */
 
-const ASR_URL      = 'http://localhost:8006/api/v1/asr';
-const CHAT_MAX_MSG = 50;
+const ASR_URL          = (window.HMI_CONFIG || {}).ASR_URL          || '';
+const ORCHESTRATOR_URL = (window.HMI_CONFIG || {}).ORCHESTRATOR_URL || '';
+const CHAT_MAX_MSG     = 50;
 
 const ROBOT_SVG = `<svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
   <rect x="3" y="6" width="12" height="9" rx="2"/>
@@ -22,6 +23,7 @@ const Ptt = (() => {
     let _deviceId     = 'default';
     let _outputId     = 'default';
     let _recording    = false;
+    const _sessionId  = crypto.randomUUID();
     let _recorder     = null;
     let _stream       = null;
     let _chunks       = [];
@@ -149,6 +151,7 @@ const Ptt = (() => {
         const blob = new Blob(_chunks, { type: mime });
         const fd   = new FormData();
         fd.append('audio', blob, `ptt.${ext}`);
+        fd.append('session_id', _sessionId);
 
         try {
             const res = await fetch(`${ASR_URL}/transcribe`, { method: 'POST', body: fd });
@@ -162,7 +165,28 @@ const Ptt = (() => {
             const text = (data.text || '').trim();
             if (text) {
                 _pushMessage({ type: 'controller', text });
-                _setStatusText('Presiona PTT para transmitir...');
+                _setStatusText('Esperando respuesta ATC...');
+
+                // Dispatch to local orchestrator → agent reply
+                _showTyping();
+                try {
+                    const orchRes = await fetch(`${ORCHESTRATOR_URL}/dispatch`, {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ session_id: _sessionId, message: text }),
+                    });
+                    if (orchRes.ok) {
+                        const orch    = await orchRes.json();
+                        const reply   = (orch.reply || '').trim();
+                        const callsign = orch.aircraft_registration || orch.agent || 'ATC';
+                        if (reply) _pushMessage({ type: 'agent', callsign, text: reply });
+                    }
+                } catch (orchErr) {
+                    console.warn('[PTT] orchestrator unreachable:', orchErr.message);
+                } finally {
+                    _hideTyping();
+                    _setStatusText('Presiona PTT para transmitir...');
+                }
             } else {
                 _setStatusText('(sin audio detectado)');
             }

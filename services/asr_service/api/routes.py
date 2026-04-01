@@ -1,6 +1,8 @@
 import logging
+import os
+
 import httpx
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, Form, HTTPException, UploadFile, File
 
 logger = logging.getLogger(__name__)
 
@@ -9,6 +11,8 @@ from .config_service import load as load_cfg, save as save_cfg
 from .models import AsrConfig, DEFAULTS
 
 router = APIRouter(prefix="/api/v1/asr", tags=["asr"])
+
+_ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "")
 
 
 @router.get("/health")
@@ -45,7 +49,10 @@ async def ollama_models():
 
 
 @router.post("/transcribe")
-async def transcribe(audio: UploadFile = File(...)):
+async def transcribe(
+    audio: UploadFile = File(...),
+    session_id: str = Form(""),
+):
     cfg = load_cfg()
     audio_bytes = await audio.read()
     filename = audio.filename or "audio.webm"
@@ -68,5 +75,24 @@ async def transcribe(audio: UploadFile = File(...)):
             api_key=cfg.get("api_key", ""),
             base_url=cfg.get("api_base_url", DEFAULTS["api_base_url"]),
         )
+
+    # If orchestrator is configured, dispatch the transcription for agent routing
+    if _ORCHESTRATOR_URL and text:
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                dispatch_resp = await client.post(
+                    f"{_ORCHESTRATOR_URL}/dispatch",
+                    json={"session_id": session_id, "message": text},
+                )
+                dispatch_resp.raise_for_status()
+                dispatch_data = dispatch_resp.json()
+                return {
+                    "text": text,
+                    "reply": dispatch_data.get("reply", ""),
+                    "agent": dispatch_data.get("agent", ""),
+                    "aircraft_registration": dispatch_data.get("aircraft_registration"),
+                }
+        except Exception as exc:
+            logger.warning("[ASR] dispatch failed: %s — returning transcription only", exc)
 
     return {"text": text}

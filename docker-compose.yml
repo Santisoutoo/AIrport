@@ -156,6 +156,8 @@ services:
       - DB_NAME=${POSTGRES_DB}
       - DB_USER=${POSTGRES_USER}
       - DB_PASS=${POSTGRES_PASSWORD}
+      - ASR_URL=${ASR_URL:-https://asr-service-300924135267.europe-west1.run.app/api/v1/asr}
+      - ORCHESTRATOR_URL=${ORCHESTRATOR_URL:-http://localhost:8007}
     volumes:
       - ./services/controller_hmi_service/static:/app/static
       - ./services/controller_hmi_service/api:/app/api
