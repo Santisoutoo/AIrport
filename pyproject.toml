@@ -33,12 +33,13 @@ dependencies = [
     "networkx",
     "matplotlib",
     "jupyter",
-    "paho-mqtt",
     "redis",
-    "imgui",
     "ipykernel",
     "psycopg2-binary",
-    "transformers"
+    "transformers",
+    "jiwer",
+    "httpx",
+    "python-dotenv"
 ]
 
 [project.urls]
