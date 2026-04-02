@@ -1,0 +1,71 @@
+# Corpus WER — GND (Ground)
+# > instrucción ATC (referencia ASR)
+# < readback esperado del piloto
+
+[gnd_001]
+> Ryanair four seven three, pushback approved, facing east.
+< Pushback approved, facing east, Ryanair four seven three.
+
+[gnd_002]
+> Ryanair four seven three, taxi to holding point Romeo one via Foxtrot, Juliet, Romeo.
+< Taxi to holding point Romeo one via Foxtrot, Juliet, Romeo, Ryanair four seven three.
+
+[gnd_003]
+> Iberia three one four two, pushback approved, facing west.
+< Pushback approved, facing west, Iberia three one four two.
+
+[gnd_004]
+> Iberia three one Foxtrot two, taxi to holding point Lima two taxiways Alpha, Tango.
+< Taxi to holding point Lima two via Alpha, Tango, Iberia three one Foxtrot two.
+
+[gnd_005]
+> Iberia three one Foxtrot two, hold short of runway three two left.
+< Hold short of runway three two left, Iberia three one Foxtrot two.
+
+[gnd_006]
+> Lufthansa three seven two, pushback approved, facing south. Caution vehicles on the apron.
+< Pushback approved, facing south, Lufthansa three seven two.
+
+[gnd_007]
+> Lufthansa three seven two, taxi to holding point Sierra two via taxiways Golf, Sierra.
+< Taxi to holding point Sierra two via Golf, Sierra, Lufthansa three seven two.
+
+[gnd_008]
+> Speedbird two Delta six, taxi to holding point Romeo two via taxiways Alpha, Bravo, Romeo.
+< Taxi to holding point Romeo two via Alpha, Bravo, Romeo, Speedbird two Delta six.
+
+[gnd_009]
+> Speedbird two four six, taxi to stand Foxtrot one five via taxiways Romeo, Alpha, Foxtrot.
+< Taxi to stand Foxtrot one five via Romeo, Alpha, Foxtrot, Speedbird two four six.
+
+[gnd_010]
+> Swiss two four one, taxi to holding point Lima one via taxiways Golf, Alpha, Lima.
+< Taxi to holding point Lima one via Golf, Alpha, Lima, Swiss two four one.
+
+[gnd_011]
+> Swiss two four one, give way to the EasyJet crossing left to right, then continue via Lima to holding point Lima one.
+< Give way to the EasyJet, then continue via Lima to Lima one, Swiss two four one.
+
+[gnd_012]
+> EasyJet eight five six zero, pushback approved, facing west.
+< Pushback approved, facing west, EasyJet eight five six zero.
+
+[gnd_013]
+> EasyJet eight Kilo six zero, taxi to holding point Sierra one via taxiways Foxtrot, Alpha, Sierra.
+< Taxi to holding point Sierra one via Foxtrot, Alpha, Sierra, EasyJet eight Kilo six zero.
+
+[gnd_014]
+> Vueling one two three, taxi to stand Hotel two via taxiways Romeo, Alpha, Hotel.
+< Taxi to stand Hotel two via Romeo, Alpha, Hotel, Vueling one two three.
+
+[gnd_015]
+> Vueling one two three, taxi to holding point Lima two via taxiways Hotel, Alpha, Lima.
+< Taxi to holding point Lima two via Hotel, Alpha, Lima, Vueling one two three.
+
+[gnd_016]
+> Ryanair four seven three, hold short of runway three two left, landing traffic on final.
+< Hold short of runway three two left, Ryanair four seven three.
+
+[gnd_017]
+> Iberia three one four two, pushback approved, facing north, tail towards stand Hotel four.
+< Pushback approved, facing north, tail to Hotel four, Iberia three one four two.
