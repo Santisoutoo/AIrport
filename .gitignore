@@ -216,3 +216,5 @@ __marimo__/
 
 # custom
 *.DS_Store
+cloudbuild.yaml
+*.yaml
