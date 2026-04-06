@@ -17,23 +17,14 @@ class Config:
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "airport_user")
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
 
-    # Redis (position tracking — read only from here)
+    # Redis
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
 
-    # Agent Cloud Run URLs
+    # Sub-agent Cloud Run URLs
     DEL_AGENT_URL: str = os.getenv("DEL_AGENT_URL", "http://del_service:8080")
     GND_AGENT_URL: str = os.getenv("GND_AGENT_URL", "http://gnd_service:8080")
     TWR_AGENT_URL: str = os.getenv("TWR_AGENT_URL", "http://twr_service:8080")
-
-    # LLM — Vertex AI via LiteLLM
-    VERTEX_PROJECT: str = os.getenv("VERTEX_PROJECT", "")
-    VERTEX_LOCATION: str = os.getenv("VERTEX_LOCATION", "global")
-    VERTEX_MODEL: str = os.getenv("VERTEX_MODEL", "gemini-3.0-flash-preview")
-
-    @property
-    def LITELLM_MODEL(self) -> str:
-        return f"vertex_ai/{self.VERTEX_MODEL}"
 
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8006"))

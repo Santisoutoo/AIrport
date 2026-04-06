@@ -5,5 +5,4 @@ pydantic
 sqlalchemy
 psycopg2-binary
 redis
-google-adk[litellm]
-litellm
+google-adk
