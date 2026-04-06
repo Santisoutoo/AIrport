@@ -1,4 +1,0 @@
-FEW_SHOT_EXAMPLES = [
-
-
-]

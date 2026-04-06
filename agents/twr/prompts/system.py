@@ -1,3 +1,0 @@
-SYSTEM_PROMPT = """
-
-"""
