@@ -1,6 +1,4 @@
 fastapi
 uvicorn[standard]
-google-adk[litellm]
-litellm
-httpx
+google-adk
 pydantic
