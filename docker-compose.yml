@@ -200,13 +200,12 @@ services:
       - DEL_AGENT_URL=${DEL_AGENT_URL:-}
       - GND_AGENT_URL=${GND_AGENT_URL:-}
       - TWR_AGENT_URL=${TWR_AGENT_URL:-}
-      - VERTEX_PROJECT=${VERTEX_PROJECT:-}
-      - VERTEX_LOCATION=${VERTEX_LOCATION:-global}
-      - VERTEX_MODEL=${VERTEX_MODEL:-gemini-3.0-flash-preview}
-      - VERTEXAI_PROJECT=${VERTEX_PROJECT:-}
-      - VERTEXAI_LOCATION=${VERTEX_LOCATION:-global}
+      - AGENT_MODEL=${GEMINI_MODEL:-gemini-3-flash-preview}
+      - GOOGLE_GENAI_USE_VERTEXAI=True
+      - GOOGLE_CLOUD_PROJECT=${VERTEX_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${VERTEX_LOCATION:-global}
     volumes:
-      - ${GCLOUD_CREDENTIALS_DIR:-}:/root/.config/gcloud:ro
+      - ${GCLOUD_CREDENTIALS_DIR}:/root/.config/gcloud:ro
     depends_on:
       postgres:
         condition: service_healthy
