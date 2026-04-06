@@ -647,10 +647,7 @@ function initToggleButton(id) {
 // ============================================
 
 function updateRunwaySelector() {
-    var container = document.getElementById('rwy-selector');
-    if (!container || !smrGraph || !smrGraph.runways) return;
-
-    container.innerHTML = '';
+    if (!smrGraph || !smrGraph.runways) return;
 
     // Collect all runway designators from the graph data
     var designators = [];
@@ -667,22 +664,25 @@ function updateRunwaySelector() {
 
     if (designators.length === 0) return;
 
-    designators.forEach(function (d, i) {
-        var btn = document.createElement('button');
-        btn.className = 'rwy-btn' + (i === 0 ? ' active' : '');
-        btn.dataset.rwy = d.hdg;
-        btn.textContent = 'RWY ' + d.label;
-        container.appendChild(btn);
+    // Group by heading (e.g., 36L + 36R share the same heading)
+    var groupMap = {};
+    designators.forEach(function (d) {
+        var key = d.hdg;
+        if (!groupMap[key]) {
+            groupMap[key] = { hdg: d.hdg, labels: [] };
+        }
+        groupMap[key].labels.push(d.label);
     });
 
-    // Set first runway as active in wind state
-    windState.activeRwy = designators[0].hdg;
+    // Sort groups by heading
+    var groups = Object.keys(groupMap).map(function (k) {
+        return groupMap[k];
+    }).sort(function (a, b) {
+        return a.hdg - b.hdg;
+    });
 
-    // Re-init the selector click handlers
-    initRwySelector();
-
-    // Update wind display with new runway
-    updateWindDisplay();
+    // Pass to wind module for paired rendering
+    setRunwayGroups(groups);
 }
 
 // ============================================

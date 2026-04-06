@@ -1,4 +1,4 @@
-// wind.js -- TWR HMI: Smart Single Wind Widget with Safety Alerts
+// wind.js -- TWR HMI: Paired Runway Wind Widget with Safety Alerts
 
 var windState = {
     direction: 0,
@@ -6,7 +6,7 @@ var windState = {
     gust: 0,
     maxSpeed: 0,
     minSpeed: 0,
-    activeRwy: 170,   // default RWY 17
+    runwayGroups: [],
     XW_LIMIT: 20,
     TW_LIMIT: 5
 };
@@ -14,21 +14,95 @@ var windState = {
 // ---- Initialization ----
 
 function initWindInstruments() {
-    renderWindDial(document.getElementById('wind-dial'), windState.activeRwy);
-    initRwySelector();
+    renderAllWindGroups();
 }
 
-function initRwySelector() {
-    var btns = document.querySelectorAll('.rwy-btn');
-    btns.forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            btns.forEach(function (b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            windState.activeRwy = parseInt(btn.dataset.rwy) || 170;
-            renderWindDial(document.getElementById('wind-dial'), windState.activeRwy);
-            updateWindDisplay();
-        });
+function setRunwayGroups(groups) {
+    windState.runwayGroups = groups;
+    renderAllWindGroups();
+}
+
+function renderAllWindGroups() {
+    var container = document.getElementById('wind-pairs-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (windState.runwayGroups.length === 0) return;
+
+    windState.runwayGroups.forEach(function (group) {
+        var card = createWindPairCard(group);
+        container.appendChild(card);
+        renderWindDial(card.querySelector('.wind-dial'), group.hdg);
     });
+
+    updateWindDisplay();
+}
+
+function createWindPairCard(group) {
+    var card = document.createElement('div');
+    card.className = 'wind-pair-card';
+    card.dataset.rwyHdg = group.hdg;
+
+    var header = document.createElement('div');
+    header.className = 'wind-pair-header';
+    header.textContent = group.labels.join(' / ');
+    card.appendChild(header);
+
+    var body = document.createElement('div');
+    body.className = 'wind-pair-body';
+
+    var dialContainer = document.createElement('div');
+    dialContainer.className = 'wind-dial-container';
+    var dial = document.createElement('div');
+    dial.className = 'wind-dial';
+    dialContainer.appendChild(dial);
+    body.appendChild(dialContainer);
+
+    var limits = document.createElement('div');
+    limits.className = 'wind-limits-container';
+    limits.appendChild(createLimitRow('XW', 'xw-' + group.hdg));
+    limits.appendChild(createLimitRow('TW', 'tw-' + group.hdg));
+    limits.appendChild(createLimitRow('HW', 'hw-' + group.hdg, true));
+    body.appendChild(limits);
+
+    card.appendChild(body);
+
+    var alert = document.createElement('div');
+    alert.className = 'rwy-change-alert hidden';
+    alert.id = 'rwy-alert-' + group.hdg;
+    card.appendChild(alert);
+
+    return card;
+}
+
+function createLimitRow(label, idPrefix, isHw) {
+    var row = document.createElement('div');
+    row.className = 'wind-limit-row';
+
+    var lbl = document.createElement('label');
+    lbl.textContent = label;
+    row.appendChild(lbl);
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'limit-bar-wrapper';
+
+    var bar = document.createElement('div');
+    bar.className = 'limit-bar' + (isHw ? ' limit-bar-hw' : '');
+    bar.id = idPrefix + '-bar';
+    var fill = document.createElement('div');
+    fill.className = 'limit-bar-fill';
+    bar.appendChild(fill);
+    wrapper.appendChild(bar);
+
+    var val = document.createElement('span');
+    val.className = 'limit-value';
+    val.id = idPrefix + '-value';
+    val.textContent = '-- kt';
+    wrapper.appendChild(val);
+
+    row.appendChild(wrapper);
+    return row;
 }
 
 // ---- SVG Wind Dial ----
@@ -36,10 +110,10 @@ function initRwySelector() {
 function renderWindDial(container, rwyHdg) {
     if (!container) return;
 
-    var size = 130;
+    var size = 100;
     var cx = size / 2;
     var cy = size / 2;
-    var r = 52;
+    var r = 40;
 
     var svg = '<svg width="' + size + '" height="' + size +
         '" viewBox="0 0 ' + size + ' ' + size + '">';
@@ -49,8 +123,8 @@ function renderWindDial(container, rwyHdg) {
         '" fill="none" stroke="#334" stroke-width="2"/>';
 
     // Runway strip
-    var rwyLen = 52;
-    var rwyW = 6;
+    var rwyLen = 40;
+    var rwyW = 5;
     var rwyRad = (rwyHdg - 90) * Math.PI / 180;
     var perpRad = rwyRad + Math.PI / 2;
 
@@ -64,7 +138,7 @@ function renderWindDial(container, rwyHdg) {
         (cx + dx - px) + ',' + (cy + dy - py) + ' ' +
         (cx - dx - px) + ',' + (cy - dy - py) + ' ' +
         (cx - dx + px) + ',' + (cy - dy + py) +
-        '" fill="rgba(0,229,255,0.2)" stroke="rgba(0,229,255,0.5)" stroke-width="1" class="smr-rwy-shape"/>';
+        '" fill="rgba(0,229,255,0.2)" stroke="rgba(0,229,255,0.5)" stroke-width="1"/>';
 
     // Dashed centerline
     for (var d = 0; d < 4; d++) {
@@ -82,7 +156,7 @@ function renderWindDial(container, rwyHdg) {
     for (var deg = 0; deg < 360; deg += 10) {
         var rad = (deg - 90) * Math.PI / 180;
         var isMajor = deg % 30 === 0;
-        var innerR = isMajor ? r - 10 : r - 5;
+        var innerR = isMajor ? r - 8 : r - 4;
 
         var x1 = cx + innerR * Math.cos(rad);
         var y1 = cy + innerR * Math.sin(rad);
@@ -93,16 +167,6 @@ function renderWindDial(container, rwyHdg) {
             '" x2="' + x2 + '" y2="' + y2 +
             '" stroke="' + (isMajor ? '#889' : '#445') +
             '" stroke-width="' + (isMajor ? 1.5 : 0.8) + '"/>';
-
-        if (isMajor) {
-            var labelR = r - 18;
-            var lx = cx + labelR * Math.cos(rad);
-            var ly = cy + labelR * Math.sin(rad);
-            svg += '<text x="' + lx + '" y="' + ly +
-                '" text-anchor="middle" dominant-baseline="central" ' +
-                'fill="#778" font-size="8" font-family="monospace">' +
-                String(deg).padStart(3, '0') + '</text>';
-        }
     }
 
     // Cardinal labels
@@ -112,15 +176,15 @@ function renderWindDial(container, rwyHdg) {
     ];
     cardinals.forEach(function (c) {
         var cRad = (c.deg - 90) * Math.PI / 180;
-        var lx = cx + (r + 10) * Math.cos(cRad);
-        var ly = cy + (r + 10) * Math.sin(cRad);
+        var lx = cx + (r + 8) * Math.cos(cRad);
+        var ly = cy + (r + 8) * Math.sin(cRad);
         svg += '<text x="' + lx + '" y="' + ly +
             '" text-anchor="middle" dominant-baseline="central" ' +
-            'fill="#99a" font-size="11" font-weight="700" font-family="monospace">' +
+            'fill="#99a" font-size="9" font-weight="700" font-family="monospace">' +
             c.label + '</text>';
     });
 
-    // Gust arc (shows variability range)
+    // Gust arc
     svg += '<path class="wind-gust-arc" d="" fill="rgba(255,145,0,0.15)" stroke="rgba(255,145,0,0.5)" stroke-width="1"/>';
 
     // Wind direction arrow
@@ -128,16 +192,14 @@ function renderWindDial(container, rwyHdg) {
         '" x2="' + cx + '" y2="' + (cy - r + 6) +
         '" stroke="#00e676" stroke-width="2.5" stroke-linecap="round"/>';
     svg += '<circle class="wind-arrow-tip" cx="' + cx + '" cy="' + (cy - r + 6) +
-        '" r="4" fill="#00e676"/>';
+        '" r="3.5" fill="#00e676"/>';
 
     // Center speed display
-    svg += '<rect x="' + (cx - 26) + '" y="' + (cy - 12) +
-        '" width="52" height="24" rx="3" fill="#0a0e14" stroke="#334" stroke-width="1"/>';
+    svg += '<rect x="' + (cx - 18) + '" y="' + (cy - 9) +
+        '" width="36" height="18" rx="3" fill="#0a0e14" stroke="#334" stroke-width="1"/>';
     svg += '<text class="wind-speed-svg" x="' + cx + '" y="' + (cy + 2) +
         '" text-anchor="middle" dominant-baseline="central" ' +
-        'fill="#00e676" font-size="18" font-weight="700" font-family="monospace">--</text>';
-    svg += '<text x="' + cx + '" y="' + (cy + 18) +
-        '" text-anchor="middle" fill="#556" font-size="8" font-family="monospace">kt</text>';
+        'fill="#00e676" font-size="14" font-weight="700" font-family="monospace">--</text>';
 
     svg += '</svg>';
     container.innerHTML = svg;
@@ -159,13 +221,22 @@ function updateWindInstruments(metar) {
 }
 
 function updateWindDisplay() {
-    var dialEl = document.getElementById('wind-dial');
-    if (!dialEl) return;
+    var container = document.getElementById('wind-pairs-container');
+    if (!container) return;
 
-    var svgEl = dialEl.querySelector('svg');
+    var cards = container.querySelectorAll('.wind-pair-card');
+    cards.forEach(function (card) {
+        var rwyHdg = parseInt(card.dataset.rwyHdg);
+        updateCardWind(card, rwyHdg);
+    });
+}
+
+function updateCardWind(card, rwyHdg) {
+    var svgEl = card.querySelector('svg');
     if (!svgEl) return;
 
-    var cx = 65, cy = 65, r = 52;
+    var cx = 50, cy = 50, r = 40;
+
     var dir = windState.direction;
     var speed = windState.speed;
     var gust = windState.gust;
@@ -177,8 +248,8 @@ function updateWindDisplay() {
         var rad = (dir - 90) * Math.PI / 180;
         var x2 = cx + (r - 6) * Math.cos(rad);
         var y2 = cy + (r - 6) * Math.sin(rad);
-        var x1 = cx - 18 * Math.cos(rad);
-        var y1 = cy - 18 * Math.sin(rad);
+        var x1 = cx - 14 * Math.cos(rad);
+        var y1 = cy - 14 * Math.sin(rad);
 
         arrow.setAttribute('x1', x1);
         arrow.setAttribute('y1', y1);
@@ -194,7 +265,7 @@ function updateWindDisplay() {
         tip.setAttribute('fill', color);
     }
 
-    // Gust arc: draw an arc showing gust spread
+    // Gust arc
     var gustArc = svgEl.querySelector('.wind-gust-arc');
     if (gustArc && gust > 0) {
         var spread = Math.min(30, (gust - speed) * 3);
@@ -223,8 +294,7 @@ function updateWindDisplay() {
     var speedSvg = svgEl.querySelector('.wind-speed-svg');
     if (speedSvg) speedSvg.textContent = speed || '--';
 
-    // Wind components for active runway
-    var rwyHdg = windState.activeRwy;
+    // Wind components for this runway heading
     var angleDiff = (dir - rwyHdg) * Math.PI / 180;
     var headwind = Math.round(speed * Math.cos(angleDiff));
     var crosswind = Math.round(Math.abs(speed * Math.sin(angleDiff)));
@@ -232,17 +302,17 @@ function updateWindDisplay() {
     var hwDisplay = headwind >= 0 ? headwind : 0;
 
     // Update XW bar
-    updateLimitBar('xw', crosswind, windState.XW_LIMIT);
-    var xwVal = document.getElementById('xw-value');
+    updateLimitBar('xw-' + rwyHdg, crosswind, windState.XW_LIMIT);
+    var xwVal = document.getElementById('xw-' + rwyHdg + '-value');
     if (xwVal) xwVal.textContent = crosswind + ' kt';
 
     // Update TW bar
-    updateLimitBar('tw', tailwind, windState.TW_LIMIT);
-    var twVal = document.getElementById('tw-value');
+    updateLimitBar('tw-' + rwyHdg, tailwind, windState.TW_LIMIT);
+    var twVal = document.getElementById('tw-' + rwyHdg + '-value');
     if (twVal) twVal.textContent = tailwind + ' kt';
 
-    // Update HW bar (no strict limit, just display)
-    var hwBar = document.getElementById('hw-bar');
+    // Update HW bar
+    var hwBar = document.getElementById('hw-' + rwyHdg + '-bar');
     if (hwBar) {
         var hwFill = hwBar.querySelector('.limit-bar-fill');
         if (hwFill) {
@@ -250,18 +320,18 @@ function updateWindDisplay() {
             hwFill.style.width = hwPct + '%';
         }
     }
-    var hwVal = document.getElementById('hw-value');
+    var hwVal = document.getElementById('hw-' + rwyHdg + '-value');
     if (hwVal) hwVal.textContent = hwDisplay + ' kt';
 
     // Runway change alert
-    var alertEl = document.getElementById('rwy-change-alert');
+    var alertEl = document.getElementById('rwy-alert-' + rwyHdg);
     if (alertEl) {
         if (tailwind > windState.TW_LIMIT) {
-            var suggestedRwy = findOppositeRunway(rwyHdg);
-            alertEl.textContent = 'TAILWIND ' + tailwind + 'kt > LIMIT ' + windState.TW_LIMIT + 'kt | SUGGEST: CHANGE TO RWY ' + suggestedRwy;
+            var reciprocal = findReciprocalGroup(rwyHdg);
+            alertEl.textContent = 'TW ' + tailwind + 'kt > ' + windState.TW_LIMIT + 'kt | SUGGEST: ' + reciprocal;
             alertEl.classList.remove('hidden');
         } else if (crosswind > windState.XW_LIMIT) {
-            alertEl.textContent = 'CROSSWIND ' + crosswind + 'kt > LIMIT ' + windState.XW_LIMIT + 'kt';
+            alertEl.textContent = 'XW ' + crosswind + 'kt > ' + windState.XW_LIMIT + 'kt';
             alertEl.classList.remove('hidden');
         } else {
             alertEl.classList.add('hidden');
@@ -287,16 +357,13 @@ function updateLimitBar(prefix, value, limit) {
     }
 }
 
-function findOppositeRunway(currentHdg) {
-    // Find the opposite runway from the selector buttons
-    var btns = document.querySelectorAll('.rwy-btn');
-    for (var i = 0; i < btns.length; i++) {
-        var hdg = parseInt(btns[i].dataset.rwy);
-        if (hdg !== currentHdg) {
-            return btns[i].textContent.replace('RWY ', '');
+function findReciprocalGroup(hdg) {
+    var recipHdg = (hdg + 180) % 360;
+    if (recipHdg === 0) recipHdg = 360;
+    for (var i = 0; i < windState.runwayGroups.length; i++) {
+        if (windState.runwayGroups[i].hdg === recipHdg) {
+            return windState.runwayGroups[i].labels.join('/');
         }
     }
-    // Fallback: calculate reciprocal
-    var opp = (currentHdg + 180) % 360;
-    return String(Math.round(opp / 10)).padStart(2, '0');
+    return 'RWY ' + String(Math.round(recipHdg / 10)).padStart(2, '0');
 }

@@ -344,11 +344,11 @@ html, body {
     border: 1px solid var(--border-color);
     border-radius: 3px;
     padding: 4px 6px;
-    margin-top: auto;
     white-space: pre-wrap;
     word-break: break-word;
     line-height: 1.4;
-    height: 42px;
+    min-height: 42px;
+    flex-shrink: 0;
     overflow-y: auto;
 }
 
@@ -397,6 +397,8 @@ html, body {
     color: var(--text-secondary);
     overflow-y: auto;
     line-height: 1.3;
+    flex: 1;
+    min-height: 0;
 }
 
 .taf-group {
@@ -848,6 +850,62 @@ html, body {
     font-weight: 700;
     color: var(--text-primary);
     min-width: 55px;
+}
+
+/* Paired runway wind layout */
+.wind-pairs-container {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+}
+
+.wind-pair-card {
+    flex: 0 0 auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+.wind-pair-header {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--hmi-green);
+    text-align: center;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.wind-pair-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.wind-pair-card .wind-limits-container {
+    width: 100%;
+    gap: 3px;
+}
+
+.wind-pair-card .limit-bar {
+    max-width: none;
+}
+
+.wind-pair-card .limit-value {
+    font-size: 11px;
+    min-width: 40px;
+}
+
+.wind-pair-card .wind-limit-row label {
+    font-size: 8px;
+}
+
+.wind-pair-card .rwy-change-alert {
+    font-size: 9px;
+    padding: 3px 6px;
+    margin-top: 4px;
 }
 
 /* Runway change alert */
@@ -1356,7 +1414,7 @@ html, body {
     background: var(--bg-secondary);
     display: flex;
     flex-direction: column;
-    height: 260px;
+    height: 260px; /* initial fallback; overridden by resize.js */
     overflow: hidden;
     position: relative;
 }
@@ -2039,4 +2097,39 @@ html, body {
     border-color: #4a3a1a !important;
     color: var(--hmi-orange) !important;
     background: #1a1200 !important;
+}
+
+/* ============================================
+   Resize Handles
+   ============================================ */
+
+.resize-handle {
+    background: var(--border-color);
+    flex-shrink: 0;
+    transition: background 0.15s;
+    z-index: 10;
+    position: relative;
+}
+
+.resize-handle::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+}
+
+.resize-handle:hover,
+.resize-handle.resize-handle--dragging {
+    background: #3a4a60;
+}
+
+.resize-handle--vertical {
+    width: 5px;
+    cursor: col-resize;
+    align-self: stretch;
+}
+
+.resize-handle--horizontal {
+    height: 5px;
+    cursor: row-resize;
+    width: 100%;
 }
