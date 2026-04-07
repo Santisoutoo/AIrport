@@ -210,13 +210,17 @@ html, body {
 }
 
 .dash-pressure-item {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
     justify-content: center;
-    gap: 4px;
+    align-items: center;
+    gap: 1px 4px;
 }
 
 .dash-pressure-item label {
+    grid-column: 1 / -1;
+    text-align: center;
     font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
@@ -267,7 +271,6 @@ html, body {
     font-family: var(--font-mono);
     border: 1px solid var(--border-color);
     align-self: center;
-    margin-top: auto;
 }
 
 /* --- METAR Icon Block --- */
@@ -1141,9 +1144,11 @@ html, body {
 /* SMR aircraft labels */
 .smr-aircraft {
     font-family: var(--font-mono);
-    font-size: 2px;
     font-weight: 700;
-    fill: var(--hmi-cyan);
+    fill: #ffffff;
+    stroke: #050e1c;
+    stroke-width: 0.4px;
+    paint-order: stroke fill;
 }
 
 .smr-aircraft-dot {

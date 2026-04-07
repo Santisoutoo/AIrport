@@ -278,30 +278,39 @@ function renderSMRFromData() {
         var p2 = geoToSVG(n2.lat, n2.lon);
 
         var isRunway = edge.category === 'runway';
-        var color = isRunway ? '#1a3a1a' : '#1a2a3a';
-        var width = isRunway ? '1.5' : '1.2';
+
+        var color = isRunway ? '#1a3a1a' : '#243a55';
+        var width = isRunway ? '1.5' : '0.8';
 
         svg += '<line x1="' + p1.x + '" y1="' + p1.y +
             '" x2="' + p2.x + '" y2="' + p2.y +
             '" stroke="' + color + '" stroke-width="' + width + '" stroke-linecap="round"/>';
 
-        // Collect label position per taxiway category
+        // Accumulate all edge midpoints per taxiway for average position
         if (!isRunway && edge.category) {
             var twyName = edge.category.replace('taxiway_', '');
             if (!taxiwayLabels[twyName]) {
-                taxiwayLabels[twyName] = {
-                    x: (p1.x + p2.x) / 2,
-                    y: (p1.y + p2.y) / 2
-                };
+                taxiwayLabels[twyName] = { sx: 0, sy: 0, n: 0 };
             }
+            taxiwayLabels[twyName].sx += (p1.x + p2.x) / 2;
+            taxiwayLabels[twyName].sy += (p1.y + p2.y) / 2;
+            taxiwayLabels[twyName].n++;
         }
     });
 
-    // --- Taxiway labels ---
+    // --- Taxiway labels: circle marker centered on taxiway ---
     Object.keys(taxiwayLabels).forEach(function (name) {
         var pos = taxiwayLabels[name];
-        svg += '<text x="' + (pos.x - 2) + '" y="' + pos.y +
-            '" text-anchor="middle" dominant-baseline="central" fill="#2a5a8a" data-base-fs="2" font-size="2" font-family="monospace" font-weight="700">' +
+        var mx = pos.sx / pos.n;
+        var my = pos.sy / pos.n;
+        // Filled circle background (scales like stand markers)
+        svg += '<circle class="smr-twy-label-bg" cx="' + mx + '" cy="' + my +
+            '" r="1.8" data-base-r="1.8"' +
+            ' fill="#0c1e38" stroke="#2a5a80" stroke-width="0.25" opacity="0.93"/>';
+        svg += '<text x="' + mx + '" y="' + my +
+            '" text-anchor="middle" dominant-baseline="central"' +
+            ' fill="#7fd4f8" data-base-fs="2.2" font-size="2.2"' +
+            ' font-family="monospace" font-weight="700">' +
             name + '</text>';
     });
 
@@ -311,14 +320,18 @@ function renderSMRFromData() {
 
         var isMil = stand.name.indexOf('Mil') !== -1;
         var isGA = stand.size_cats && (stand.size_cats.indexOf('helos') !== -1 || stand.size_cats.indexOf('props') !== -1);
-        var dotColor = isMil ? '#4a5568' : isGA ? '#2a5a8a' : '#00e5ff';
+        var dotColor = isMil ? '#6a7a8a' : isGA ? '#3a80c0' : '#00e5ff';
 
         svg += '<rect class="smr-stand" data-cx="' + p.x + '" data-cy="' + p.y +
             '" x="' + (p.x - 0.6) + '" y="' + (p.y - 0.6) +
-            '" width="1.2" height="1.2" data-base-size="1.2" fill="' + dotColor + '" opacity="0.5" rx="0.2"/>';
+            '" width="1.2" height="1.2" data-base-size="1.2" fill="' + dotColor +
+            '" opacity="0.9" rx="0.2"/>';
 
-        svg += '<text x="' + p.x + '" y="' + (p.y + 1.8) +
-            '" text-anchor="middle" fill="' + dotColor + '" data-base-fs="2" data-base-dy="2.2" font-size="2" font-family="monospace" opacity="0.8">' +
+        svg += '<text class="smr-stand-label" x="' + p.x + '" y="' + (p.y + 2.2) +
+            '" data-cy="' + p.y + '" data-base-dy="1.2"' +
+            ' text-anchor="middle" fill="' + dotColor +
+            '" stroke="#040c16" stroke-width="2" data-base-sw="2" paint-order="stroke"' +
+            ' data-base-fs="1.3" font-size="1.3" font-family="monospace" font-weight="bold">' +
             stand.name + '</text>';
     });
 
@@ -326,7 +339,7 @@ function renderSMRFromData() {
     Object.keys(smrGraph.nodes).forEach(function (id) {
         var n = smrGraph.nodes[id];
         var p = geoToSVG(n.lat, n.lon);
-        svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="0.3" data-base-r="0.3" fill="#1a2a3a" opacity="0.4"/>';
+        svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="0.3" data-base-r="0.3" fill="#1a2a3a" opacity="0.2"/>';
     });
 
     // Aircraft overlay group (on top)
@@ -350,16 +363,24 @@ function rescaleSMRElements() {
     var texts = svgEl.querySelectorAll('text[data-base-fs]');
     for (var i = 0; i < texts.length; i++) {
         var base = parseFloat(texts[i].getAttribute('data-base-fs'));
-        texts[i].setAttribute('font-size', base * s);
-        // Adjust stand label Y offset
-        var baseDy = texts[i].getAttribute('data-base-dy');
-        if (baseDy) {
-            var cx = parseFloat(texts[i].getAttribute('x'));
-            texts[i].setAttribute('y', cx ? parseFloat(texts[i].getAttribute('y')) : 0);
-        }
+        var fs = base * s;
+        texts[i].setAttribute('font-size', fs);
     }
 
-    // Rescale stand rects
+    // Rescale and reposition stand labels
+    var standLabels = svgEl.querySelectorAll('.smr-stand-label');
+    var showLabels = s < 0.28;
+    for (var ii = 0; ii < standLabels.length; ii++) {
+        var lcy = parseFloat(standLabels[ii].getAttribute('data-cy'));
+        var baseDy = parseFloat(standLabels[ii].getAttribute('data-base-dy'));
+        var baseSw = parseFloat(standLabels[ii].getAttribute('data-base-sw'));
+        // Keep label just below the stand square at any zoom level
+        standLabels[ii].setAttribute('y', lcy + baseDy * s + 0.6 * s);
+        standLabels[ii].setAttribute('stroke-width', baseSw * s);
+        standLabels[ii].style.display = showLabels ? '' : 'none';
+    }
+
+    // Rescale stand rects (commercial)
     var rects = svgEl.querySelectorAll('rect.smr-stand');
     for (var j = 0; j < rects.length; j++) {
         var cx = parseFloat(rects[j].getAttribute('data-cx'));
@@ -370,9 +391,10 @@ function rescaleSMRElements() {
         rects[j].setAttribute('y', cy - sz / 2);
         rects[j].setAttribute('width', sz);
         rects[j].setAttribute('height', sz);
-        rects[j].setAttribute('rx', 0.2 * s);
+        rects[j].setAttribute('rx', 0.3 * s);
     }
 
+    // Rescale stand diamonds (military)
     // Rescale node circles
     var circles = svgEl.querySelectorAll('circle[data-base-r]');
     for (var k = 0; k < circles.length; k++) {
@@ -380,15 +402,8 @@ function rescaleSMRElements() {
         circles[k].setAttribute('r', baseR * s);
     }
 
-    // Rescale aircraft dots and labels
-    var acDots = svgEl.querySelectorAll('.smr-aircraft-dot');
-    for (var m = 0; m < acDots.length; m++) {
-        acDots[m].setAttribute('r', 0.6 * s);
-    }
-    var acLabels = svgEl.querySelectorAll('.smr-aircraft');
-    for (var n = 0; n < acLabels.length; n++) {
-        acLabels[n].setAttribute('font-size', 1 * s);
-    }
+    // Aircraft dots: now handled by the circle[data-base-r] loop above
+    // Aircraft labels: rescale via text[data-base-fs] loop above
 }
 
 // --- Pan & Zoom interaction ---
@@ -561,10 +576,12 @@ function updateSMRAircraft(plans) {
         }
 
         group.innerHTML +=
-            '<circle class="' + dotClass + '" cx="' + pos.x + '" cy="' + pos.y + '" r="0.6"/>' +
-            '<text class="smr-aircraft" x="' + (pos.x + 2) + '" y="' + (pos.y + 0.5) +
-            '" dominant-baseline="central">' + escapeHtml(reg.slice(-4)) + '</text>';
+            '<circle class="' + dotClass + '" cx="' + pos.x + '" cy="' + pos.y + '" r="1.0" data-base-r="1.0"/>' +
+            '<text class="smr-aircraft" x="' + (pos.x + 1.4) + '" y="' + (pos.y + 0.5) +
+            '" data-base-fs="1.5" font-size="1.5" dominant-baseline="central">' + escapeHtml(reg.slice(-4)) + '</text>';
     });
+    // Rescale immediately to match current zoom level
+    rescaleSMRElements();
 }
 
 // ---- RIMCAS (Runway Incursion Alert) ----
