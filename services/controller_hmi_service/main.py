@@ -50,22 +50,22 @@ app.include_router(router, prefix=PREFIX, tags=["HMI"])
 app.include_router(plugin_router)
 
 
-@app.get("/config.js", include_in_schema=False)
-async def frontend_config():
-    asr_url         = os.getenv("ASR_URL", "")
-    orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8007")
-    js = (
-        f"window.HMI_CONFIG = {{\n"
-        f'  ASR_URL: "{asr_url}",\n'
-        f'  ORCHESTRATOR_URL: "{orchestrator_url}"\n'
-        f"}};\n"
-    )
-    return Response(content=js, media_type="application/javascript")
-
-
 @app.get("/setup", include_in_schema=False)
 async def setup_page():
     return FileResponse("static/setup.html")
+
+
+# Generate config.js into the static dir so StaticFiles serves it.
+_static_dir = Path(__file__).resolve().parent / "static"
+_asr_url = os.getenv("ASR_URL", "")
+_orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8007")
+(_static_dir / "config.js").write_text(
+    f"window.HMI_CONFIG = {{\n"
+    f'  ASR_URL: "{_asr_url}",\n'
+    f'  ORCHESTRATOR_URL: "{_orchestrator_url}"\n'
+    f"}};\n",
+    encoding="utf-8",
+)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 

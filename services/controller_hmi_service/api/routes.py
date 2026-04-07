@@ -247,7 +247,7 @@ async def proxy_asr_transcribe(request: Request):
 
     body = await request.body()
     content_type = request.headers.get("content-type", "")
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=180.0) as client:
         try:
             resp = await client.post(
                 f"{asr_url}/transcribe",
@@ -259,7 +259,7 @@ async def proxy_asr_transcribe(request: Request):
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
         except httpx.RequestError as e:
-            logger.error("ASR proxy error: %s", e)
+            logger.error("ASR proxy error: %s %r", type(e).__name__, e)
             raise HTTPException(status_code=502, detail="ASR service unreachable")
 
 
