@@ -267,7 +267,8 @@ function renderSMRFromData() {
     });
 
     // --- Taxiway edges ---
-    var taxiwayLabels = {};
+    // One label per unique taxiway name, positioned at the average of all matching elements
+    var labelByName = {};
 
     smrGraph.edges.forEach(function (edge) {
         var n1 = smrGraph.nodes[edge.from];
@@ -286,30 +287,40 @@ function renderSMRFromData() {
             '" x2="' + p2.x + '" y2="' + p2.y +
             '" stroke="' + color + '" stroke-width="' + width + '" stroke-linecap="round"/>';
 
-        // Accumulate all edge midpoints per taxiway for average position
-        if (!isRunway && edge.category) {
-            var twyName = edge.category.replace('taxiway_', '');
-            if (!taxiwayLabels[twyName]) {
-                taxiwayLabels[twyName] = { sx: 0, sy: 0, n: 0 };
-            }
-            taxiwayLabels[twyName].sx += (p1.x + p2.x) / 2;
-            taxiwayLabels[twyName].sy += (p1.y + p2.y) / 2;
-            taxiwayLabels[twyName].n++;
+        if (!isRunway && edge.name && edge.name !== 'Unnamed edge') {
+            if (!labelByName[edge.name]) labelByName[edge.name] = { sx: 0, sy: 0, n: 0 };
+            labelByName[edge.name].sx += (p1.x + p2.x) / 2;
+            labelByName[edge.name].sy += (p1.y + p2.y) / 2;
+            labelByName[edge.name].n++;
         }
     });
 
-    // --- Taxiway labels: circle marker centered on taxiway ---
-    Object.keys(taxiwayLabels).forEach(function (name) {
-        var pos = taxiwayLabels[name];
-        var mx = pos.sx / pos.n;
-        var my = pos.sy / pos.n;
-        // Filled circle background (scales like stand markers)
+    // Also accumulate clean named taxi nodes (skip internal routing names)
+    Object.keys(smrGraph.nodes).forEach(function (id) {
+        var n = smrGraph.nodes[id];
+        if (!n.name) return;
+        if (/^Node\s+\d+$/.test(n.name)) return;
+        if (n.name.indexOf('_') !== -1) return;
+        if (n.name.length > 4) return;
+        var pn = geoToSVG(n.lat, n.lon);
+        if (!labelByName[n.name]) labelByName[n.name] = { sx: 0, sy: 0, n: 0 };
+        labelByName[n.name].sx += pn.x;
+        labelByName[n.name].sy += pn.y;
+        labelByName[n.name].n++;
+    });
+
+    // --- Taxiway labels: one per name at the average position ---
+    Object.keys(labelByName).forEach(function (name) {
+        var d = labelByName[name];
+        var mx = d.sx / d.n;
+        var my = d.sy / d.n;
+        // Smaller, less obtrusive marker
         svg += '<circle class="smr-twy-label-bg" cx="' + mx + '" cy="' + my +
-            '" r="1.8" data-base-r="1.8"' +
-            ' fill="#0c1e38" stroke="#2a5a80" stroke-width="0.25" opacity="0.93"/>';
+            '" r="1.1" data-base-r="1.1"' +
+            ' fill="#1a1108" stroke="#5a3a10" stroke-width="0.2" opacity="0.9"/>';
         svg += '<text x="' + mx + '" y="' + my +
             '" text-anchor="middle" dominant-baseline="central"' +
-            ' fill="#7fd4f8" data-base-fs="2.2" font-size="2.2"' +
+            ' fill="#ffc94a" data-base-fs="1.4" font-size="1.4"' +
             ' font-family="monospace" font-weight="700">' +
             name + '</text>';
     });
