@@ -204,8 +204,9 @@ services:
       - GOOGLE_GENAI_USE_VERTEXAI=True
       - GOOGLE_CLOUD_PROJECT=${VERTEX_PROJECT}
       - GOOGLE_CLOUD_LOCATION=${VERTEX_LOCATION:-global}
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa-key.json
     volumes:
-      - ${GCLOUD_CREDENTIALS_DIR}:/root/.config/gcloud:ro
+      - ${GCP_SA_KEY_PATH}:/secrets/sa-key.json:ro
     depends_on:
       postgres:
         condition: service_healthy
