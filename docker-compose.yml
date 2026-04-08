@@ -159,7 +159,7 @@ services:
       - DB_NAME=${POSTGRES_DB}
       - DB_USER=${POSTGRES_USER}
       - DB_PASS=${POSTGRES_PASSWORD}
-      - ASR_URL=${ASR_URL:-https://asr-service-300924135267.europe-west1.run.app/api/v1/asr}
+      - ASR_URL=${ASR_URL:-http://asr_service:8000/api/v1/asr}
       - ORCHESTRATOR_URL=${ORCHESTRATOR_URL:-http://localhost:8007}
     volumes:
       - ./services/controller_hmi_service/static:/app/static
@@ -184,8 +184,8 @@ services:
 
   orchestrator_service:
     build:
-      context: ./services/orchestrator_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/orchestrator_service/Dockerfile
     container_name: airport_orchestrator
     restart: unless-stopped
     ports:
@@ -204,9 +204,7 @@ services:
       - GOOGLE_GENAI_USE_VERTEXAI=True
       - GOOGLE_CLOUD_PROJECT=${VERTEX_PROJECT}
       - GOOGLE_CLOUD_LOCATION=${VERTEX_LOCATION:-global}
-      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa-key.json
-    volumes:
-      - ${GCP_SA_KEY_PATH}:/secrets/sa-key.json:ro
+      - GOOGLE_APPLICATION_CREDENTIALS_JSON=${GOOGLE_APPLICATION_CREDENTIALS_JSON}
     depends_on:
       postgres:
         condition: service_healthy
