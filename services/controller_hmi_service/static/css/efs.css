@@ -35,6 +35,9 @@
     --phase-taxi: #ff9100;
     --phase-lineup: #ffab40;
     --phase-cleared: #00e676;
+    --phase-approach: #29b6f6;
+    --phase-landed: #0288d1;
+    --phase-vacating: #4fc3f7;
 
     /* Flight category colors */
     --cat-vfr: #00e676;
@@ -483,6 +486,11 @@ html, body {
     border-bottom-color: var(--hmi-green);
 }
 
+.arrivals-header {
+    background: linear-gradient(135deg, #002233, #002d44);
+    border-bottom-color: var(--phase-approach);
+}
+
 .col-title {
     font-size: 12px;
     font-weight: 700;
@@ -573,6 +581,15 @@ html, body {
 .flight-strip.phase-cleared {
     border-left-color: var(--phase-cleared);
     box-shadow: 0 0 8px rgba(0, 230, 118, 0.25);
+}
+.flight-strip.phase-approach  { border-left-color: var(--phase-approach); }
+.flight-strip.phase-landed {
+    border-left-color: var(--phase-landed);
+    box-shadow: 0 0 6px rgba(2, 136, 209, 0.3);
+}
+.flight-strip.phase-vacating {
+    border-left-color: var(--phase-vacating);
+    box-shadow: 0 0 8px rgba(79, 195, 247, 0.25);
 }
 
 /* Strip top row: flight info */
@@ -705,6 +722,23 @@ html, body {
 .strip-action-btn.btn-cleared.active-phase {
     background: var(--hmi-green);
     border-color: var(--hmi-green);
+}
+
+.strip-action-btn.btn-approach.active-phase {
+    background: var(--phase-approach);
+    border-color: var(--phase-approach);
+    color: #000;
+}
+
+.strip-action-btn.btn-landed.active-phase {
+    background: var(--phase-landed);
+    border-color: var(--phase-landed);
+}
+
+.strip-action-btn.btn-vacating.active-phase {
+    background: var(--phase-vacating);
+    border-color: var(--phase-vacating);
+    color: #000;
 }
 
 /* Empty column state */
