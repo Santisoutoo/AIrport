@@ -43,9 +43,23 @@ class RunResponse(BaseModel):
 
 @app.post("/agents/delivery/run", response_model=RunResponse, tags=["delivery"])
 async def run(req: RunRequest) -> RunResponse:
+    logger.info(
+        "[DEL] ▶ request | session=%s | msg=%r | flight_plan=%s | atis=%s",
+        req.session_id, req.message[:80], bool(req.flight_plan), bool(req.atis),
+    )
+    t0 = asyncio.get_event_loop().time()
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        _executor, run_agent, req.session_id, req.message, req.flight_plan, req.atis
+    try:
+        result = await loop.run_in_executor(
+            _executor, run_agent, req.session_id, req.message, req.flight_plan, req.atis
+        )
+    except Exception:
+        logger.exception("[DEL] ✗ executor error | session=%s", req.session_id)
+        raise
+    elapsed_ms = int((asyncio.get_event_loop().time() - t0) * 1000)
+    logger.info(
+        "[DEL] ■ done | session=%s | reply=%r | clearance_data=%s | %d ms",
+        req.session_id, result["reply"][:80], bool(result.get("clearance_data")), elapsed_ms,
     )
     return RunResponse(
         session_id=req.session_id,
