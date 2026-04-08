@@ -17,6 +17,7 @@ const ROBOT_SVG = `<svg viewBox="0 0 18 18" width="13" height="13" fill="none" s
   <path d="M3 9.5H1.5M16.5 9.5H15"/>
 </svg>`;
 
+
 const Ptt = (() => {
 
     let _pttKey = 'Space';
@@ -81,7 +82,7 @@ const Ptt = (() => {
         _recording = true;
         _chunks = [];
         _setState('recording');
-        _showTyping();
+        _showTyping('ctrl');
 
         const constraints = {
             audio: (_deviceId && _deviceId !== 'default')
@@ -168,7 +169,7 @@ const Ptt = (() => {
                 _setStatusText('Esperando respuesta ATC...');
 
                 // Dispatch to local orchestrator → agent reply
-                _showTyping();
+                _showTyping('agent');
                 try {
                     const orchRes = await fetch(`${ORCHESTRATOR_PROXY}/dispatch`, {
                         method: 'POST',
@@ -179,7 +180,8 @@ const Ptt = (() => {
                         const orch = await orchRes.json();
                         const reply = (orch.reply || '').trim();
                         const callsign = orch.aircraft_registration || orch.agent || 'ATC';
-                        if (reply) _pushMessage({ type: 'agent', callsign, text: reply });
+                        const dep = orch.agent || null;
+                        if (reply) _pushMessage({ type: 'agent', callsign, dep, text: reply });
                     } else {
                         let detail = `Orchestrator error ${orchRes.status}`;
                         try { detail = (await orchRes.json()).detail || detail; } catch (_) { }
@@ -356,7 +358,8 @@ const Ptt = (() => {
                 `</div>`;
         }
         const cs = _esc(m.callsign || '???');
-        return `<div class="chat-msg chat-agent">` +
+        const depCls = m.dep ? ` chat-dep-${m.dep.toLowerCase()}` : '';
+        return `<div class="chat-msg chat-agent${depCls}">` +
             `<div class="chat-agent-header">${ROBOT_SVG}<span class="chat-callsign">${cs}</span></div>` +
             `<div class="chat-bubble chat-bubble-agent">${safe}</div>` +
             `<div class="chat-meta"><span class="chat-time">${m.time}</span></div>` +
@@ -367,13 +370,15 @@ const Ptt = (() => {
     // Typing indicator
     // ------------------------------------------------------------------
 
-    function _showTyping() {
+    function _showTyping(side) {
         const log = document.getElementById('chat-log');
         if (!log || document.getElementById('chat-typing')) return;
         const div = document.createElement('div');
         div.id = 'chat-typing';
-        div.className = 'chat-msg chat-ctrl';
-        div.innerHTML = `<div class="chat-bubble chat-bubble-ctrl chat-typing-bubble">` +
+        const isAgent = side === 'agent';
+        div.className = 'chat-msg ' + (isAgent ? 'chat-agent' : 'chat-ctrl');
+        const bubbleClass = isAgent ? 'chat-bubble-agent' : 'chat-bubble-ctrl';
+        div.innerHTML = `<div class="chat-bubble ${bubbleClass} chat-typing-bubble">` +
             `<span class="typing-dot"></span>` +
             `<span class="typing-dot"></span>` +
             `<span class="typing-dot"></span>` +

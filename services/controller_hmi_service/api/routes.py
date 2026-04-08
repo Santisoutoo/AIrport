@@ -199,6 +199,9 @@ async def update_strip_state(aircraft_reg: str, data: dict):
         "TAXI": "TAXI",
         "LINEUP": "RUNWAY",
         "CLEARED": "RUNWAY",
+        "APPROACH": "ARRIVALS",
+        "LANDED":   "ARRIVALS",
+        "VACATING": "ARRIVALS",
     }
     column = column_map.get(phase, "PRE_TAXI")
     strip_states[aircraft_reg] = {"phase": phase, "column": column}
