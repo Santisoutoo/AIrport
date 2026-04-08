@@ -42,9 +42,23 @@ class RunResponse(BaseModel):
 
 @app.post("/agents/tower/run", response_model=RunResponse, tags=["tower"])
 async def run(req: RunRequest) -> RunResponse:
+    logger.info(
+        "[TWR] ▶ request | session=%s | msg=%r | clearance_data=%s",
+        req.session_id, req.message[:80], bool(req.clearance_data),
+    )
+    t0 = asyncio.get_event_loop().time()
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        _executor, run_agent, req.session_id, req.message, req.clearance_data
+    try:
+        result = await loop.run_in_executor(
+            _executor, run_agent, req.session_id, req.message, req.clearance_data
+        )
+    except Exception:
+        logger.exception("[TWR] ✗ executor error | session=%s", req.session_id)
+        raise
+    elapsed_ms = int((asyncio.get_event_loop().time() - t0) * 1000)
+    logger.info(
+        "[TWR] ■ done | session=%s | reply=%r | reply_data=%s | %d ms",
+        req.session_id, result["reply"][:80], bool(result.get("reply_data")), elapsed_ms,
     )
     return RunResponse(
         session_id=req.session_id,
