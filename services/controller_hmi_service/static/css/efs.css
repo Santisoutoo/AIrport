@@ -28,6 +28,9 @@
     --hmi-emerald: #2ecc71;
     --hmi-amber: #f39c12;
     --hmi-magenta: #bc8cff;
+    --hmi-del: #c77dff;   /* DEL – violeta */
+    --hmi-gnd: #ffd60a;   /* GND – ámbar dorado */
+    --hmi-twr: #06d6a0;   /* TWR – verde menta */
 
     /* Strip phase colors */
     --phase-default: #555;
@@ -1602,6 +1605,32 @@ html, body {
     color: var(--text-primary);
 }
 
+/* ---- Dependency colours (DEL / GND / TWR) ---- */
+
+.chat-dep-del .chat-bubble-agent {
+    background: rgba(199, 125, 255, 0.09);
+    border-color: rgba(199, 125, 255, 0.28);
+    color: var(--hmi-del);
+}
+.chat-dep-del .chat-agent-header,
+.chat-dep-del .chat-callsign { color: var(--hmi-del); }
+
+.chat-dep-gnd .chat-bubble-agent {
+    background: rgba(255, 214, 10, 0.07);
+    border-color: rgba(255, 214, 10, 0.25);
+    color: var(--hmi-gnd);
+}
+.chat-dep-gnd .chat-agent-header,
+.chat-dep-gnd .chat-callsign { color: var(--hmi-gnd); }
+
+.chat-dep-twr .chat-bubble-agent {
+    background: rgba(6, 214, 160, 0.08);
+    border-color: rgba(6, 214, 160, 0.25);
+    color: var(--hmi-twr);
+}
+.chat-dep-twr .chat-agent-header,
+.chat-dep-twr .chat-callsign { color: var(--hmi-twr); }
+
 /* Meta line (sender + time) */
 .chat-meta {
     display: flex;
@@ -1639,7 +1668,7 @@ html, body {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--hmi-cyan);
+    background: currentColor;
     opacity: 0.4;
     animation: typing-bounce 1s infinite;
 }
