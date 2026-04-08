@@ -3,7 +3,8 @@
    Chat-style comms log + inline quick config
    ============================================ */
 
-const ASR_URL      = 'http://localhost:8006/api/v1/asr';
+const ASR_PROXY = '/api/v1/hmi/asr';
+const ORCHESTRATOR_PROXY = '/api/v1/hmi/orchestrator';
 const CHAT_MAX_MSG = 50;
 
 const ROBOT_SVG = `<svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -16,17 +17,19 @@ const ROBOT_SVG = `<svg viewBox="0 0 18 18" width="13" height="13" fill="none" s
   <path d="M3 9.5H1.5M16.5 9.5H15"/>
 </svg>`;
 
+
 const Ptt = (() => {
 
-    let _pttKey       = 'Space';
-    let _deviceId     = 'default';
-    let _outputId     = 'default';
-    let _recording    = false;
-    let _recorder     = null;
-    let _stream       = null;
-    let _chunks       = [];
-    let _messages     = [];
-    let _configOpen   = false;
+    let _pttKey = 'Space';
+    let _deviceId = 'default';
+    let _outputId = 'default';
+    let _recording = false;
+    const _sessionId = crypto.randomUUID();
+    let _recorder = null;
+    let _stream = null;
+    let _chunks = [];
+    let _messages = [];
+    let _configOpen = false;
     let _capturingKey = false;
     let _captureHandler = null;
 
@@ -36,21 +39,21 @@ const Ptt = (() => {
 
     async function init() {
         try {
-            const res = await fetch(`${ASR_URL}/config`);
-            if (res.ok) {
-                const cfg  = await res.json();
-                _pttKey   = cfg.ptt_key      || 'Space';
+            const saved = localStorage.getItem('airport_asr_settings');
+            if (saved) {
+                const cfg = JSON.parse(saved);
+                _pttKey = cfg.ptt_key || 'Space';
                 _deviceId = cfg.input_device || 'default';
                 _outputId = cfg.output_device || 'default';
             }
-        } catch (_) {}
+        } catch (_) { }
 
         _renderKeyBadge();
         _setState('idle');
 
         window.addEventListener('keydown', _onKeyDown);
-        window.addEventListener('keyup',   _onKeyUp);
-        window.addEventListener('blur',    _abortRecording);
+        window.addEventListener('keyup', _onKeyUp);
+        window.addEventListener('blur', _abortRecording);
     }
 
     // ------------------------------------------------------------------
@@ -77,9 +80,9 @@ const Ptt = (() => {
 
     async function _startRecording() {
         _recording = true;
-        _chunks    = [];
+        _chunks = [];
         _setState('recording');
-        _showTyping();
+        _showTyping('ctrl');
 
         const constraints = {
             audio: (_deviceId && _deviceId !== 'default')
@@ -88,9 +91,9 @@ const Ptt = (() => {
         };
 
         try {
-            _stream   = await navigator.mediaDevices.getUserMedia(constraints);
+            _stream = await navigator.mediaDevices.getUserMedia(constraints);
             const mime = _pickMime();
-            _recorder  = new MediaRecorder(_stream, mime ? { mimeType: mime } : {});
+            _recorder = new MediaRecorder(_stream, mime ? { mimeType: mime } : {});
             _recorder.ondataavailable = e => { if (e.data.size > 0) _chunks.push(e.data); };
             _recorder.onstop = _onRecordingDone;
             _recorder.start();
@@ -145,16 +148,17 @@ const Ptt = (() => {
         }
 
         const mime = _recorder.mimeType || 'audio/webm';
-        const ext  = mime.includes('ogg') ? 'ogg' : 'webm';
+        const ext = mime.includes('ogg') ? 'ogg' : 'webm';
         const blob = new Blob(_chunks, { type: mime });
-        const fd   = new FormData();
+        const fd = new FormData();
         fd.append('audio', blob, `ptt.${ext}`);
+        fd.append('session_id', _sessionId);
 
         try {
-            const res = await fetch(`${ASR_URL}/transcribe`, { method: 'POST', body: fd });
+            const res = await fetch(`${ASR_PROXY}/transcribe`, { method: 'POST', body: fd });
             if (!res.ok) {
                 let detail = 'HTTP ' + res.status;
-                try { detail = (await res.json()).detail || detail; } catch (_) {}
+                try { detail = (await res.json()).detail || detail; } catch (_) { }
                 throw new Error(detail);
             }
 
@@ -162,7 +166,35 @@ const Ptt = (() => {
             const text = (data.text || '').trim();
             if (text) {
                 _pushMessage({ type: 'controller', text });
-                _setStatusText('Presiona PTT para transmitir...');
+                _setStatusText('Esperando respuesta ATC...');
+
+                // Dispatch to local orchestrator → agent reply
+                _showTyping('agent');
+                try {
+                    const orchRes = await fetch(`${ORCHESTRATOR_PROXY}/dispatch`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_id: _sessionId, message: text }),
+                    });
+                    if (orchRes.ok) {
+                        const orch = await orchRes.json();
+                        const reply = (orch.reply || '').trim();
+                        const callsign = orch.aircraft_registration || orch.agent || 'ATC';
+                        const dep = orch.agent || null;
+                        if (reply) _pushMessage({ type: 'agent', callsign, dep, text: reply });
+                    } else {
+                        let detail = `Orchestrator error ${orchRes.status}`;
+                        try { detail = (await orchRes.json()).detail || detail; } catch (_) { }
+                        _setStatusText('Error ATC: ' + detail);
+                        console.error('[PTT] orchestrator error:', detail);
+                    }
+                } catch (orchErr) {
+                    _setStatusText('Error ATC: ' + orchErr.message);
+                    console.error('[PTT] orchestrator unreachable:', orchErr.message);
+                } finally {
+                    _hideTyping();
+                    _setStatusText('Presiona PTT para transmitir...');
+                }
             } else {
                 _setStatusText('(sin audio detectado)');
             }
@@ -188,7 +220,7 @@ const Ptt = (() => {
     async function toggleConfig() {
         _configOpen = !_configOpen;
         const panel = document.getElementById('comms-config');
-        const gear  = document.getElementById('comms-gear-btn');
+        const gear = document.getElementById('comms-gear-btn');
         if (!panel) return;
 
         if (_configOpen) {
@@ -214,11 +246,11 @@ const Ptt = (() => {
         try {
             const s = await navigator.mediaDevices.getUserMedia({ audio: true });
             s.getTracks().forEach(t => t.stop());
-        } catch (_) {}
+        } catch (_) { }
 
         const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
-        const micSel  = document.getElementById('cc-mic');
-        const outSel  = document.getElementById('cc-out');
+        const micSel = document.getElementById('cc-mic');
+        const outSel = document.getElementById('cc-out');
         if (!micSel || !outSel) return;
 
         micSel.innerHTML = '<option value="default">Default</option>';
@@ -226,9 +258,9 @@ const Ptt = (() => {
 
         devices.forEach(d => {
             const opt = document.createElement('option');
-            opt.value       = d.deviceId;
+            opt.value = d.deviceId;
             opt.textContent = d.label || d.deviceId.slice(0, 28);
-            if (d.kind === 'audioinput')  micSel.appendChild(opt.cloneNode(true));
+            if (d.kind === 'audioinput') micSel.appendChild(opt.cloneNode(true));
             if (d.kind === 'audiooutput') outSel.appendChild(opt);
         });
     }
@@ -236,7 +268,7 @@ const Ptt = (() => {
     function _syncConfigUI() {
         const micSel = document.getElementById('cc-mic');
         const outSel = document.getElementById('cc-out');
-        const keyEl  = document.getElementById('cc-ptt-key');
+        const keyEl = document.getElementById('cc-ptt-key');
 
         if (micSel && [...micSel.options].some(o => o.value === _deviceId))
             micSel.value = _deviceId;
@@ -274,44 +306,26 @@ const Ptt = (() => {
         if (btn) btn.classList.remove('capturing');
     }
 
-    async function saveQuickConfig() {
-        const micVal = document.getElementById('cc-mic')?.value     || 'default';
-        const outVal = document.getElementById('cc-out')?.value     || 'default';
+    function saveQuickConfig() {
+        const micVal = document.getElementById('cc-mic')?.value || 'default';
+        const outVal = document.getElementById('cc-out')?.value || 'default';
         const keyVal = document.getElementById('cc-ptt-key')?.textContent || _pttKey;
 
-        // Fetch current full config to preserve AI fields
-        let full = {};
-        try {
-            const r = await fetch(`${ASR_URL}/config`);
-            if (r.ok) full = await r.json();
-        } catch (_) {}
-
-        const payload = Object.assign({}, full, {
-            input_device:  micVal,
-            output_device: outVal,
-            ptt_key:       keyVal,
-        });
+        _pttKey = keyVal;
+        _deviceId = micVal;
+        _outputId = outVal;
 
         try {
-            const res = await fetch(`${ASR_URL}/config`, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify(payload),
-            });
+            localStorage.setItem('airport_asr_settings', JSON.stringify({
+                ptt_key: _pttKey,
+                input_device: _deviceId,
+                output_device: _outputId,
+            }));
+        } catch (_) { }
 
-            if (res.ok) {
-                _pttKey   = keyVal;
-                _deviceId = micVal;
-                _outputId = outVal;
-                _renderKeyBadge();
-                _setStatusText('Configuracion guardada');
-                setTimeout(() => _setStatusText('Presiona PTT para transmitir...'), 2000);
-            } else {
-                _setStatusText('Error al guardar');
-            }
-        } catch (_) {
-            _setStatusText('No se pudo conectar con el servicio ASR');
-        }
+        _renderKeyBadge();
+        _setStatusText('Configuracion guardada');
+        setTimeout(() => _setStatusText('Presiona PTT para transmitir...'), 2000);
 
         toggleConfig();
     }
@@ -322,7 +336,7 @@ const Ptt = (() => {
 
     function _pushMessage(msg) {
         const now = new Date();
-        msg.time  = _utcTime(now);
+        msg.time = _utcTime(now);
         _messages.push(msg);
         if (_messages.length > CHAT_MAX_MSG) _messages.shift();
         _renderMessages();
@@ -339,33 +353,36 @@ const Ptt = (() => {
         const safe = _esc(m.text);
         if (m.type === 'controller') {
             return `<div class="chat-msg chat-ctrl">` +
-                   `<div class="chat-bubble chat-bubble-ctrl">${safe}</div>` +
-                   `<div class="chat-meta"><span class="chat-sender">TWR</span><span class="chat-time">${m.time}</span></div>` +
-                   `</div>`;
+                `<div class="chat-bubble chat-bubble-ctrl">${safe}</div>` +
+                `<div class="chat-meta"><span class="chat-sender">TWR</span><span class="chat-time">${m.time}</span></div>` +
+                `</div>`;
         }
         const cs = _esc(m.callsign || '???');
-        return `<div class="chat-msg chat-agent">` +
-               `<div class="chat-agent-header">${ROBOT_SVG}<span class="chat-callsign">${cs}</span></div>` +
-               `<div class="chat-bubble chat-bubble-agent">${safe}</div>` +
-               `<div class="chat-meta"><span class="chat-time">${m.time}</span></div>` +
-               `</div>`;
+        const depCls = m.dep ? ` chat-dep-${m.dep.toLowerCase()}` : '';
+        return `<div class="chat-msg chat-agent${depCls}">` +
+            `<div class="chat-agent-header">${ROBOT_SVG}<span class="chat-callsign">${cs}</span></div>` +
+            `<div class="chat-bubble chat-bubble-agent">${safe}</div>` +
+            `<div class="chat-meta"><span class="chat-time">${m.time}</span></div>` +
+            `</div>`;
     }
 
     // ------------------------------------------------------------------
     // Typing indicator
     // ------------------------------------------------------------------
 
-    function _showTyping() {
+    function _showTyping(side) {
         const log = document.getElementById('chat-log');
         if (!log || document.getElementById('chat-typing')) return;
         const div = document.createElement('div');
-        div.id        = 'chat-typing';
-        div.className = 'chat-msg chat-ctrl';
-        div.innerHTML = `<div class="chat-bubble chat-bubble-ctrl chat-typing-bubble">` +
-                        `<span class="typing-dot"></span>` +
-                        `<span class="typing-dot"></span>` +
-                        `<span class="typing-dot"></span>` +
-                        `</div>`;
+        div.id = 'chat-typing';
+        const isAgent = side === 'agent';
+        div.className = 'chat-msg ' + (isAgent ? 'chat-agent' : 'chat-ctrl');
+        const bubbleClass = isAgent ? 'chat-bubble-agent' : 'chat-bubble-ctrl';
+        div.innerHTML = `<div class="chat-bubble ${bubbleClass} chat-typing-bubble">` +
+            `<span class="typing-dot"></span>` +
+            `<span class="typing-dot"></span>` +
+            `<span class="typing-dot"></span>` +
+            `</div>`;
         log.appendChild(div);
         log.scrollTop = log.scrollHeight;
     }
@@ -380,10 +397,10 @@ const Ptt = (() => {
     // ------------------------------------------------------------------
 
     function _setState(state) {
-        const led   = document.getElementById('ptt-led');
+        const led = document.getElementById('ptt-led');
         const label = document.getElementById('ptt-state-label');
         if (!led || !label) return;
-        led.className   = 'ptt-led ptt-' + state;
+        led.className = 'ptt-led ptt-' + state;
         label.className = 'ptt-state-label ptt-label-' + state;
         const text = { idle: 'IDLE', recording: 'REC', processing: 'PROC', error: 'ERR' };
         label.textContent = text[state] || state.toUpperCase();
@@ -401,8 +418,8 @@ const Ptt = (() => {
 
     function _utcTime(d) {
         return String(d.getUTCHours()).padStart(2, '0') + ':' +
-               String(d.getUTCMinutes()).padStart(2, '0') + ':' +
-               String(d.getUTCSeconds()).padStart(2, '0') + 'Z';
+            String(d.getUTCMinutes()).padStart(2, '0') + ':' +
+            String(d.getUTCSeconds()).padStart(2, '0') + 'Z';
     }
 
     function _esc(s) {

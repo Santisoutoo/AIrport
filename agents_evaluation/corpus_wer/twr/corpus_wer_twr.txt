@@ -1,0 +1,67 @@
+# Corpus WER — TWR (Tower)
+# > instrucción ATC (referencia ASR)
+# < readback esperado del piloto
+
+[twr_001]
+> Ryanair four seven three, runway three two left, line up and wait.
+< Runway three two left, line up, and wait Ryanair four seven three.
+
+[twr_002]
+> Ryanair four seven Bravo, wind three one zero degrees, wind calm, runway three two left, cleared for takeoff.
+< Runway three two left, cleared for takeoff, Ryanair four seven Bravo.
+
+[twr_003]
+> Ryanair four seven three, contact Madrid Departure on one two one decimal niner.
+< One two one decimal niner, Ryanair four seven three.
+
+[twr_004]
+> Iberia three one four two, behind the Swiss on short final, runway three two left, line up and wait behind.
+< Behind the Swiss on short final, runway three two left, lining up behind, Iberia three one four two.
+
+[twr_005]
+> Iberia three one four two, wind three zero zero degrees, eight knots, runway three two left, cleared for takeoff.
+< Runway three two left, cleared for takeoff, Iberia three one four two.
+
+[twr_006]
+> Lufthansa three seven two, runway one eight left, line up and wait.
+< Runway one eight left, line up and wait, Lufthansa three seven two.
+
+[twr_007]
+> Lufthansa three seven two, wind one seven zero degrees, one five knots, runway one eight left, cleared for takeoff.
+< Runway one eight left, cleared for takeoff, Lufthansa three seven two.
+    
+[twr_008]
+> Lufthansa four five one, wind three two zero degrees, one zero knots, runway three two right, cleared to land.
+< Runway three two right, cleared to land, Lufthansa four five one.
+
+[twr_009]
+> Speedbird two Alpha six, wind three one zero degrees, one two knots, runway three two left, cleared to land.
+< Runway three two left, cleared to land, Speedbird two Alpha six.
+
+[twr_010]
+> Speedbird two four six, contact Ground on one two one decimal six five five. Good day.
+< One two one decimal six five five, Speedbird two four six. Good day.
+
+[twr_011]
+> Swiss two four one, runway three two right, line up and wait.
+< Runway three two right, lining up, Swiss two four one.
+
+[twr_012]
+> Swiss two four one, wind three zero five degrees, one four knots, runway three two right, cleared for takeoff.
+< Runway three two right, cleared for takeoff, Swiss two four one.
+
+[twr_013]
+> Swiss three six two, wind three zero zero degrees, eight knots, runway three two left, cleared to land.
+< Runway three two left, cleared to land, Swiss three six two.
+
+[twr_014]
+> EasyJet eight Tango six zero, runway one eight right, line up and wait.
+< Runway one eight right, lining up, EasyJet eight Tango six zero.
+
+[twr_015]
+> EasyJet eight Tango six zero, wind one eight zero degrees, two zero knots, runway one eight right, cleared for takeoff.
+< Runway one eight right, cleared for takeoff, EasyJet eight Tango six zero.
+
+[twr_016]
+> Vueling four five six, go around.
+< Going around, Vueling four five six.

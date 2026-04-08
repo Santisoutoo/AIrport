@@ -11,14 +11,18 @@ var PHASE_COLUMN = {
     'PUSHBACK': 'PRE_TAXI',
     'TAXI': 'TAXI',
     'LINEUP': 'RUNWAY',
-    'CLEARED': 'RUNWAY'
+    'CLEARED': 'RUNWAY',
+    'APPROACH': 'ARRIVALS',
+    'LANDED':   'ARRIVALS',
+    'VACATING': 'ARRIVALS'
 };
 
 // Column body ID -> default phase when a strip is dropped there
 var COLUMN_DEFAULT_PHASE = {
-    'strips-pretaxi': 'PRE_TAXI',
-    'strips-taxi':    'TAXI',
-    'strips-runway':  'LINEUP'
+    'strips-pretaxi':  'PRE_TAXI',
+    'strips-taxi':     'TAXI',
+    'strips-runway':   'LINEUP',
+    'strips-arrivals': 'APPROACH'
 };
 
 var _dropZonesInited = false;
@@ -66,32 +70,43 @@ function setStripPhase(reg, phase) {
     });
 }
 
-// ---- Render strips into 3 columns ----
+// ---- Render strips into 4 columns ----
 
 function renderFlightStrips(plans) {
     var preTaxiContainer = document.getElementById('strips-pretaxi');
-    var taxiContainer = document.getElementById('strips-taxi');
-    var runwayContainer = document.getElementById('strips-runway');
+    var taxiContainer    = document.getElementById('strips-taxi');
+    var runwayContainer  = document.getElementById('strips-runway');
+    var arrivalsContainer = document.getElementById('strips-arrivals');
 
-    if (!preTaxiContainer || !taxiContainer || !runwayContainer) return;
+    if (!preTaxiContainer || !taxiContainer || !runwayContainer || !arrivalsContainer) return;
 
-    preTaxiContainer.innerHTML = '';
-    taxiContainer.innerHTML = '';
-    runwayContainer.innerHTML = '';
+    preTaxiContainer.innerHTML  = '';
+    taxiContainer.innerHTML     = '';
+    runwayContainer.innerHTML   = '';
+    arrivalsContainer.innerHTML = '';
 
-    var counts = { PRE_TAXI: 0, TAXI: 0, RUNWAY: 0 };
+    var counts = { PRE_TAXI: 0, TAXI: 0, RUNWAY: 0, ARRIVALS: 0 };
 
     if (!plans || plans.length === 0) {
         preTaxiContainer.innerHTML = emptyState();
+        arrivalsContainer.innerHTML = emptyState();
         updateColumnCounts(counts);
         return;
     }
 
     plans.forEach(function (plan) {
         var reg = plan.aircraft_registration;
+        var isArrival = plan.destination_ICAO === currentICAO;
+
+        // Auto-assign initial phase if not yet tracked
+        if (!stripStates[reg]) {
+            var defaultPhase = isArrival ? 'APPROACH' : 'PRE_TAXI';
+            stripStates[reg] = { phase: defaultPhase, column: PHASE_COLUMN[defaultPhase] };
+        }
+
         var column = getStripColumn(reg);
-        var phase = getStripPhase(reg);
-        var strip = createStripElement(plan, phase);
+        var phase  = getStripPhase(reg);
+        var strip  = createStripElement(plan, phase, isArrival);
 
         if (column === 'TAXI') {
             taxiContainer.appendChild(strip);
@@ -99,6 +114,9 @@ function renderFlightStrips(plans) {
         } else if (column === 'RUNWAY') {
             runwayContainer.appendChild(strip);
             counts.RUNWAY++;
+        } else if (column === 'ARRIVALS') {
+            arrivalsContainer.appendChild(strip);
+            counts.ARRIVALS++;
         } else {
             preTaxiContainer.appendChild(strip);
             counts.PRE_TAXI++;
@@ -106,8 +124,9 @@ function renderFlightStrips(plans) {
     });
 
     if (counts.PRE_TAXI === 0) preTaxiContainer.innerHTML = emptyState();
-    if (counts.TAXI === 0) taxiContainer.innerHTML = emptyState();
-    if (counts.RUNWAY === 0) runwayContainer.innerHTML = emptyState();
+    if (counts.TAXI === 0)     taxiContainer.innerHTML = emptyState();
+    if (counts.RUNWAY === 0)   runwayContainer.innerHTML = emptyState();
+    if (counts.ARRIVALS === 0) arrivalsContainer.innerHTML = emptyState();
 
     updateColumnCounts(counts);
 
@@ -125,6 +144,8 @@ function updateColumnCounts(counts) {
     if (el) el.textContent = counts.TAXI;
     el = document.getElementById('count-runway');
     if (el) el.textContent = counts.RUNWAY;
+    el = document.getElementById('count-arrivals');
+    if (el) el.textContent = counts.ARRIVALS;
 }
 
 function emptyState() {
@@ -135,7 +156,7 @@ function emptyState() {
 
 // ---- Create Strip Card ----
 
-function createStripElement(plan, phase) {
+function createStripElement(plan, phase, isArrival) {
     var strip = document.createElement('div');
     strip.className = 'flight-strip phase-' + phase.toLowerCase();
     strip.dataset.registration = plan.aircraft_registration;
@@ -172,28 +193,48 @@ function createStripElement(plan, phase) {
     var sid = plan.route ? truncateRoute(plan.route, 12) : 'DCT';
 
     // Build strip HTML
-    strip.innerHTML =
-        // Top row: rules, callsign, type, WTC
-        '<div class="strip-info-row">' +
-            '<span class="strip-rules ' + rulesClass + '">' + rulesText + '</span>' +
-            '<span class="strip-callsign">' + escapeHtml(plan.aircraft_registration) + '</span>' +
-            '<span class="strip-type">' + escapeHtml(plan.aircraft_type) + '</span>' +
-            '<span class="strip-wtc ' + wtcClass + '">' + escapeHtml(plan.wake_turbulence_category) + '</span>' +
-        '</div>' +
-        // Detail row: SID, SQ, Alt, Dest
-        '<div class="strip-details-row">' +
-            '<span><span class="strip-detail-label">SID:</span> <span class="strip-sid">' + escapeHtml(sid) + '</span></span>' +
-            '<span><span class="strip-detail-label">SQ:</span> <span class="strip-sq">' + squawk + '</span></span>' +
-            '<span class="strip-alt">' + altDisplay + '</span>' +
-            '<span class="strip-dest">' + escapeHtml(plan.destination_ICAO) + '</span>' +
-        '</div>' +
-        // Action buttons
-        '<div class="strip-actions">' +
-            actionBtn('PUSH', 'btn-push', plan.aircraft_registration, phase, 'PUSHBACK') +
-            actionBtn('TAXI', 'btn-taxi', plan.aircraft_registration, phase, 'TAXI') +
-            actionBtn('LINE-UP', 'btn-lineup', plan.aircraft_registration, phase, 'LINEUP') +
-            actionBtn('CLEARED', 'btn-cleared', plan.aircraft_registration, phase, 'CLEARED') +
-        '</div>';
+    if (isArrival) {
+        // Arrival strip: show origin, star/approach info instead of SID/dest
+        var origin = plan.departure_ICAO || '----';
+        strip.innerHTML =
+            '<div class="strip-info-row">' +
+                '<span class="strip-rules ' + rulesClass + '">' + rulesText + '</span>' +
+                '<span class="strip-callsign">' + escapeHtml(plan.aircraft_registration) + '</span>' +
+                '<span class="strip-type">' + escapeHtml(plan.aircraft_type) + '</span>' +
+                '<span class="strip-wtc ' + wtcClass + '">' + escapeHtml(plan.wake_turbulence_category) + '</span>' +
+            '</div>' +
+            '<div class="strip-details-row">' +
+                '<span><span class="strip-detail-label">FROM:</span> <span class="strip-sid">' + escapeHtml(origin) + '</span></span>' +
+                '<span><span class="strip-detail-label">SQ:</span> <span class="strip-sq">' + squawk + '</span></span>' +
+                '<span class="strip-alt">' + altDisplay + '</span>' +
+                '<span class="strip-dest arr-origin">' + escapeHtml(plan.destination_ICAO) + '</span>' +
+            '</div>' +
+            '<div class="strip-actions">' +
+                actionBtn('APPR', 'btn-approach', plan.aircraft_registration, phase, 'APPROACH') +
+                actionBtn('LANDED', 'btn-landed', plan.aircraft_registration, phase, 'LANDED') +
+                actionBtn('VACATING', 'btn-vacating', plan.aircraft_registration, phase, 'VACATING') +
+            '</div>';
+    } else {
+        strip.innerHTML =
+            '<div class="strip-info-row">' +
+                '<span class="strip-rules ' + rulesClass + '">' + rulesText + '</span>' +
+                '<span class="strip-callsign">' + escapeHtml(plan.aircraft_registration) + '</span>' +
+                '<span class="strip-type">' + escapeHtml(plan.aircraft_type) + '</span>' +
+                '<span class="strip-wtc ' + wtcClass + '">' + escapeHtml(plan.wake_turbulence_category) + '</span>' +
+            '</div>' +
+            '<div class="strip-details-row">' +
+                '<span><span class="strip-detail-label">SID:</span> <span class="strip-sid">' + escapeHtml(sid) + '</span></span>' +
+                '<span><span class="strip-detail-label">SQ:</span> <span class="strip-sq">' + squawk + '</span></span>' +
+                '<span class="strip-alt">' + altDisplay + '</span>' +
+                '<span class="strip-dest">' + escapeHtml(plan.destination_ICAO) + '</span>' +
+            '</div>' +
+            '<div class="strip-actions">' +
+                actionBtn('PUSH', 'btn-push', plan.aircraft_registration, phase, 'PUSHBACK') +
+                actionBtn('TAXI', 'btn-taxi', plan.aircraft_registration, phase, 'TAXI') +
+                actionBtn('LINE-UP', 'btn-lineup', plan.aircraft_registration, phase, 'LINEUP') +
+                actionBtn('CLEARED', 'btn-cleared', plan.aircraft_registration, phase, 'CLEARED') +
+            '</div>';
+    }
 
     // Attach button event listeners
     strip.querySelectorAll('.strip-action-btn').forEach(function (btn) {

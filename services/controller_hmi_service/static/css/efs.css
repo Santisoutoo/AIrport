@@ -28,6 +28,9 @@
     --hmi-emerald: #2ecc71;
     --hmi-amber: #f39c12;
     --hmi-magenta: #bc8cff;
+    --hmi-del: #c77dff;   /* DEL – violeta */
+    --hmi-gnd: #ffd60a;   /* GND – ámbar dorado */
+    --hmi-twr: #06d6a0;   /* TWR – verde menta */
 
     /* Strip phase colors */
     --phase-default: #555;
@@ -35,6 +38,9 @@
     --phase-taxi: #ff9100;
     --phase-lineup: #ffab40;
     --phase-cleared: #00e676;
+    --phase-approach: #29b6f6;
+    --phase-landed: #0288d1;
+    --phase-vacating: #4fc3f7;
 
     /* Flight category colors */
     --cat-vfr: #00e676;
@@ -210,13 +216,17 @@ html, body {
 }
 
 .dash-pressure-item {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
     justify-content: center;
-    gap: 4px;
+    align-items: center;
+    gap: 1px 4px;
 }
 
 .dash-pressure-item label {
+    grid-column: 1 / -1;
+    text-align: center;
     font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
@@ -267,7 +277,6 @@ html, body {
     font-family: var(--font-mono);
     border: 1px solid var(--border-color);
     align-self: center;
-    margin-top: auto;
 }
 
 /* --- METAR Icon Block --- */
@@ -344,11 +353,11 @@ html, body {
     border: 1px solid var(--border-color);
     border-radius: 3px;
     padding: 4px 6px;
-    margin-top: auto;
     white-space: pre-wrap;
     word-break: break-word;
     line-height: 1.4;
-    height: 42px;
+    min-height: 42px;
+    flex-shrink: 0;
     overflow-y: auto;
 }
 
@@ -397,6 +406,8 @@ html, body {
     color: var(--text-secondary);
     overflow-y: auto;
     line-height: 1.3;
+    flex: 1;
+    min-height: 0;
 }
 
 .taf-group {
@@ -476,6 +487,11 @@ html, body {
 .runway-header {
     background: linear-gradient(135deg, #002a10, #003a15);
     border-bottom-color: var(--hmi-green);
+}
+
+.arrivals-header {
+    background: linear-gradient(135deg, #002233, #002d44);
+    border-bottom-color: var(--phase-approach);
 }
 
 .col-title {
@@ -568,6 +584,15 @@ html, body {
 .flight-strip.phase-cleared {
     border-left-color: var(--phase-cleared);
     box-shadow: 0 0 8px rgba(0, 230, 118, 0.25);
+}
+.flight-strip.phase-approach  { border-left-color: var(--phase-approach); }
+.flight-strip.phase-landed {
+    border-left-color: var(--phase-landed);
+    box-shadow: 0 0 6px rgba(2, 136, 209, 0.3);
+}
+.flight-strip.phase-vacating {
+    border-left-color: var(--phase-vacating);
+    box-shadow: 0 0 8px rgba(79, 195, 247, 0.25);
 }
 
 /* Strip top row: flight info */
@@ -700,6 +725,23 @@ html, body {
 .strip-action-btn.btn-cleared.active-phase {
     background: var(--hmi-green);
     border-color: var(--hmi-green);
+}
+
+.strip-action-btn.btn-approach.active-phase {
+    background: var(--phase-approach);
+    border-color: var(--phase-approach);
+    color: #000;
+}
+
+.strip-action-btn.btn-landed.active-phase {
+    background: var(--phase-landed);
+    border-color: var(--phase-landed);
+}
+
+.strip-action-btn.btn-vacating.active-phase {
+    background: var(--phase-vacating);
+    border-color: var(--phase-vacating);
+    color: #000;
 }
 
 /* Empty column state */
@@ -848,6 +890,62 @@ html, body {
     font-weight: 700;
     color: var(--text-primary);
     min-width: 55px;
+}
+
+/* Paired runway wind layout */
+.wind-pairs-container {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+}
+
+.wind-pair-card {
+    flex: 0 0 auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+.wind-pair-header {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--hmi-green);
+    text-align: center;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.wind-pair-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.wind-pair-card .wind-limits-container {
+    width: 100%;
+    gap: 3px;
+}
+
+.wind-pair-card .limit-bar {
+    max-width: none;
+}
+
+.wind-pair-card .limit-value {
+    font-size: 11px;
+    min-width: 40px;
+}
+
+.wind-pair-card .wind-limit-row label {
+    font-size: 8px;
+}
+
+.wind-pair-card .rwy-change-alert {
+    font-size: 9px;
+    padding: 3px 6px;
+    margin-top: 4px;
 }
 
 /* Runway change alert */
@@ -1083,9 +1181,11 @@ html, body {
 /* SMR aircraft labels */
 .smr-aircraft {
     font-family: var(--font-mono);
-    font-size: 2px;
     font-weight: 700;
-    fill: var(--hmi-cyan);
+    fill: #ffffff;
+    stroke: #050e1c;
+    stroke-width: 0.4px;
+    paint-order: stroke fill;
 }
 
 .smr-aircraft-dot {
@@ -1356,7 +1456,7 @@ html, body {
     background: var(--bg-secondary);
     display: flex;
     flex-direction: column;
-    height: 260px;
+    height: 260px; /* initial fallback; overridden by resize.js */
     overflow: hidden;
     position: relative;
 }
@@ -1505,6 +1605,32 @@ html, body {
     color: var(--text-primary);
 }
 
+/* ---- Dependency colours (DEL / GND / TWR) ---- */
+
+.chat-dep-del .chat-bubble-agent {
+    background: rgba(199, 125, 255, 0.09);
+    border-color: rgba(199, 125, 255, 0.28);
+    color: var(--hmi-del);
+}
+.chat-dep-del .chat-agent-header,
+.chat-dep-del .chat-callsign { color: var(--hmi-del); }
+
+.chat-dep-gnd .chat-bubble-agent {
+    background: rgba(255, 214, 10, 0.07);
+    border-color: rgba(255, 214, 10, 0.25);
+    color: var(--hmi-gnd);
+}
+.chat-dep-gnd .chat-agent-header,
+.chat-dep-gnd .chat-callsign { color: var(--hmi-gnd); }
+
+.chat-dep-twr .chat-bubble-agent {
+    background: rgba(6, 214, 160, 0.08);
+    border-color: rgba(6, 214, 160, 0.25);
+    color: var(--hmi-twr);
+}
+.chat-dep-twr .chat-agent-header,
+.chat-dep-twr .chat-callsign { color: var(--hmi-twr); }
+
 /* Meta line (sender + time) */
 .chat-meta {
     display: flex;
@@ -1542,7 +1668,7 @@ html, body {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--hmi-cyan);
+    background: currentColor;
     opacity: 0.4;
     animation: typing-bounce 1s infinite;
 }
@@ -2039,4 +2165,39 @@ html, body {
     border-color: #4a3a1a !important;
     color: var(--hmi-orange) !important;
     background: #1a1200 !important;
+}
+
+/* ============================================
+   Resize Handles
+   ============================================ */
+
+.resize-handle {
+    background: var(--border-color);
+    flex-shrink: 0;
+    transition: background 0.15s;
+    z-index: 10;
+    position: relative;
+}
+
+.resize-handle::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+}
+
+.resize-handle:hover,
+.resize-handle.resize-handle--dragging {
+    background: #3a4a60;
+}
+
+.resize-handle--vertical {
+    width: 5px;
+    cursor: col-resize;
+    align-self: stretch;
+}
+
+.resize-handle--horizontal {
+    height: 5px;
+    cursor: row-resize;
+    width: 100%;
 }
