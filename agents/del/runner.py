@@ -1,11 +1,9 @@
 import asyncio
 import json
 import logging
-import os
 import re
 from typing import Any
 
-import redis as redis_lib
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
@@ -16,20 +14,6 @@ logger = logging.getLogger(__name__)
 
 _APP_NAME = "airport_del"
 
-_REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
-_REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
-_AIRPORT_ICAO_KEY = "airport:current:icao"
-
-
-def _get_airport_icao() -> str | None:
-    """Fetch the active airport ICAO code from Redis."""
-    try:
-        r = redis_lib.Redis(host=_REDIS_HOST, port=_REDIS_PORT, db=0, decode_responses=True)
-        return r.get(_AIRPORT_ICAO_KEY)
-    except Exception:
-        logger.warning("[DEL] could not read airport ICAO from Redis")
-        return None
-
 
 def run_agent(
     session_id: str,
@@ -37,13 +21,10 @@ def run_agent(
     flight_plan: dict | None = None,
     atis: dict | None = None,
 ) -> dict[str, Any]:
-    # Enrich message with pre-fetched context from the orchestrator
-    airport_icao = _get_airport_icao()
+    # Enrich message with context pre-fetched by the orchestrator
     enriched = message
-    if flight_plan or atis or airport_icao:
+    if flight_plan or atis:
         parts = [message, "\n\n[CONTEXT]"]
-        if airport_icao:
-            parts.append(f"Airport ICAO: {airport_icao}")
         if flight_plan:
             parts.append(f"Flight plan: {flight_plan}")
         if atis:
