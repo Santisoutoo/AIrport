@@ -44,6 +44,7 @@ def forward_to_agent(
     registration: str,
     message: str,
     tool_context: ToolContext,
+    taxi_route: dict | None = None,
 ) -> str:
     """
     Forward the pilot message to the correct ATC controller agent and return
@@ -53,6 +54,10 @@ def forward_to_agent(
         dependency:   Controller to call — "DEL", "GND", or "TWR".
         registration: Aircraft callsign in canonical form (e.g. "EC-MIG").
         message:      The pilot message with the callsign corrected.
+        taxi_route:   Pre-computed taxi route dict from get_taxi_route().
+                      When provided (GND taxi clearances), it is merged into
+                      clearance_data so the GND agent can produce a correct
+                      readback without needing to call any routing tool itself.
     """
     dep = dependency.upper()
     if dep not in _ROUTES:
@@ -89,6 +94,10 @@ def forward_to_agent(
             k: v for k, v in aircraft_data.items()
             if k not in ("registration", "dependency", "source")
         }
+        # Merge the pre-computed taxi route so the GND agent knows the exact
+        # waypoints and can produce a correct pilot readback.
+        if taxi_route and taxi_route.get("success"):
+            clearance_fields["taxi_route"] = taxi_route
         if clearance_fields:
             payload["clearance_data"] = clearance_fields
             logger.debug("[ORCH] %s payload — clearance_data=%s", dep, clearance_fields)

@@ -137,6 +137,7 @@ def run_orchestrator_agent(
             "dependency": state.get("dependency", "DEL"),
             "registration": state.get("registration"),
             "clearance_data": state.get("clearance_data"),
+            "advance_registration_gnd": state.get("advance_registration_gnd"),
         }
 
     result = asyncio.run(_run())
@@ -159,10 +160,33 @@ def run_orchestrator_agent(
                 destination_icao=cd.get("destination_icao", ""),
                 clearance_text=cd.get("clearance_text", ""),
             )
-            repo.update_dependency(cd.get("aircraft_registration", registration), "GND")
-            logger.info("[ORCH] clearance persisted and advanced to GND for %s", registration)
+            # NOTE: do NOT advance to GND here.
+            # The aircraft stays in DEL until the controller says
+            # "contact ground on {freq}". The advance_to_gnd tool sets
+            # state["advance_registration_gnd"] when it detects that phrase.
+            logger.info("[ORCH] clearance persisted for %s — waiting for ground frequency release", registration)
         except Exception as exc:
             logger.error("[ORCH] failed to persist clearance: %s", exc)
+
+    # Advance to GND only after controller says "contact ground on {freq}"
+    advance_reg_gnd = result.get("advance_registration_gnd")
+    if advance_reg_gnd:
+        try:
+            repo = ClearanceRepository(db)
+            repo.update_dependency(advance_reg_gnd, "GND")
+            logger.info("[ORCH] ground release — %s advanced to GND", advance_reg_gnd)
+        except Exception as exc:
+            logger.error("[ORCH] failed to advance %s to GND: %s", advance_reg_gnd, exc)
+
+    # Advance to TWR only after controller releases with "contact tower on {freq}"
+    advance_reg_twr = result.get("advance_registration_twr")
+    if advance_reg_twr:
+        try:
+            repo = ClearanceRepository(db)
+            repo.update_dependency(advance_reg_twr, "TWR")
+            logger.info("[ORCH] released to TWR — %s advanced to TWR", advance_reg_twr)
+        except Exception as exc:
+            logger.error("[ORCH] failed to advance %s to TWR: %s", advance_reg_twr, exc)
 
     return {
         "reply": result["reply"],

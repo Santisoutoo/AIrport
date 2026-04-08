@@ -6,3 +6,4 @@ sqlalchemy
 psycopg2-binary
 redis
 google-adk
+networkx
