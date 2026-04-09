@@ -1,0 +1,153 @@
+<mxfile host="65bd71144e">
+    <diagram id="orch-detail" name="Orchestrator — Data Flow">
+        <mxGraphModel dx="1475" dy="2063" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="dispatch-in" value="&lt;b&gt;① POST /dispatch&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#666;&quot;&gt;{ message: text, session_id }&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#888;fontColor=#333;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="570" y="20" width="260" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="orch" value="&lt;b&gt;ORCHESTRATOR&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;dashed=1;verticalAlign=top;arcSize=4;opacity=40;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="230" y="105" width="1100" height="560" as="geometry"/>
+                </mxCell>
+                <mxCell id="phase1" value="&lt;b&gt;② FASE 1 — Fetch Known Aircraft&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;Consulta PostgreSQL · Redis · Flight Plan Service&lt;br/&gt;Construye lista de aeronaves conocidas con su fase (DEL/GND/TWR)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="140" width="440" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="phase2" value="&lt;b&gt;③ FASE 2 — LLM Agent (ORCH / Gemini)&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;Identifica callsign · Determina fase · Llama forward_to_agent()&lt;/font&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#777;&quot;&gt;④: reenvía al agente DEL, GND o TWR según dependency&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="275" width="440" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="phase3" value="&lt;b&gt;⑤ FASE 3 — Persist Clearance&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;Solo si respuesta DEL o cambio de fase (advance_to_gnd / advance_to_twr)&lt;/font&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#777;&quot;&gt;INSERT / UPDATE aircraft_clearances · UPDATE dependency&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="930" y="430" width="440" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="fp-svc" value="Flight Plan Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ebe8ff;strokeColor=#9999cc;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="60" width="170" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis" value="&lt;b&gt;Redis&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#666;&quot;&gt;aircraft:active_set&lt;br/&gt;aircraft:state:{reg}&lt;br/&gt;{lat, lon, alt, speed}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="160" width="170" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="pg-container" value="&lt;b&gt;PostgreSQL&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;arcSize=6;" parent="1" vertex="1">
+                    <mxGeometry x="1422.5" y="60" width="215" height="290" as="geometry"/>
+                </mxCell>
+                <mxCell id="pg-table" value="&lt;b&gt;aircraft_clearances&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;registration (PK)&lt;br/&gt;dependency: DEL|GND|TWR&lt;br/&gt;squawk: int&lt;br/&gt;initial_altitude: int&lt;br/&gt;instrumental_departure (SID)&lt;br/&gt;runway_in_use: str&lt;br/&gt;altimeter: float&lt;br/&gt;destination_icao: str&lt;br/&gt;clearance_text: text&lt;br/&gt;taxi_route: JSONB&lt;br/&gt;cleared_at, updated_at&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;arcSize=4;align=left;spacingLeft=8;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="1434.5" y="95" width="191" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="dispatch-out" value="&lt;b&gt;⑥ DispatchResponse&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#666;&quot;&gt;{ reply, agent: DEL|GND|TWR, registration, session_id }&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#888;fontColor=#333;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1400" y="920" width="260" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-in-p1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;strokeWidth=2;" parent="1" source="dispatch-in" target="phase1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p1-p2" value="&lt;font style=&quot;font-size:9px;color:#555;&quot;&gt;known_aircraft []&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;strokeWidth=1.5;" parent="1" source="phase1" target="phase2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p2-p3" value="&lt;font style=&quot;font-size:9px;color:#555;&quot;&gt;clearance_data, registration&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;strokeWidth=1.5;" parent="1" source="phase2" target="phase3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p3-out" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;strokeWidth=2;" parent="1" source="phase3" target="dispatch-out" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p1-fp" value="&lt;font style=&quot;font-size:9px;color:#1a5276;&quot;&gt;GET /plans&lt;br/&gt;← [{flight_plan_data}]&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;endArrow=open;startArrow=open;startFill=0;endFill=0;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="phase1" target="fp-svc" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p1-redis" value="&lt;font style=&quot;font-size:9px;color:#1a5276;&quot;&gt;SMEMBERS aircraft:active_set&lt;br/&gt;HGETALL aircraft:state:{reg}&lt;br/&gt;← Set&lt;reg&gt;, {lat,lon,alt,speed}&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;endArrow=open;startArrow=open;startFill=0;endFill=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="phase1" target="redis" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p1-pg-read" value="&lt;font style=&quot;font-size:9px;color:#1a5276;&quot;&gt;SELECT * FROM aircraft_clearances&lt;br/&gt;← {reg, dependency, squawk,&lt;br/&gt;altitude, SID, runway, ...}&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;endArrow=open;startArrow=open;startFill=0;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" parent="1" source="phase1" target="pg-container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p3-pg-write" value="&lt;font style=&quot;font-size:9px;color:#7d5a00;&quot;&gt;INSERT: {reg, squawk, altitude,&lt;br/&gt;SID, runway, dep=&#39;DEL&#39;}&lt;br/&gt;UPDATE dependency (DEL→GND|TWR)&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="phase3" target="pg-container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p2-del-req" value="&lt;font style=&quot;font-size:9px;color:#1b5e20;&quot;&gt;④ {session_id, message,&lt;br/&gt;flight_plan, atis}&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=1.5;exitX=0.007;exitY=0.436;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;" parent="1" source="phase2" target="del-agent" edge="1">
+                    <mxGeometry x="-0.4627" y="-55" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="395" y="319"/>
+                            <mxPoint x="395" y="895"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-del-p2-resp" value="&lt;font style=&quot;font-size:9px;color:#1b5e20;&quot;&gt;{reply, clearance_data:&lt;br/&gt;{squawk, altitude, SID,&lt;br/&gt;runway, altimeter}}&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=1.5;dashed=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.45;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="del-agent" target="phase2" edge="1">
+                    <mxGeometry x="-0.7742" y="-50" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="440" y="895"/>
+                            <mxPoint x="440" y="320"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-p2-gnd-req" value="&lt;font style=&quot;font-size:9px;color:#1b5e20;&quot;&gt;④ {session_id, message,&lt;br/&gt;clearance_data, taxi_route?}&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=1.5;exitX=0.359;exitY=0.993;exitDx=0;exitDy=0;entryX=0.4;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;" parent="1" source="phase2" target="gnd-agent" edge="1">
+                    <mxGeometry x="-0.8722" y="-67" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="640" y="374"/>
+                            <mxPoint x="640" y="898"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-gnd-p2-resp" value="&lt;font style=&quot;font-size:9px;color:#1b5e20;&quot;&gt;{reply, clearance_data}&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=1.5;dashed=1;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0.53;entryY=1;entryDx=0;entryDy=0;" parent="1" source="gnd-agent" target="phase2" edge="1">
+                    <mxGeometry x="-0.0949" y="-26" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="713" y="898"/>
+                        </Array>
+                        <mxPoint x="2" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-p2-twr-req" value="&lt;font style=&quot;font-size:9px;color:#1b5e20;&quot;&gt;④ {session_id, message,&lt;br/&gt;clearance_data}&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=1.5;exitX=0.82;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="phase2" target="twr-agent" edge="1">
+                    <mxGeometry x="0.1516" y="-20" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="841" y="790"/>
+                            <mxPoint x="1177" y="790"/>
+                            <mxPoint x="1177" y="895"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-twr-p2-resp" value="&lt;font style=&quot;font-size:9px;color:#1b5e20;&quot;&gt;{reply}&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=1.5;dashed=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.861;entryY=0.962;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="twr-agent" target="phase2" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1220" y="895"/>
+                            <mxPoint x="1220" y="742"/>
+                            <mxPoint x="860" y="742"/>
+                            <mxPoint x="860" y="375"/>
+                            <mxPoint x="859" y="375"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend" value="&lt;b&gt;Leyenda&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#1a5276;&quot;&gt;━━  READ (azul)&lt;/font&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#7d5a00;&quot;&gt;━━  WRITE (naranja)&lt;/font&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#1b5e20;&quot;&gt;━━  Request al agente&lt;/font&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#1b5e20;&quot;&gt;╌╌  Response del agente&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;arcSize=8;align=left;spacingLeft=8;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="940" width="170" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="" style="group" vertex="1" connectable="0" parent="1">
+                    <mxGeometry x="210" y="870" width="1100" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="cloudrun" value="&lt;b&gt;Google Cloud Run · Gemini&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#edf7ed;strokeColor=#82b366;dashed=1;verticalAlign=top;arcSize=6;" parent="2" vertex="1">
+                    <mxGeometry width="1100" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="del-agent" value="&lt;b&gt;DEL Agent&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Clearance Delivery&lt;br/&gt;Squawk · SID · Altitude&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;" parent="2" vertex="1">
+                    <mxGeometry x="25" y="25" width="280" height="175" as="geometry"/>
+                </mxCell>
+                <mxCell id="gnd-agent" value="&lt;b&gt;GND Agent&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Ground Control&lt;br/&gt;Pushback · Taxi Routes&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;" parent="2" vertex="1">
+                    <mxGeometry x="390" y="27.5" width="280" height="175" as="geometry"/>
+                </mxCell>
+                <mxCell id="twr-agent" value="&lt;b&gt;TWR Agent&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Tower&lt;br/&gt;T/O · Landing · GA&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;" parent="2" vertex="1">
+                    <mxGeometry x="820" y="25" width="255" height="175" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="" style="editableCssRules=.*;html=1;shape=image;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnY9Imh0dHBzOi8vdmVjdGEuaW8vbmFubyIgd2lkdGg9IjM2NS40NjQ5OTY3NzA0MjQ5MyIgaGVpZ2h0PSIzNzkuMjIyOTk0NDYzNTc3OTUiIHZpZXdCb3g9IjAgMCA5Ni42OTU5OTkxNDU1MDc4MSAxMDAuMzM1OTk4NTM1MTU2MjUiPiYjeGE7PHN0eWxlIHR5cGU9InRleHQvY3NzIj4mI3hhOwkuc3Qwe2ZpbGw6IzQyODVmNDt9JiN4YTsJLnN0MXtmaWxsOiNhZWNiZmE7fSYjeGE7PC9zdHlsZT4mI3hhOwk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMjkuNzk0IDEwMC4zMzZMNDYuOTIgNTAuMTY4aDQ5Ljc3NnpNMCA5OS42NzFsMTIuOTc2LTQ5LjUwMkgyOS4yMkwxNi44OTcgOTIuMDU0eiIvPiYjeGE7CTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yOS43OTQgMEw0Ni45MiA1MC4xNjhoNDkuNzc2ek0wIC42NjZsMTIuOTc2IDQ5LjUwMkgyOS4yMkwxNi44OTcgOC4yODN6Ii8+JiN4YTs8L3N2Zz4=;" vertex="1" parent="2">
+                    <mxGeometry x="155" y="50" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="" style="editableCssRules=.*;html=1;shape=image;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnY9Imh0dHBzOi8vdmVjdGEuaW8vbmFubyIgd2lkdGg9IjM2NS40NjQ5OTY3NzA0MjQ5MyIgaGVpZ2h0PSIzNzkuMjIyOTk0NDYzNTc3OTUiIHZpZXdCb3g9IjAgMCA5Ni42OTU5OTkxNDU1MDc4MSAxMDAuMzM1OTk4NTM1MTU2MjUiPiYjeGE7PHN0eWxlIHR5cGU9InRleHQvY3NzIj4mI3hhOwkuc3Qwe2ZpbGw6IzQyODVmNDt9JiN4YTsJLnN0MXtmaWxsOiNhZWNiZmE7fSYjeGE7PC9zdHlsZT4mI3hhOwk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMjkuNzk0IDEwMC4zMzZMNDYuOTIgNTAuMTY4aDQ5Ljc3NnpNMCA5OS42NzFsMTIuOTc2LTQ5LjUwMkgyOS4yMkwxNi44OTcgOTIuMDU0eiIvPiYjeGE7CTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yOS43OTQgMEw0Ni45MiA1MC4xNjhoNDkuNzc2ek0wIC42NjZsMTIuOTc2IDQ5LjUwMkgyOS4yMkwxNi44OTcgOC4yODN6Ii8+JiN4YTs8L3N2Zz4=;" vertex="1" parent="2">
+                    <mxGeometry x="520" y="50" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="" style="editableCssRules=.*;html=1;shape=image;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnY9Imh0dHBzOi8vdmVjdGEuaW8vbmFubyIgd2lkdGg9IjM2NS40NjQ5OTY3NzA0MjQ5MyIgaGVpZ2h0PSIzNzkuMjIyOTk0NDYzNTc3OTUiIHZpZXdCb3g9IjAgMCA5Ni42OTU5OTkxNDU1MDc4MSAxMDAuMzM1OTk4NTM1MTU2MjUiPiYjeGE7PHN0eWxlIHR5cGU9InRleHQvY3NzIj4mI3hhOwkuc3Qwe2ZpbGw6IzQyODVmNDt9JiN4YTsJLnN0MXtmaWxsOiNhZWNiZmE7fSYjeGE7PC9zdHlsZT4mI3hhOwk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMjkuNzk0IDEwMC4zMzZMNDYuOTIgNTAuMTY4aDQ5Ljc3NnpNMCA5OS42NzFsMTIuOTc2LTQ5LjUwMkgyOS4yMkwxNi44OTcgOTIuMDU0eiIvPiYjeGE7CTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yOS43OTQgMEw0Ni45MiA1MC4xNjhoNDkuNzc2ek0wIC42NjZsMTIuOTc2IDQ5LjUwMkgyOS4yMkwxNi44OTcgOC4yODN6Ii8+JiN4YTs8L3N2Zz4=;" vertex="1" parent="2">
+                    <mxGeometry x="940" y="50" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="6" target="dispatch-in">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="PPT 🎤" style="whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#888;fontColor=#333;rounded=1;arcSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="640" y="-117.5" width="120" height="60" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
