@@ -24,7 +24,7 @@ Each ATC phase is handled by a dedicated AI agent running on Google Cloud Run, b
 
 ## Architecture
 
-![Architecture](docs/architecture.svg∫)
+![Architecture](docs/architecture.svg)
 
 **Services:**
 
