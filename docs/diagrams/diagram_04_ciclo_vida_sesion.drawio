@@ -1,0 +1,109 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="d04-session" name="04 — Ciclo de Vida de Sesión ATC">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- TÍTULO -->
+        <mxCell id="title" value="&lt;b&gt;&lt;font style=&quot;font-size:18px;&quot;&gt;AIrport — Ciclo de Vida de una Sesión ATC&lt;/font&gt;&lt;/b&gt;" style="text;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="800" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- ===== ESTADOS ===== -->
+
+        <!-- INICIO -->
+        <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="650" y="80" width="30" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- IDLE -->
+        <mxCell id="idle" value="&lt;b&gt;IDLE&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;Sistema en espera&lt;br/&gt;X-Plane activo, plugin cargado&lt;br/&gt;Redis polling 2s activo&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666;fontSize=11;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="545" y="140" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- SESSION_REQUESTED -->
+        <mxCell id="session-req" value="&lt;b&gt;SESSION_REQUESTED&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;Redis: airport:session_request&lt;br/&gt;= {status: &quot;pending&quot;, icao: &quot;LEBL&quot;,&lt;br/&gt;aircraft_count: 5}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="510" y="270" width="310" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- INITIALIZING -->
+        <mxCell id="initializing" value="&lt;b&gt;INITIALIZING&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="300" y="420" width="730" height="200" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="init-1" value="&lt;b&gt;1.&lt;/b&gt; Carga airport graph (Redis → AirportDataStore)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="455" width="440" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="init-2" value="&lt;b&gt;2.&lt;/b&gt; Genera N planes de vuelo (→ Flight Plan Service HTTP)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="480" width="460" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="init-3" value="&lt;b&gt;3.&lt;/b&gt; Asigna stands (StandAssigner: wingspan matching)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="505" width="440" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="init-4" value="&lt;b&gt;4.&lt;/b&gt; Spawna modelos .obj (AircraftSpawner → xp.createInstance)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="530" width="460" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="init-5" value="&lt;b&gt;5.&lt;/b&gt; Registra aeronaves en AircraftTracker" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="555" width="440" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="init-6" value="&lt;b&gt;6.&lt;/b&gt; Inicia flight loops: Tracker (2 Hz) + Mover (10 Hz)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="580" width="460" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- ACTIVE -->
+        <mxCell id="active" value="&lt;b&gt;ACTIVE&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;Tracker 2 Hz: posición → Redis + InfluxDB&lt;br/&gt;Mover 10 Hz: anima aeronaves según move_cmd&lt;br/&gt;Controller da instrucciones ATC (voz)&lt;br/&gt;Orchestrator procesa clearances continuas&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="510" y="680" width="310" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- STOPPING -->
+        <mxCell id="stopping" value="&lt;b&gt;STOPPING&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;Redis: airport:session_request&lt;br/&gt;= {status: &quot;stop&quot;}&lt;br/&gt;(detectado por polling 2s)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="510" y="840" width="310" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- CLEANUP -->
+        <mxCell id="cleanup" value="&lt;b&gt;CLEANUP&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;arcSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="300" y="980" width="730" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="clean-1" value="&lt;b&gt;1.&lt;/b&gt; Destruye instancias .obj (xp.destroyInstance)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1010" width="440" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="clean-2" value="&lt;b&gt;2.&lt;/b&gt; Libera objetos cargados (xp.unloadObject)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1035" width="440" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="clean-3" value="&lt;b&gt;3.&lt;/b&gt; Detiene flight loops (AircraftTracker.stop, Mover.stop)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1060" width="460" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="clean-4" value="&lt;b&gt;4.&lt;/b&gt; Limpia Redis keys (aircraft:state:*, active_set, move_cmd)" style="text;html=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1085" width="460" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- FIN -->
+        <mxCell id="end" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000;strokeColor=#000;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="650" y="1130" width="30" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="end-ring" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="644" y="1124" width="42" height="42" as="geometry"/>
+        </mxCell>
+
+        <!-- ===== TRANSICIONES ===== -->
+        <mxCell id="t-start-idle" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;" edge="1" source="start" target="idle" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="t-idle-req" value="Controller configura sesión en HMI&lt;br/&gt;y pulsa &quot;Start Session&quot;" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;fontSize=9;" edge="1" source="idle" target="session-req" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="t-req-init" value="Plugin detecta session_request pendiente (2s poll)" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;fontSize=9;" edge="1" source="session-req" target="initializing" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="t-init-active" value="Inicialización completada" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;fontSize=9;" edge="1" source="initializing" target="active" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="t-active-stop" value="Controller pulsa &quot;Stop Session&quot; en HMI" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#b85450;fontSize=9;" edge="1" source="active" target="stopping" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="t-stop-clean" value="Plugin detecta status=&quot;stop&quot; (2s poll)" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#b85450;fontSize=9;" edge="1" source="stopping" target="cleanup" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="t-clean-end" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;" edge="1" source="cleanup" target="end" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="t-end-idle" value="Vuelve a IDLE" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="end-ring" target="idle" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="180" y="1145"/>
+              <mxPoint x="180" y="180"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
