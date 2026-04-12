@@ -69,3 +69,135 @@
 [gnd_017]
 > Iberia three one four two, pushback approved, facing north, tail towards stand Hotel four.
 < Pushback approved, facing north, tail to Hotel four, Iberia three one four two.
+
+[gnd_018]
+> Ryanair four seven three, pushback and start approved, facing west.
+< Pushback and start approved, facing west, Ryanair four seven three.
+
+[gnd_019]
+> Iberia three one four Bravo, taxi to holding point runway three two left via Alpha, Bravo.
+< Taxi to holding point runway three two left via Alpha, Bravo, Iberia three one four Bravo.
+
+[gnd_020]
+> Lufthansa three seven two, pushback and start approved, facing south.
+< Pushback and start approved, facing south, Lufthansa three seven two.
+
+[gnd_021]
+> Lufthansa three seven two, taxi to holding point runway one eight left via Delta, Echo.
+< Taxi to holding point runway one eight left via Delta, Echo, Lufthansa three seven two.
+
+[gnd_022]
+> Ryanair six six Golf, hold position, expect taxi in two minutes.
+< Hold position, Ryanair six six Golf.
+
+[gnd_023]
+> Iberia three one four Bravo, pushback approved, caution traffic behind, Airbus three twenty.
+< Pushback approved, Iberia three one four Bravo.
+
+[gnd_024]
+> Lufthansa three seven two, taxi to holding point runway one eight left via Delta, cross runway two seven.
+< Taxi to holding point runway one eight left via Delta, cross runway two seven, Lufthansa three seven two.
+
+[gnd_025]
+> Swiss two four one, taxi to holding point runway three two right via Alpha, hold short of runway three two left.
+< Taxi to holding point runway three two right via Alpha, hold short of runway three two left, Swiss two four one.
+
+[gnd_026]
+> EasyJet eight five Whiskey zero, give way to departing traffic on your left.
+< Give way to departing traffic on your left, EasyJet eight five Whiskey zero.
+
+[gnd_027]
+> Ryanair six six Golf, taxi to holding point runway three two right via Bravo, follow the Boeing seven three seven ahead.
+< Taxi to holding point runway three two right via Bravo, follow the Boeing, Ryanair six six Golf.
+
+[gnd_028]
+> Vueling one two three, start up approved, QNH one zero one three.
+< Start up approved, QNH one zero one three, Vueling one two three.
+
+[gnd_029]
+> Swiss two four one, pushback approved, facing north.
+< Pushback approved, facing north, Swiss two four one.
+
+[gnd_030]
+> Speedbird two Delta six, taxi to holding point runway two seven via Bravo, expedite.
+< Taxi to holding point runway two seven via Bravo, expediting, Speedbird two Delta six.
+
+[gnd_031]
+> EasyJet eight five six zero, taxi to stand Golf three via Romeo, Alpha, Golf.
+< Taxi to stand Golf three via Romeo, Alpha, Golf, EasyJet eight five six zero.
+
+[gnd_032]
+> Ryanair four seven three, taxi to stand Delta five via Foxtrot, hold short of taxiway Alpha.
+< Taxi to stand Delta five via Foxtrot, hold short of Alpha, Ryanair four seven three.
+
+[gnd_033]
+> Iberia three one four Bravo, cross runway one eight right, taxi to holding point runway one eight left via Delta.
+< Cross runway one eight right, taxi to holding point runway one eight left via Delta, Iberia three one four Bravo.
+
+[gnd_034]
+> Swiss two four one, give way to the Airbus on your right, hold position.
+< Give way to the Airbus on your right, holding position, Swiss two four one.
+
+[gnd_035]
+> EasyJet eight Kilo six zero, follow the Ryanair ahead, taxi via Alpha, Sierra to holding point Sierra one.
+< Follow the Ryanair, taxi via Alpha, Sierra to holding point Sierra one, EasyJet eight Kilo six zero.
+
+[gnd_036]
+> Vueling one two three, hold position, de-icing in progress ahead.
+< Hold position, Vueling one two three.
+
+[gnd_037]
+> Lufthansa three seven two, continue taxi via Golf to holding point Sierra two.
+< Continue taxi via Golf to holding point Sierra two, Lufthansa three seven two.
+
+[gnd_038]
+> Ryanair four seven three, standby for pushback, traffic on the apron.
+< Standing by, Ryanair four seven three.
+
+[gnd_039]
+> Iberia three one four Bravo, start up approved, information Delta current.
+< Start up approved, information Delta, Iberia three one four Bravo.
+
+[gnd_040]
+> Speedbird two four six, taxi to holding point Juliet two via Foxtrot, Golf, Juliet.
+< Taxi to holding point Juliet two via Foxtrot, Golf, Juliet, Speedbird two four six.
+
+[gnd_041]
+> EasyJet eight five six zero, stop immediately, vehicle crossing.
+< Stopping, EasyJet eight five six zero.
+
+[gnd_042]
+> Lufthansa three seven two, pushback approved, facing east, tail towards taxiway Lima.
+< Pushback approved, facing east, tail to Lima, Lufthansa three seven two.
+
+[gnd_043]
+> Swiss two four one, taxi to remote stand Romeo five via Alpha, Romeo.
+< Taxi to remote stand Romeo five via Alpha, Romeo, Swiss two four one.
+
+[gnd_044]
+> Ryanair six six Golf, hold position, runway occupied.
+< Hold position, Ryanair six six Golf.
+
+[gnd_045]
+> Iberia three one four Bravo, taxi to holding point runway three two right via Bravo.
+< Taxi to holding point runway three two right via Bravo, Iberia three one four Bravo.
+
+[gnd_046]
+> Vueling one two three, give way to the Embraer on your left, then taxi to holding point Lima one via Hotel, Alpha, Lima.
+< Give way to the Embraer, then taxi to holding point Lima one via Hotel, Alpha, Lima, Vueling one two three.
+
+[gnd_047]
+> EasyJet eight five six zero, pushback approved, facing west, tail to the south.
+< Pushback approved, facing west, tail to the south, EasyJet eight five six zero.
+
+[gnd_048]
+> Speedbird two Delta six, taxi to holding point Romeo one via Bravo, Golf, Romeo, follow the Swiss ahead.
+< Taxi to holding point Romeo one via Bravo, Golf, Romeo, follow the Swiss, Speedbird two Delta six.
+
+[gnd_049]
+> Ryanair four seven three, cross runway three two left, caution wake turbulence, heavy departed two minutes ago.
+< Cross runway three two left, Ryanair four seven three.
+
+[gnd_050]
+> Iberia three one four Bravo, pushback and start approved, facing north, tail towards stand Hotel four.
+< Pushback and start approved, facing north, tail to Hotel four, Iberia three one four Bravo.
