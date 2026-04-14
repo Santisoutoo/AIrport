@@ -368,7 +368,10 @@ function rescaleSMRElements() {
     var svgEl = document.getElementById('smr-svg');
     if (!svgEl) return;
 
-    var s = smrViewBox.w / 100; // zoom scale: 1 = no zoom, 0.1 = zoomed 10x
+    var s  = smrViewBox.w / 100; // zoom scale: 1 = no zoom, 0.1 = zoomed 10x
+    // Label SIZE scale: full visual size at ≥3x zoom (s≤0.35), shrinks when zoomed out.
+    // Position offsets (distance from dot) still use s → fixed visual gap at all zooms.
+    var sL = Math.min(s, 0.35);
 
     // Rescale all text with data-base-fs
     var texts = svgEl.querySelectorAll('text[data-base-fs]');
@@ -414,7 +417,71 @@ function rescaleSMRElements() {
     }
 
     // Aircraft dots: now handled by the circle[data-base-r] loop above
-    // Aircraft labels: rescale via text[data-base-fs] loop above
+
+    // Aurora label background rects
+    // Position (x,y) uses s → fixed visual gap from dot at all zooms.
+    // Size (w,h,rx,sw) uses sL → shrinks when zoomed out, full size at ≥3x zoom.
+    var labelBgs = svgEl.querySelectorAll('.smr-label-bg');
+    for (var lb = 0; lb < labelBgs.length; lb++) {
+        var lbEl = labelBgs[lb];
+        var lbDotX   = parseFloat(lbEl.getAttribute('data-dot-x'));
+        var lbDotY   = parseFloat(lbEl.getAttribute('data-dot-y'));
+        var lbBaseOx = parseFloat(lbEl.getAttribute('data-base-ox'));
+        var lbBaseOy = parseFloat(lbEl.getAttribute('data-base-oy'));
+        var lbBaseW  = parseFloat(lbEl.getAttribute('data-base-w'));
+        var lbBaseH  = parseFloat(lbEl.getAttribute('data-base-h'));
+        var lbBaseRx = parseFloat(lbEl.getAttribute('data-base-rx'));
+        var lbBaseSw = parseFloat(lbEl.getAttribute('data-base-sw'));
+        lbEl.setAttribute('x',            lbDotX + lbBaseOx * sL);
+        lbEl.setAttribute('y',            lbDotY + lbBaseOy * sL);
+        lbEl.setAttribute('width',        lbBaseW  * sL);
+        lbEl.setAttribute('height',       lbBaseH  * sL);
+        lbEl.setAttribute('rx',           lbBaseRx * sL);
+        lbEl.setAttribute('stroke-width', lbBaseSw * sL);
+    }
+
+    // Aurora label leader lines (position uses s, stroke uses sL)
+    var labelLines = svgEl.querySelectorAll('.smr-label-line');
+    for (var ll = 0; ll < labelLines.length; ll++) {
+        var llEl = labelLines[ll];
+        var llDotX   = parseFloat(llEl.getAttribute('data-dot-x'));
+        var llDotY   = parseFloat(llEl.getAttribute('data-dot-y'));
+        var llBaseOx = parseFloat(llEl.getAttribute('data-base-ox2'));
+        var llBaseOy = parseFloat(llEl.getAttribute('data-base-oy2'));
+        var llBaseSw = parseFloat(llEl.getAttribute('data-base-sw'));
+        llEl.setAttribute('x1',           llDotX);
+        llEl.setAttribute('y1',           llDotY);
+        llEl.setAttribute('x2',           llDotX + llBaseOx * sL);
+        llEl.setAttribute('y2',           llDotY + llBaseOy * sL);
+        llEl.setAttribute('stroke-width', llBaseSw * sL);
+    }
+
+    // Aurora label text blocks (position uses s, line-spacing uses sL)
+    var labelTexts = svgEl.querySelectorAll('.smr-label-text');
+    for (var lt = 0; lt < labelTexts.length; lt++) {
+        var ltEl = labelTexts[lt];
+        var ltDotX   = parseFloat(ltEl.getAttribute('data-dot-x'));
+        var ltDotY   = parseFloat(ltEl.getAttribute('data-dot-y'));
+        var ltBaseOx = parseFloat(ltEl.getAttribute('data-base-ox'));
+        var ltBaseOy = parseFloat(ltEl.getAttribute('data-base-oy'));
+        var ltBaseDy = parseFloat(ltEl.getAttribute('data-base-dy'));
+        var ltNewX   = ltDotX + ltBaseOx * sL;
+        var ltNewY   = ltDotY + ltBaseOy * sL;
+        ltEl.setAttribute('x', ltNewX);
+        ltEl.setAttribute('y', ltNewY);
+        var tspans = ltEl.querySelectorAll('tspan');
+        for (var ts = 0; ts < tspans.length; ts++) {
+            tspans[ts].setAttribute('x', ltNewX);
+            if (ts > 0) tspans[ts].setAttribute('dy', ltBaseDy * sL);
+        }
+    }
+
+    // Aurora label font size (separate from generic text loop, uses sL)
+    var lblFontEls = svgEl.querySelectorAll('text[data-lbl-fs]');
+    for (var lf = 0; lf < lblFontEls.length; lf++) {
+        var lblBase = parseFloat(lblFontEls[lf].getAttribute('data-lbl-fs'));
+        lblFontEls[lf].setAttribute('font-size', lblBase * sL);
+    }
 }
 
 // --- Pan & Zoom interaction ---
@@ -517,6 +584,196 @@ function applySMRViewBox() {
     rescaleSMRElements();
 }
 
+// --- Aurora-style HMI ground label for SMR ---
+
+var smrLabelOffsets    = {};   // { reg: {ox, oy} } — persisted user-drag offsets
+var _smrLabelDragState = null;
+var _smrLabelDragInited = false;
+
+// Margins between box origin and text origin (in base SVG units, constant)
+var SMR_LBL_TXT_MARGIN_X = 0.4;
+var SMR_LBL_TXT_MARGIN_Y = 1.3;
+
+function renderSMRLabel(pos, plan, column, phase) {
+    var reg = plan.aircraft_registration;
+
+    // Lazy-load persisted drag offset
+    if (!smrLabelOffsets[reg]) {
+        var stored = localStorage.getItem('smr_lbl_offset_' + reg);
+        smrLabelOffsets[reg] = stored ? JSON.parse(stored) : { ox: 0, oy: 0 };
+    }
+    var userOx = smrLabelOffsets[reg].ox;
+    var userOy = smrLabelOffsets[reg].oy;
+
+    var typeWtc = escapeHtml((plan.aircraft_type || '----') + '/' + (plan.wake_turbulence_category || '-'));
+    var squawk  = escapeHtml(String(plan.squawk || generateSquawk(reg)));
+    var depDest = escapeHtml((plan.departure_ICAO || '----') + '>' + (plan.destination_ICAO || '----'));
+    var cflSpd  = escapeHtml(formatFL(plan.cruising_altitude) + ' ' + formatSpeed(plan.cruising_speed));
+
+    // Strip annotation labels lb1–lb5 from localStorage
+    var lblParts = [];
+    ['lb1', 'lb2', 'lb3', 'lb4', 'lb5'].forEach(function (key) {
+        var v = localStorage.getItem('strip_lbl_' + reg + '_' + key);
+        if (v && v.trim()) lblParts.push(v.trim());
+    });
+    var annotation = lblParts.join('  ');
+
+    var isRunway    = column === 'RUNWAY';
+    var isIncursion = isRunway && phase !== 'CLEARED' && phase !== 'LINEUP';
+    var dotColor  = isIncursion ? '#ff1744' : isRunway ? '#00e5ff' : '#ffc94a';
+    var dimColor  = isIncursion ? 'rgba(255,23,68,0.60)'
+                  : isRunway   ? 'rgba(0,229,255,0.55)'
+                  :               'rgba(255,201,74,0.55)';
+    var noteColor = 'rgba(220,220,255,0.85)';
+
+    var dx = pos.x, dy = pos.y;
+
+    var LINE_DY = 1.78;
+    var BOX_OX  = 1.8  + userOx;
+    var BOX_OY  = -5.0 + userOy;
+    var BOX_W   = 13.5;
+    var BOX_H   = LINE_DY * (annotation ? 6 : 5) + 2.0;
+    var TXT_OX  = BOX_OX + SMR_LBL_TXT_MARGIN_X;
+    var TXT_OY  = BOX_OY + SMR_LBL_TXT_MARGIN_Y;
+    var LINE_OY2 = BOX_OY + BOX_H / 2;   // leader ends at left-centre of box
+
+    var eReg = escapeHtml(reg);
+    var svg = '';
+
+    // Background rect (cursor:move signals middle-drag)
+    svg += '<rect class="smr-label-bg" data-reg="' + eReg + '"' +
+        ' x="' + (dx + BOX_OX) + '" y="' + (dy + BOX_OY) + '"' +
+        ' width="' + BOX_W + '" height="' + BOX_H + '"' +
+        ' data-dot-x="' + dx + '" data-dot-y="' + dy + '"' +
+        ' data-base-ox="' + BOX_OX + '" data-base-oy="' + BOX_OY + '"' +
+        ' data-base-w="' + BOX_W + '" data-base-h="' + BOX_H + '"' +
+        ' data-base-rx="0.4" data-base-sw="0.15"' +
+        ' fill="rgba(4,12,22,0.85)" stroke="' + dotColor + '" stroke-width="0.15" rx="0.4"' +
+        ' style="cursor:move"/>';
+
+    // Leader line: dot → left-centre of box
+    svg += '<line class="smr-label-line" data-reg="' + eReg + '"' +
+        ' x1="' + dx + '" y1="' + dy + '"' +
+        ' x2="' + (dx + BOX_OX) + '" y2="' + (dy + LINE_OY2) + '"' +
+        ' data-dot-x="' + dx + '" data-dot-y="' + dy + '"' +
+        ' data-base-ox2="' + BOX_OX + '" data-base-oy2="' + LINE_OY2 + '"' +
+        ' data-base-sw="0.12"' +
+        ' stroke="' + dotColor + '" stroke-width="0.12" opacity="0.6"/>';
+
+    // Label text block
+    svg += '<text class="smr-label-text" data-reg="' + eReg + '"' +
+        ' x="' + (dx + TXT_OX) + '" y="' + (dy + TXT_OY) + '"' +
+        ' data-dot-x="' + dx + '" data-dot-y="' + dy + '"' +
+        ' data-base-ox="' + TXT_OX + '" data-base-oy="' + TXT_OY + '"' +
+        ' data-lbl-fs="1.5" data-base-dy="' + LINE_DY + '"' +
+        ' font-size="1.5" font-family="monospace" style="cursor:move">';
+    svg += '<tspan x="' + (dx + TXT_OX) + '" dy="0" fill="' + dotColor + '" font-weight="700">' + eReg + '</tspan>';
+    svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + typeWtc + '</tspan>';
+    svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + squawk + '</tspan>';
+    svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + depDest + '</tspan>';
+    svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + cflSpd + '</tspan>';
+    if (annotation) {
+        svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + noteColor + '">' + escapeHtml(annotation) + '</tspan>';
+    }
+    svg += '</text>';
+
+    return svg;
+}
+
+// --- Middle-button drag to reposition SMR labels ---
+
+function _smrLabelElByReg(svgEl, cls, reg) {
+    var els = svgEl.querySelectorAll('.' + cls);
+    for (var i = 0; i < els.length; i++) {
+        if (els[i].getAttribute('data-reg') === reg) return els[i];
+    }
+    return null;
+}
+
+function initSMRLabelDrag() {
+    var svgEl = document.getElementById('smr-svg');
+    if (!svgEl) return;
+
+    // Attach middle-mousedown on freshly rendered bg and text elements
+    var draggables = svgEl.querySelectorAll('.smr-label-bg, .smr-label-text');
+    for (var d = 0; d < draggables.length; d++) {
+        (function (el) {
+            el.addEventListener('mousedown', function (e) {
+                if (e.button !== 1) return;
+                e.preventDefault();
+                var reg = el.getAttribute('data-reg');
+                var bg  = _smrLabelElByReg(svgEl, 'smr-label-bg', reg);
+                if (!bg) return;
+                _smrLabelDragState = {
+                    reg:      reg,
+                    startX:   e.clientX,
+                    startY:   e.clientY,
+                    startBgOx: parseFloat(bg.getAttribute('data-base-ox')),
+                    startBgOy: parseFloat(bg.getAttribute('data-base-oy'))
+                };
+                svgEl.style.cursor = 'move';
+            });
+        }(draggables[d]));
+    }
+
+    // Window-level handlers registered only once for the lifetime of the page
+    if (_smrLabelDragInited) return;
+    _smrLabelDragInited = true;
+
+    window.addEventListener('mousemove', function (e) {
+        if (!_smrLabelDragState) return;
+        var sv = document.getElementById('smr-svg');
+        if (!sv) return;
+
+        var rect = sv.getBoundingClientRect();
+        // Delta in base SVG units (scale-independent: 100 / rendered px)
+        var dOx = (e.clientX - _smrLabelDragState.startX) * 100 / rect.width;
+        var dOy = (e.clientY - _smrLabelDragState.startY) * 100 / rect.height;
+
+        var reg     = _smrLabelDragState.reg;
+        var newBgOx = _smrLabelDragState.startBgOx + dOx;
+        var newBgOy = _smrLabelDragState.startBgOy + dOy;
+
+        var bg   = _smrLabelElByReg(sv, 'smr-label-bg',   reg);
+        var line = _smrLabelElByReg(sv, 'smr-label-line', reg);
+        var txt  = _smrLabelElByReg(sv, 'smr-label-text', reg);
+
+        if (!bg) return;
+        var BOX_H = parseFloat(bg.getAttribute('data-base-h'));
+
+        bg.setAttribute('data-base-ox', newBgOx);
+        bg.setAttribute('data-base-oy', newBgOy);
+
+        if (line) {
+            line.setAttribute('data-base-ox2', newBgOx);
+            line.setAttribute('data-base-oy2', newBgOy + BOX_H / 2);
+        }
+        if (txt) {
+            txt.setAttribute('data-base-ox', newBgOx + SMR_LBL_TXT_MARGIN_X);
+            txt.setAttribute('data-base-oy', newBgOy + SMR_LBL_TXT_MARGIN_Y);
+        }
+
+        rescaleSMRElements();
+    });
+
+    window.addEventListener('mouseup', function (e) {
+        if (!_smrLabelDragState || e.button !== 1) return;
+        var reg = _smrLabelDragState.reg;
+        var sv  = document.getElementById('smr-svg');
+        var bg  = sv ? _smrLabelElByReg(sv, 'smr-label-bg', reg) : null;
+        if (bg) {
+            var finalOx = parseFloat(bg.getAttribute('data-base-ox'));
+            var finalOy = parseFloat(bg.getAttribute('data-base-oy'));
+            // Store offset relative to the hardcoded defaults (BOX_OX=1.8, BOX_OY=-5.0)
+            var offset = { ox: finalOx - 1.8, oy: finalOy - (-5.0) };
+            smrLabelOffsets[reg] = offset;
+            localStorage.setItem('smr_lbl_offset_' + reg, JSON.stringify(offset));
+        }
+        _smrLabelDragState = null;
+        if (sv) sv.style.cursor = 'grab';
+    });
+}
+
 // --- Place aircraft on SMR based on strip phase ---
 
 function updateSMRAircraft(plans) {
@@ -588,11 +845,12 @@ function updateSMRAircraft(plans) {
 
         group.innerHTML +=
             '<circle class="' + dotClass + '" cx="' + pos.x + '" cy="' + pos.y + '" r="1.0" data-base-r="1.0"/>' +
-            '<text class="smr-aircraft" x="' + (pos.x + 1.4) + '" y="' + (pos.y + 0.5) +
-            '" data-base-fs="1.5" font-size="1.5" dominant-baseline="central">' + escapeHtml(reg.slice(-4)) + '</text>';
+            renderSMRLabel(pos, plan, column, phase);
     });
     // Rescale immediately to match current zoom level
     rescaleSMRElements();
+    // Attach middle-button drag handlers to the freshly rendered labels
+    initSMRLabelDrag();
 }
 
 // ---- RIMCAS (Runway Incursion Alert) ----

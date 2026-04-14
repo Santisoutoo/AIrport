@@ -298,6 +298,10 @@ function createStripElement(plan, phase, isArrival) {
         label.addEventListener('blur', function () {
             strip.draggable = true;
             localStorage.setItem('strip_lbl_' + reg + '_' + label.dataset.key, label.textContent.trim());
+            // Reflect updated annotation on the SMR label immediately
+            if (typeof updateSMRAircraft === 'function' && typeof flightPlans !== 'undefined') {
+                updateSMRAircraft(flightPlans);
+            }
         });
         label.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') { e.preventDefault(); label.blur(); }
