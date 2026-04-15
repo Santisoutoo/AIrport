@@ -27,6 +27,41 @@ var COLUMN_DEFAULT_PHASE = {
 
 var _dropZonesInited = false;
 
+// User-defined strip order within each column: { 'PRE_TAXI': ['REG1','REG2',...], ... }
+var stripOrder = {};
+
+// Column name -> column body element ID (reverse of COLUMN_DEFAULT_PHASE)
+var COLUMN_BODY_ID = {
+    'PRE_TAXI':  'strips-pretaxi',
+    'TAXI':      'strips-taxi',
+    'RUNWAY':    'strips-runway',
+    'ARRIVALS':  'strips-arrivals'
+};
+
+// ---- Strip order helpers ----
+
+function _ensureOrder(reg, column) {
+    if (!stripOrder[column]) stripOrder[column] = [];
+    if (stripOrder[column].indexOf(reg) === -1) stripOrder[column].push(reg);
+}
+
+function _moveOrder(dragReg, targetReg, insertBefore, targetColumn) {
+    // Remove from all columns first
+    Object.keys(stripOrder).forEach(function (col) {
+        stripOrder[col] = stripOrder[col].filter(function (r) { return r !== dragReg; });
+    });
+    if (!stripOrder[targetColumn]) stripOrder[targetColumn] = [];
+    var order = stripOrder[targetColumn];
+    var idx = order.indexOf(targetReg);
+    if (idx === -1) {
+        order.push(dragReg);
+    } else if (insertBefore) {
+        order.splice(idx, 0, dragReg);
+    } else {
+        order.splice(idx + 1, 0, dragReg);
+    }
+}
+
 // ---- Load strip states from server ----
 
 function loadStripStates(callback) {
@@ -73,60 +108,70 @@ function setStripPhase(reg, phase) {
 // ---- Render strips into 4 columns ----
 
 function renderFlightStrips(plans) {
-    var preTaxiContainer = document.getElementById('strips-pretaxi');
-    var taxiContainer    = document.getElementById('strips-taxi');
-    var runwayContainer  = document.getElementById('strips-runway');
-    var arrivalsContainer = document.getElementById('strips-arrivals');
+    var containers = {
+        PRE_TAXI:  document.getElementById('strips-pretaxi'),
+        TAXI:      document.getElementById('strips-taxi'),
+        RUNWAY:    document.getElementById('strips-runway'),
+        ARRIVALS:  document.getElementById('strips-arrivals')
+    };
 
-    if (!preTaxiContainer || !taxiContainer || !runwayContainer || !arrivalsContainer) return;
+    if (!containers.PRE_TAXI || !containers.TAXI || !containers.RUNWAY || !containers.ARRIVALS) return;
 
-    preTaxiContainer.innerHTML  = '';
-    taxiContainer.innerHTML     = '';
-    runwayContainer.innerHTML   = '';
-    arrivalsContainer.innerHTML = '';
+    containers.PRE_TAXI.innerHTML  = '';
+    containers.TAXI.innerHTML      = '';
+    containers.RUNWAY.innerHTML    = '';
+    containers.ARRIVALS.innerHTML  = '';
 
     var counts = { PRE_TAXI: 0, TAXI: 0, RUNWAY: 0, ARRIVALS: 0 };
 
     if (!plans || plans.length === 0) {
-        preTaxiContainer.innerHTML = emptyState();
-        arrivalsContainer.innerHTML = emptyState();
+        containers.PRE_TAXI.innerHTML  = emptyState();
+        containers.ARRIVALS.innerHTML  = emptyState();
         updateColumnCounts(counts);
         return;
     }
 
+    // Group plans by column and register in stripOrder
+    var byColumn = { PRE_TAXI: [], TAXI: [], RUNWAY: [], ARRIVALS: [] };
     plans.forEach(function (plan) {
         var reg = plan.aircraft_registration;
         var isArrival = plan.destination_ICAO === currentICAO;
-
-        // Auto-assign initial phase if not yet tracked
         if (!stripStates[reg]) {
             var defaultPhase = isArrival ? 'APPROACH' : 'PRE_TAXI';
             stripStates[reg] = { phase: defaultPhase, column: PHASE_COLUMN[defaultPhase] };
         }
-
         var column = getStripColumn(reg);
-        var phase  = getStripPhase(reg);
-        var strip  = createStripElement(plan, phase, isArrival);
-
-        if (column === 'TAXI') {
-            taxiContainer.appendChild(strip);
-            counts.TAXI++;
-        } else if (column === 'RUNWAY') {
-            runwayContainer.appendChild(strip);
-            counts.RUNWAY++;
-        } else if (column === 'ARRIVALS') {
-            arrivalsContainer.appendChild(strip);
-            counts.ARRIVALS++;
-        } else {
-            preTaxiContainer.appendChild(strip);
-            counts.PRE_TAXI++;
-        }
+        _ensureOrder(reg, column);
+        byColumn[column].push(plan);
     });
 
-    if (counts.PRE_TAXI === 0) preTaxiContainer.innerHTML = emptyState();
-    if (counts.TAXI === 0)     taxiContainer.innerHTML = emptyState();
-    if (counts.RUNWAY === 0)   runwayContainer.innerHTML = emptyState();
-    if (counts.ARRIVALS === 0) arrivalsContainer.innerHTML = emptyState();
+    // Sort each column by user-defined order, new arrivals go to the end
+    ['PRE_TAXI', 'TAXI', 'RUNWAY', 'ARRIVALS'].forEach(function (col) {
+        var order = stripOrder[col] || [];
+        byColumn[col].sort(function (a, b) {
+            var ai = order.indexOf(a.aircraft_registration);
+            var bi = order.indexOf(b.aircraft_registration);
+            if (ai === -1) ai = Infinity;
+            if (bi === -1) bi = Infinity;
+            return ai - bi;
+        });
+    });
+
+    // Render each column in order
+    ['PRE_TAXI', 'TAXI', 'RUNWAY', 'ARRIVALS'].forEach(function (col) {
+        byColumn[col].forEach(function (plan) {
+            var reg = plan.aircraft_registration;
+            var isArrival = plan.destination_ICAO === currentICAO;
+            var strip = createStripElement(plan, getStripPhase(reg), isArrival);
+            containers[col].appendChild(strip);
+            counts[col]++;
+        });
+    });
+
+    if (counts.PRE_TAXI === 0) containers.PRE_TAXI.innerHTML = emptyState();
+    if (counts.TAXI === 0)     containers.TAXI.innerHTML     = emptyState();
+    if (counts.RUNWAY === 0)   containers.RUNWAY.innerHTML   = emptyState();
+    if (counts.ARRIVALS === 0) containers.ARRIVALS.innerHTML = emptyState();
 
     updateColumnCounts(counts);
 
@@ -154,7 +199,26 @@ function emptyState() {
         '<div>Empty</div></div>';
 }
 
-// ---- Create Strip Card ----
+// ---- Format helpers ----
+
+function formatFL(feet) {
+    if (!feet) return '----';
+    if (feet >= 10000) return 'F' + Math.round(feet / 100);
+    return 'A' + String(Math.round(feet / 100)).padStart(3, '0');
+}
+
+function formatSpeed(knots) {
+    if (!knots) return '-----';
+    return 'N' + String(knots).padStart(4, '0');
+}
+
+function formatTime(hhmm) {
+    if (!hhmm && hhmm !== 0) return '--:--';
+    var s = String(Math.floor(hhmm)).padStart(4, '0');
+    return s.slice(0, 2) + ':' + s.slice(2, 4);
+}
+
+// ---- Create Strip Card (IVAO paper-strip grid) ----
 
 function createStripElement(plan, phase, isArrival) {
     var strip = document.createElement('div');
@@ -170,96 +234,133 @@ function createStripElement(plan, phase, isArrival) {
         strip.classList.remove('dragging');
     });
 
-    var isIFR = plan.flight_rules === 'I';
-    var rulesClass = isIFR ? 'ifr' : 'vfr';
-    var rulesText = isIFR ? 'IFR' : 'VFR';
+    var reg      = plan.aircraft_registration;
+    var isIFR    = plan.flight_rules !== 'V';
+    var cfl      = formatFL(plan.cruising_altitude);
+    var spd      = formatSpeed(plan.cruising_speed);
+    var depTime  = formatTime(plan.departure_time);
+    var acType   = escapeHtml(plan.aircraft_type || '----');
+    var wtc      = escapeHtml(plan.wake_turbulence_category || '-');
+    var squawk   = plan.squawk || generateSquawk(reg);
+    var depIcao  = escapeHtml(plan.departure_ICAO || '----');
+    var destIcao = escapeHtml(plan.destination_ICAO || '----');
+    var route    = escapeHtml(plan.route || 'DCT');
+    var remarks  = escapeHtml(plan.other_info || plan.remarks || '');
 
-    // WTC
-    var wtcClasses = { 'H': 'wtc-heavy', 'M': 'wtc-medium', 'L': 'wtc-light', 'J': 'wtc-super' };
-    var wtcClass = wtcClasses[plan.wake_turbulence_category] || 'wtc-medium';
-
-    // Altitude display
-    var altDisplay;
-    if (plan.cruising_altitude >= 10000) {
-        altDisplay = 'FL' + Math.round(plan.cruising_altitude / 100);
-    } else {
-        altDisplay = plan.cruising_altitude + 'ft';
+    function lbl(key) {
+        return '<div class="fs-cell fs-label" data-key="' + key + '"></div>';
     }
 
-    // Squawk (generate from registration if not available)
-    var squawk = plan.squawk || generateSquawk(plan.aircraft_registration);
+    // Grid layout (4 rows × 5 cols, route spans rows 1-3 in col 5):
+    // Row 1: dep | cfl  | callsign | dest    | route (span 3)
+    // Row 2: I/V | type | label-1  | empty   |
+    // Row 3: --- | spd  | label-2  | depTime |
+    // Row 4: sqk | lbl3 | label-4  | label-5 | remarks
+    strip.innerHTML =
+        '<div class="fs-grid">' +
+            // Row 1
+            '<div class="fs-cell fs-dep">' + depIcao + '</div>' +
+            '<div class="fs-cell fs-cfl">' + cfl + '</div>' +
+            '<div class="fs-cell fs-call">' + escapeHtml(reg) + '</div>' +
+            '<div class="fs-cell fs-dest' + (isArrival ? ' fs-arr-dest' : '') + '">' + destIcao + '</div>' +
+            '<div class="fs-cell fs-route">' + route + '</div>' +
+            // Row 2
+            '<div class="fs-cell fs-rules ' + (isIFR ? 'fs-ifr' : 'fs-vfr') + '">' + (isIFR ? 'I' : 'V') + '</div>' +
+            '<div class="fs-cell fs-type">' + acType + '/' + wtc + '</div>' +
+            lbl('lb1') +
+            '<div class="fs-cell fs-emp"></div>' +
+            // Row 3
+            '<div class="fs-cell fs-emp"></div>' +
+            '<div class="fs-cell fs-speed">' + spd + '</div>' +
+            lbl('lb2') +
+            '<div class="fs-cell fs-time">' + depTime + '</div>' +
+            // Row 4
+            '<div class="fs-cell fs-squawk">' + squawk + '</div>' +
+            lbl('lb3') +
+            lbl('lb4') +
+            lbl('lb5') +
+            '<div class="fs-cell fs-rmk">' + remarks + '</div>' +
+        '</div>';
 
-    // SID (extract first waypoint from route or use route)
-    var sid = plan.route ? truncateRoute(plan.route, 12) : 'DCT';
+    // Load saved label content from localStorage
+    strip.querySelectorAll('.fs-label').forEach(function (label) {
+        var saved = localStorage.getItem('strip_lbl_' + reg + '_' + label.dataset.key);
+        if (saved) label.textContent = saved;
+        label.contentEditable = 'true';
+    });
 
-    // Build strip HTML
-    if (isArrival) {
-        // Arrival strip: show origin, star/approach info instead of SID/dest
-        var origin = plan.departure_ICAO || '----';
-        strip.innerHTML =
-            '<div class="strip-info-row">' +
-                '<span class="strip-rules ' + rulesClass + '">' + rulesText + '</span>' +
-                '<span class="strip-callsign">' + escapeHtml(plan.aircraft_registration) + '</span>' +
-                '<span class="strip-type">' + escapeHtml(plan.aircraft_type) + '</span>' +
-                '<span class="strip-wtc ' + wtcClass + '">' + escapeHtml(plan.wake_turbulence_category) + '</span>' +
-            '</div>' +
-            '<div class="strip-details-row">' +
-                '<span><span class="strip-detail-label">FROM:</span> <span class="strip-sid">' + escapeHtml(origin) + '</span></span>' +
-                '<span><span class="strip-detail-label">SQ:</span> <span class="strip-sq">' + squawk + '</span></span>' +
-                '<span class="strip-alt">' + altDisplay + '</span>' +
-                '<span class="strip-dest arr-origin">' + escapeHtml(plan.destination_ICAO) + '</span>' +
-            '</div>' +
-            '<div class="strip-actions">' +
-                actionBtn('APPR', 'btn-approach', plan.aircraft_registration, phase, 'APPROACH') +
-                actionBtn('LANDED', 'btn-landed', plan.aircraft_registration, phase, 'LANDED') +
-                actionBtn('VACATING', 'btn-vacating', plan.aircraft_registration, phase, 'VACATING') +
-            '</div>';
-    } else {
-        strip.innerHTML =
-            '<div class="strip-info-row">' +
-                '<span class="strip-rules ' + rulesClass + '">' + rulesText + '</span>' +
-                '<span class="strip-callsign">' + escapeHtml(plan.aircraft_registration) + '</span>' +
-                '<span class="strip-type">' + escapeHtml(plan.aircraft_type) + '</span>' +
-                '<span class="strip-wtc ' + wtcClass + '">' + escapeHtml(plan.wake_turbulence_category) + '</span>' +
-            '</div>' +
-            '<div class="strip-details-row">' +
-                '<span><span class="strip-detail-label">SID:</span> <span class="strip-sid">' + escapeHtml(sid) + '</span></span>' +
-                '<span><span class="strip-detail-label">SQ:</span> <span class="strip-sq">' + squawk + '</span></span>' +
-                '<span class="strip-alt">' + altDisplay + '</span>' +
-                '<span class="strip-dest">' + escapeHtml(plan.destination_ICAO) + '</span>' +
-            '</div>' +
-            '<div class="strip-actions">' +
-                actionBtn('PUSH', 'btn-push', plan.aircraft_registration, phase, 'PUSHBACK') +
-                actionBtn('TAXI', 'btn-taxi', plan.aircraft_registration, phase, 'TAXI') +
-                actionBtn('LINE-UP', 'btn-lineup', plan.aircraft_registration, phase, 'LINEUP') +
-                actionBtn('CLEARED', 'btn-cleared', plan.aircraft_registration, phase, 'CLEARED') +
-            '</div>';
-    }
-
-    // Attach button event listeners
-    strip.querySelectorAll('.strip-action-btn').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
+    // Labels: pause dragging while editing, save on blur
+    strip.querySelectorAll('.fs-label').forEach(function (label) {
+        label.addEventListener('mousedown', function (e) {
+            strip.draggable = false;
             e.stopPropagation();
-            var targetPhase = btn.dataset.phase;
-            var reg = btn.dataset.reg;
-            // PUSH toggles: click again while already in PUSHBACK → revert to PRE_TAXI
-            if (targetPhase === 'PUSHBACK' && getStripPhase(reg) === 'PUSHBACK') {
-                targetPhase = 'PRE_TAXI';
+        });
+        label.addEventListener('blur', function () {
+            strip.draggable = true;
+            localStorage.setItem('strip_lbl_' + reg + '_' + label.dataset.key, label.textContent.trim());
+            // Reflect updated annotation on the SMR label immediately
+            if (typeof updateSMRAircraft === 'function' && typeof flightPlans !== 'undefined') {
+                updateSMRAircraft(flightPlans);
             }
-            setStripPhase(reg, targetPhase);
-            // Re-render all strips
-            if (typeof rerenderStrips === 'function') rerenderStrips();
+        });
+        label.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); label.blur(); }
         });
     });
 
-    return strip;
-}
+    // Intra-column reordering (and cross-column drop at specific position)
+    strip.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var rect = strip.getBoundingClientRect();
+        var before = e.clientY < (rect.top + rect.height / 2);
+        strip.dataset.dropInsert = before ? 'before' : 'after';
+        strip.classList.toggle('drop-before', before);
+        strip.classList.toggle('drop-after', !before);
+    });
 
-function actionBtn(label, cssClass, reg, currentPhase, targetPhase) {
-    var activeClass = currentPhase === targetPhase ? ' active-phase' : '';
-    return '<button class="strip-action-btn ' + cssClass + activeClass +
-        '" data-phase="' + targetPhase +
-        '" data-reg="' + escapeHtml(reg) + '">' + label + '</button>';
+    strip.addEventListener('dragleave', function (e) {
+        if (!strip.contains(e.relatedTarget)) {
+            strip.classList.remove('drop-before', 'drop-after');
+            delete strip.dataset.dropInsert;
+        }
+    });
+
+    strip.addEventListener('drop', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var insertBefore = strip.dataset.dropInsert !== 'after';
+        strip.classList.remove('drop-before', 'drop-after');
+        delete strip.dataset.dropInsert;
+
+        var dragReg = e.dataTransfer.getData('text/plain');
+        if (!dragReg || dragReg === reg) return;
+
+        var dragColumn   = getStripColumn(dragReg);
+        var targetColumn = getStripColumn(reg);
+
+        _moveOrder(dragReg, reg, insertBefore, targetColumn);
+
+        if (dragColumn === targetColumn) {
+            // Same bay: move the DOM element directly, no full rerender
+            var dragEl = null;
+            document.querySelectorAll('.flight-strip').forEach(function (el) {
+                if (el.dataset.registration === dragReg) dragEl = el;
+            });
+            if (dragEl) {
+                strip.parentNode.insertBefore(dragEl, insertBefore ? strip : strip.nextSibling);
+            }
+        } else {
+            // Different column: change phase then rerender
+            var newPhase = COLUMN_DEFAULT_PHASE[COLUMN_BODY_ID[targetColumn]];
+            if (newPhase) {
+                setStripPhase(dragReg, newPhase);
+                if (typeof rerenderStrips === 'function') rerenderStrips();
+            }
+        }
+    });
+
+    return strip;
 }
 
 function generateSquawk(reg) {
@@ -310,9 +411,17 @@ function _initDropZones() {
             var reg = e.dataTransfer.getData('text/plain');
             if (!reg) return;
             var newPhase = COLUMN_DEFAULT_PHASE[colId];
-            if (newPhase && getStripPhase(reg) !== newPhase) {
-                setStripPhase(reg, newPhase);
-                if (typeof rerenderStrips === 'function') rerenderStrips();
+            if (newPhase) {
+                var targetColumn = PHASE_COLUMN[newPhase] || 'PRE_TAXI';
+                // Remove from old column order and append to end of target column
+                Object.keys(stripOrder).forEach(function (c) {
+                    stripOrder[c] = stripOrder[c].filter(function (r) { return r !== reg; });
+                });
+                _ensureOrder(reg, targetColumn);
+                if (getStripPhase(reg) !== newPhase) {
+                    setStripPhase(reg, newPhase);
+                    if (typeof rerenderStrips === 'function') rerenderStrips();
+                }
             }
         });
     });

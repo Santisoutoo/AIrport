@@ -13,6 +13,8 @@ from agent.agent import gnd_agent
 logger = logging.getLogger(__name__)
 
 _APP_NAME = "airport_gnd"
+_session_service = InMemorySessionService()
+_runner = Runner(agent=gnd_agent, app_name=_APP_NAME, session_service=_session_service)
 
 
 def run_agent(
@@ -27,15 +29,16 @@ def run_agent(
 
     logger.info("[GND] run_agent | session=%s | msg=%r", session_id, enriched[:200])
 
-    session_service = InMemorySessionService()
-    runner = Runner(agent=gnd_agent, app_name=_APP_NAME, session_service=session_service)
-
     async def _run() -> str:
-        await session_service.create_session(
+        existing = await _session_service.get_session(
             app_name=_APP_NAME, user_id="pilot", session_id=session_id
         )
+        if not existing:
+            await _session_service.create_session(
+                app_name=_APP_NAME, user_id="pilot", session_id=session_id
+            )
         reply_parts = []
-        async for event in runner.run_async(
+        async for event in _runner.run_async(
             user_id="pilot",
             session_id=session_id,
             new_message=Content(role="user", parts=[Part(text=enriched)]),

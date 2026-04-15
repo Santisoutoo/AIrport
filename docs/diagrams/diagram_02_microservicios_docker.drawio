@@ -1,0 +1,107 @@
+<mxfile host="65bd71144e">
+    <diagram id="d02-docker" name="02 — Microservicios Docker Compose">
+        <mxGraphModel dx="1310" dy="1147" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="&lt;b&gt;&lt;font style=&quot;font-size:18px;&quot;&gt;AIrport — Arquitectura de Microservicios (Docker Compose)&lt;/font&gt;&lt;/b&gt;" style="text;html=1;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="20" width="900" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="docker-net" value="&lt;b&gt;Red Docker Interna (airport_network)&lt;/b&gt;" style="swimlane;startSize=30;fillColor=#f0f8ff;strokeColor=#4a86e8;dashed=1;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="80" width="1350" height="720" as="geometry"/>
+                </mxCell>
+                <mxCell id="infra-group" value="&lt;b&gt;Infraestructura (Stateful)&lt;/b&gt;" style="swimlane;startSize=25;fillColor=#fffde7;strokeColor=#d6b656;fontStyle=1;fontSize=10;" parent="docker-net" vertex="1">
+                    <mxGeometry x="20" y="50" width="1310" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis-c" value="&lt;b&gt;redis&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;image: redis:7-alpine&lt;br/&gt;interno: 6379&lt;br/&gt;expuesto: 6379&lt;br/&gt;&lt;br/&gt;Estado en tiempo real&lt;br/&gt;Pub/Sub aeronaves&lt;br/&gt;Comandos movimiento&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="infra-group" vertex="1">
+                    <mxGeometry x="60" y="35" width="170" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="pg-c" value="&lt;b&gt;postgres&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;image: postgres:15&lt;br/&gt;interno: 5432&lt;br/&gt;expuesto: 5432&lt;br/&gt;&lt;br/&gt;aircraft_clearances&lt;br/&gt;flight_plans&lt;br/&gt;atis&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="infra-group" vertex="1">
+                    <mxGeometry x="370" y="35" width="170" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="influx-c" value="&lt;b&gt;influxdb&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;image: influxdb:2.7&lt;br/&gt;interno: 8086&lt;br/&gt;expuesto: 8087&lt;br/&gt;&lt;br/&gt;Measurement: aircraft_state&lt;br/&gt;Retention: 1 semana&lt;br/&gt;Tags: session, reg, type&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="infra-group" vertex="1">
+                    <mxGeometry x="680" y="35" width="170" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="svc-group" value="&lt;b&gt;Microservicios de Aplicación (FastAPI)&lt;/b&gt;" style="swimlane;startSize=25;fillColor=#e8f5e9;strokeColor=#4caf50;fontStyle=1;fontSize=10;" parent="docker-net" vertex="1">
+                    <mxGeometry x="20" y="270" width="1310" height="430" as="geometry"/>
+                </mxCell>
+                <mxCell id="asr-c" value="&lt;b&gt;asr_service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Puerto: 8000&lt;br/&gt;FastAPI&lt;br/&gt;—&lt;br/&gt;Whisper medium.en&lt;br/&gt;fine-tuned ATC&lt;br/&gt;LLM corrector (Gemini)&lt;br/&gt;POST /api/v1/asr/transcribe&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;fontSize=10;" parent="svc-group" vertex="1">
+                    <mxGeometry x="20" y="135" width="195" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="fp-c" value="&lt;b&gt;flight_plan_service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Puerto: 8003&lt;br/&gt;FastAPI&lt;br/&gt;—&lt;br/&gt;Genera planes IFR&lt;br/&gt;flightplandatabase.com API&lt;br/&gt;GET/POST /api/v1/flight-plans&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;fontSize=10;" parent="svc-group" vertex="1">
+                    <mxGeometry x="250" y="130" width="195" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="weather-c" value="&lt;b&gt;weather_service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Puerto: 8004&lt;br/&gt;FastAPI&lt;br/&gt;—&lt;br/&gt;METAR · TAF · ATIS&lt;br/&gt;Aviation Weather Center&lt;br/&gt;GET /api/v1/weather/atis&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;fontSize=10;" parent="svc-group" vertex="1">
+                    <mxGeometry x="500" y="130" width="195" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="hmi-c" value="&lt;b&gt;controller_hmi_service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Puerto: 8005&lt;br/&gt;FastAPI + HTML/JS&lt;br/&gt;—&lt;br/&gt;UI web controlador&lt;br/&gt;Flight strips · Radar suelo&lt;br/&gt;ATIS display&lt;br/&gt;POST /api/v1/hmi/transmit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;fontSize=10;" parent="svc-group" vertex="1">
+                    <mxGeometry x="720" y="135" width="195" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-hmi-asr2" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" parent="svc-group" source="hmi-c" target="asr-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="orch-c" value="&lt;b&gt;orchestrator_service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Puerto: 8006&lt;br/&gt;FastAPI + Google ADK&lt;br/&gt;—&lt;br/&gt;Enrutamiento DEL/GND/TWR&lt;br/&gt;Estado máquina aeronaves&lt;br/&gt;Tools: taxi, advance, forward&lt;br/&gt;POST /api/v1/dispatch/transmit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;arcSize=10;fontSize=10;" parent="svc-group" vertex="1">
+                    <mxGeometry x="970" y="60" width="195" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-hmi-orch2" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" parent="svc-group" source="hmi-c" target="orch-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-orch-fp2" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" parent="svc-group" source="orch-c" target="fp-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-orch-weather2" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" parent="svc-group" source="orch-c" target="weather-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-browser-hmi" value="HTTP :8005" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;fontSize=9;" parent="svc-group" source="orch-c" target="hmi-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="gcloud-ext" value="&lt;b&gt;Google Cloud Run&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;DEL / GND / TWR Agents&lt;br/&gt;Gemini Flash (IA)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;arcSize=10;fontSize=11;" parent="svc-group" vertex="1">
+                    <mxGeometry x="980" y="320" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-orch-gcloud" value="HTTPS (Cloud Run)" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;fontSize=9;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="svc-group" source="orch-c" target="gcloud-ext" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1080" y="310"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-fp-pg2" value="SQL" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;fontSize=9;" parent="docker-net" source="fp-c" target="pg-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-weather-pg2" value="SQL" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;fontSize=9;" parent="docker-net" source="weather-c" target="pg-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-orch-pg2" value="SQL" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;fontSize=9;" parent="docker-net" source="orch-c" target="pg-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-orch-redis2" value="Redis" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;fontSize=9;" parent="docker-net" source="orch-c" target="redis-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="xplane-ext" value="&lt;b&gt;X-Plane 12 + Plugin&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Proceso externo (no Docker)&lt;br/&gt;XPPython3 in-process&lt;br/&gt;Accede a Redis y HMI via localhost&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;arcSize=10;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1430" y="440" width="230" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-xp-redis3" value="Redis :6379 (localhost)" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d79b00;dashed=1;fontSize=9;" parent="1" source="xplane-ext" target="redis-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-xp-influx3" value="InfluxDB :8087 (localhost)" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d79b00;dashed=1;fontSize=9;" parent="1" source="xplane-ext" target="influx-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-xp-hmi3" value="HTTP :8005 (sync ICAO)" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d79b00;dashed=1;fontSize=9;" parent="1" source="xplane-ext" target="hmi-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="browser-ext" value="&lt;b&gt;Navegador Web&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Controlador ATC&lt;br/&gt;localhost:8005&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1435" y="600" width="200" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;fontSize=9;" edge="1" parent="1" source="browser-ext" target="orch-c">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1420" y="535" as="sourcePoint"/>
+                        <mxPoint x="965" y="565" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="3" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="orch-c" target="xplane-ext">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

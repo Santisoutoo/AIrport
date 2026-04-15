@@ -118,6 +118,80 @@ html, body {
     text-shadow: 0 0 8px rgba(0, 230, 118, 0.3);
 }
 
+/* --- Stopwatch widget --- */
+#stopwatch-widget {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 4px 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s;
+}
+
+#stopwatch-widget:hover {
+    border-color: var(--text-dim);
+}
+
+#stopwatch-widget.sw-active {
+    border-color: var(--hmi-red);
+    box-shadow: 0 0 6px rgba(255, 23, 68, 0.2);
+}
+
+.sw-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.sw-dot.sw-running {
+    background: var(--hmi-red);
+    box-shadow: 0 0 5px var(--hmi-red);
+    animation: sw-pulse 1s ease-in-out infinite;
+}
+
+@keyframes sw-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+}
+
+.sw-display {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 2px;
+    min-width: 48px;
+    text-align: center;
+    transition: color 0.2s;
+}
+
+#stopwatch-widget.sw-active .sw-display {
+    color: var(--hmi-red);
+    text-shadow: 0 0 6px rgba(255, 23, 68, 0.3);
+}
+
+.sw-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.sw-btn:hover {
+    color: var(--text-primary);
+}
+
 .badge {
     display: inline-block;
     padding: 2px 10px;
@@ -546,7 +620,8 @@ html, body {
     border-left: 4px solid var(--phase-default);
     border-radius: 4px;
     margin-bottom: 4px;
-    padding: 6px 8px;
+    padding: 0;
+    overflow: hidden;
     font-family: var(--font-mono);
     font-size: 11px;
     transition: border-color 0.3s, box-shadow 0.3s, transform 0.15s;
@@ -573,6 +648,17 @@ html, body {
     outline-offset: -4px;
 }
 
+/* Intra-column reorder drop indicators */
+.flight-strip.drop-before {
+    border-top: 2px solid var(--hmi-cyan);
+    margin-top: -1px;
+}
+
+.flight-strip.drop-after {
+    border-bottom: 2px solid var(--hmi-cyan);
+    margin-bottom: -1px;
+}
+
 /* Phase border colors */
 .flight-strip.phase-pretaxi { border-left-color: var(--phase-default); }
 .flight-strip.phase-pushback { border-left-color: var(--phase-pushback); }
@@ -595,153 +681,87 @@ html, body {
     box-shadow: 0 0 8px rgba(79, 195, 247, 0.25);
 }
 
-/* Strip top row: flight info */
-.strip-info-row {
+/* --- IVAO-style paper strip grid --- */
+
+/* 5 columns: dep/rules/empty/squawk | cfl/type/speed/lbl | callsign/lbl/lbl/lbl | dest/emp/time/lbl | route(3rows)/rmk */
+.fs-grid {
+    display: grid;
+    grid-template-columns: 46px 62px 1fr 52px 2fr;
+    grid-auto-rows: auto;
+    font-family: var(--font-mono);
+}
+
+.fs-cell {
+    padding: 2px 5px;
+    font-size: 10px;
+    color: var(--text-secondary);
+    min-height: 18px;
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    overflow: hidden;
+    white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 4px;
 }
 
-.strip-rules {
-    display: inline-block;
-    padding: 1px 5px;
-    border-radius: 2px;
+/* Row 4 cells (children 14-18): no bottom border */
+.fs-grid > .fs-cell:nth-child(n+14) {
+    border-bottom: none;
+}
+
+/* Route: col 5, spans rows 1-3 */
+.fs-route {
+    grid-column: 5;
+    grid-row: 1 / 4;
+    border-right: none;
+    white-space: normal;
+    word-break: break-word;
+    align-items: flex-start;
+    padding: 3px 5px;
     font-size: 9px;
-    font-weight: 700;
-}
-
-.strip-rules.ifr {
-    background: var(--hmi-cyan);
-    color: #000;
-}
-
-.strip-rules.vfr {
-    background: #f9a825;
-    color: #000;
-}
-
-.strip-callsign {
-    font-weight: 700;
-    font-size: 13px;
-    color: var(--text-primary);
-    letter-spacing: 0.5px;
-}
-
-.strip-type {
-    font-size: 10px;
     color: var(--hmi-cyan);
+    line-height: 1.5;
 }
 
-.strip-wtc {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
-    text-align: center;
-    border-radius: 50%;
-    font-size: 9px;
-    font-weight: 700;
-}
-
-.wtc-heavy { background: var(--hmi-red); color: #fff; }
-.wtc-medium { background: var(--hmi-cyan); color: #000; }
-.wtc-light { background: var(--hmi-green); color: #000; }
-.wtc-super { background: var(--hmi-magenta); color: #fff; }
-
-.strip-detail {
-    font-size: 10px;
-    color: var(--text-secondary);
-}
-
-.strip-detail-label {
-    color: var(--text-dim);
+/* Remarks: col 5, row 4 */
+.fs-rmk {
+    border-right: none;
+    white-space: normal;
+    word-break: break-word;
     font-size: 8px;
+    color: var(--text-dim);
+    line-height: 1.4;
+    align-items: flex-start;
+    padding: 2px 5px;
 }
 
-/* Strip details row */
-.strip-details-row {
-    display: flex;
-    gap: 8px;
-    font-size: 10px;
-    color: var(--text-secondary);
-    margin-bottom: 5px;
-    flex-wrap: wrap;
+/* Field colours */
+.fs-dep    { color: var(--text-primary); font-weight: 700; font-size: 11px; }
+.fs-cfl    { color: var(--hmi-cyan); font-weight: 600; }
+.fs-call   { color: var(--text-primary); font-weight: 700; font-size: 12px; letter-spacing: 0.5px; }
+.fs-dest   { color: var(--hmi-red); font-weight: 700; font-size: 11px; }
+.fs-arr-dest { color: var(--hmi-green) !important; }
+.fs-rules  { font-weight: 700; font-size: 11px; }
+.fs-ifr    { color: var(--hmi-cyan); }
+.fs-vfr    { color: var(--hmi-green); }
+.fs-type   { color: var(--text-secondary); font-size: 9px; }
+.fs-speed  { color: var(--hmi-amber); }
+.fs-time   { color: var(--text-primary); }
+.fs-squawk { color: var(--hmi-orange); font-weight: 600; }
+
+/* Editable label cells */
+.fs-label {
+    cursor: text;
+    background: rgba(255, 255, 255, 0.02);
 }
-
-.strip-sid { color: var(--hmi-cyan); }
-.strip-sq { color: var(--hmi-orange); }
-.strip-alt { color: var(--text-primary); font-weight: 700; font-size: 12px; }
-.strip-dest { color: var(--hmi-red); font-weight: 600; }
-
-/* Strip action buttons */
-.strip-actions {
-    display: flex;
-    gap: 3px;
+.fs-label:focus {
+    outline: none;
+    background: rgba(0, 229, 255, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.25);
 }
-
-.strip-action-btn {
-    flex: 1;
-    padding: 3px 2px;
-    border: 1px solid var(--border-color);
-    border-radius: 3px;
-    background: var(--bg-primary);
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-}
-
-.strip-action-btn:hover {
-    background: var(--bg-toolbar);
-    color: var(--text-primary);
-    border-color: var(--text-dim);
-}
-
-.strip-action-btn.active-phase {
-    color: #000;
-}
-
-.strip-action-btn.btn-push.active-phase {
-    background: var(--phase-pushback);
-    border-color: var(--phase-pushback);
-}
-
-.strip-action-btn.btn-taxi.active-phase {
-    background: var(--hmi-orange);
-    border-color: var(--hmi-orange);
-}
-
-.strip-action-btn.btn-lineup.active-phase {
-    background: var(--phase-lineup);
-    border-color: var(--phase-lineup);
-}
-
-.strip-action-btn.btn-cleared.active-phase {
-    background: var(--hmi-green);
-    border-color: var(--hmi-green);
-}
-
-.strip-action-btn.btn-approach.active-phase {
-    background: var(--phase-approach);
-    border-color: var(--phase-approach);
-    color: #000;
-}
-
-.strip-action-btn.btn-landed.active-phase {
-    background: var(--phase-landed);
-    border-color: var(--phase-landed);
-}
-
-.strip-action-btn.btn-vacating.active-phase {
-    background: var(--phase-vacating);
-    border-color: var(--phase-vacating);
-    color: #000;
+.fs-label:not(:empty) {
+    color: var(--hmi-amber);
+    font-weight: 600;
 }
 
 /* Empty column state */
