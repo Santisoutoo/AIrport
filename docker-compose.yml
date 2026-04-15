@@ -18,7 +18,7 @@ services:
       - airport_network
     command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -41,7 +41,7 @@ services:
     networks:
       - airport_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -86,7 +86,7 @@ services:
     networks:
       - airport_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/flight-plan/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/flight-plan/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -107,7 +107,7 @@ services:
     networks:
       - airport_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/weather/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/weather/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -125,16 +125,23 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - ORCHESTRATOR_URL=http://orchestrator_service:8006
+      - ASR_LLM_MODEL=${GEMINI_MODEL:-gemini-3-flash-preview}
+      - GOOGLE_GENAI_USE_VERTEXAI=True
+      - GOOGLE_CLOUD_PROJECT=${VERTEX_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${VERTEX_LOCATION:-global}
+      - GOOGLE_APPLICATION_CREDENTIALS_JSON=${GOOGLE_APPLICATION_CREDENTIALS_JSON}
     volumes:
       - asr_hf_cache:/root/.cache/huggingface
       - ./services/asr_service:/app
+      - ./shared/trace_logger.py:/app/trace_logger.py
+      - ./logs:/logs
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - airport_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/asr/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/asr/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -177,7 +184,7 @@ services:
     networks:
       - airport_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/hmi/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/hmi/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -205,6 +212,8 @@ services:
       - GOOGLE_CLOUD_PROJECT=${VERTEX_PROJECT}
       - GOOGLE_CLOUD_LOCATION=${VERTEX_LOCATION:-global}
       - GOOGLE_APPLICATION_CREDENTIALS_JSON=${GOOGLE_APPLICATION_CREDENTIALS_JSON}
+    volumes:
+      - ./logs:/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -217,7 +226,7 @@ services:
     networks:
       - airport_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8006/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
