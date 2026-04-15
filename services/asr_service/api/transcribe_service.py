@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from core.config import get_settings, get_model_backend
 from core.phonetics import normalize_phonetic
 from core.corrections import correct_callsigns
+from prompts.whisper_context import ATC_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,10 @@ def _transcribe_faster_whisper(audio_bytes: bytes, suffix: str) -> str:
             tmp_path,
             language=cfg.whisper_language,
             beam_size=cfg.whisper_beam_size,
+            initial_prompt=ATC_PROMPT,
+            condition_on_previous_text=False,
+            hallucination_silence_threshold=2.0,
+            no_speech_threshold=0.6,
         )
         text = " ".join(s.text for s in segments).strip()
     finally:
