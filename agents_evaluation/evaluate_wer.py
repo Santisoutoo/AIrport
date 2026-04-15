@@ -9,7 +9,7 @@ from pathlib import Path
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 ASR_URL = os.getenv("ASR_URL", "http://localhost:8007/api/v1/asr/transcribe")
-ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "")  # vacío = saltar fase 2
+ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "")
 
 CORPUS_TXTS = {
     "del": Path("corpus_wer/del/corpus_wer_del.txt"),
@@ -156,11 +156,13 @@ def main():
         try:
             resp = dispatch(r["hyp"], r["id"])
         except httpx.ConnectError:
-            print(f"  ERROR: no se puede conectar al orquestador ({ORCHESTRATOR_URL})")
+            print(
+                f"  ERROR: no se puede conectar al orquestador ({ORCHESTRATOR_URL})")
             print("  Asegúrate de que orchestrator_service está corriendo.")
             break
         except httpx.HTTPStatusError as e:
-            print(f"  ERROR {r['id']}: orquestador devolvió {e.response.status_code}")
+            print(
+                f"  ERROR {r['id']}: orquestador devolvió {e.response.status_code}")
             continue
         except Exception as e:
             print(f"  ERROR {r['id']}: {e}")
@@ -178,7 +180,8 @@ def main():
 
     # ── Exportar CSV ──────────────────────────────────────────────────────────
     csv_path = Path("resultados_wer.csv")
-    fieldnames = ["id", "dep", "wer", "ref", "hyp", "readback_expected", "agent_reply", "agent_phase"]
+    fieldnames = ["id", "dep", "wer", "ref", "hyp",
+                  "readback_expected", "agent_reply", "agent_phase"]
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
