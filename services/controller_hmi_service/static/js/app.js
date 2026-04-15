@@ -440,20 +440,31 @@ function rescaleSMRElements() {
         lbEl.setAttribute('stroke-width', lbBaseSw * sL);
     }
 
-    // Aurora label leader lines (position uses s, stroke uses sL)
+    // Aurora label leader lines — attach to nearest box edge
     var labelLines = svgEl.querySelectorAll('.smr-label-line');
     for (var ll = 0; ll < labelLines.length; ll++) {
         var llEl = labelLines[ll];
         var llDotX   = parseFloat(llEl.getAttribute('data-dot-x'));
         var llDotY   = parseFloat(llEl.getAttribute('data-dot-y'));
-        var llBaseOx = parseFloat(llEl.getAttribute('data-base-ox2'));
-        var llBaseOy = parseFloat(llEl.getAttribute('data-base-oy2'));
         var llBaseSw = parseFloat(llEl.getAttribute('data-base-sw'));
-        llEl.setAttribute('x1',           llDotX);
-        llEl.setAttribute('y1',           llDotY);
-        llEl.setAttribute('x2',           llDotX + llBaseOx * sL);
-        llEl.setAttribute('y2',           llDotY + llBaseOy * sL);
+        llEl.setAttribute('x1', llDotX);
+        llEl.setAttribute('y1', llDotY);
         llEl.setAttribute('stroke-width', llBaseSw * sL);
+
+        // Look up matching bg rect to get current box geometry
+        var llReg = llEl.getAttribute('data-reg');
+        var llBg  = _smrLabelElByReg(svgEl, 'smr-label-bg', llReg);
+        if (llBg) {
+            var bgOx = parseFloat(llBg.getAttribute('data-base-ox'));
+            var bgOy = parseFloat(llBg.getAttribute('data-base-oy'));
+            var bgW  = parseFloat(llBg.getAttribute('data-base-w'));
+            var bgH  = parseFloat(llBg.getAttribute('data-base-h'));
+            var boxX = llDotX + bgOx * sL;
+            var boxY = llDotY + bgOy * sL;
+            var att  = leaderAttachPoint(llDotX, llDotY, boxX, boxY, bgW * sL, bgH * sL);
+            llEl.setAttribute('x2', att.x);
+            llEl.setAttribute('y2', att.y);
+        }
     }
 
     // Aurora label text blocks (position uses s, line-spacing uses sL)
@@ -586,6 +597,41 @@ function applySMRViewBox() {
 
 // --- Aurora-style HMI ground label for SMR ---
 
+// Return the point on the box boundary nearest to (dotX,dotY) by ray-casting
+// from the box centre toward the dot and finding the first edge intersection.
+function leaderAttachPoint(dotX, dotY, boxX, boxY, boxW, boxH) {
+    var cx = boxX + boxW / 2;
+    var cy = boxY + boxH / 2;
+    var vx = dotX - cx;
+    var vy = dotY - cy;
+    if (vx === 0 && vy === 0) return { x: boxX, y: cy };
+
+    var tMin = Infinity, bestX = boxX, bestY = cy;
+    var t, iy, ix;
+
+    // Left edge
+    if (vx !== 0) {
+        t = (boxX - cx) / vx;
+        if (t > 0) { iy = cy + t * vy; if (iy >= boxY && iy <= boxY + boxH && t < tMin) { tMin = t; bestX = boxX; bestY = iy; } }
+    }
+    // Right edge
+    if (vx !== 0) {
+        t = (boxX + boxW - cx) / vx;
+        if (t > 0) { iy = cy + t * vy; if (iy >= boxY && iy <= boxY + boxH && t < tMin) { tMin = t; bestX = boxX + boxW; bestY = iy; } }
+    }
+    // Top edge
+    if (vy !== 0) {
+        t = (boxY - cy) / vy;
+        if (t > 0) { ix = cx + t * vx; if (ix >= boxX && ix <= boxX + boxW && t < tMin) { tMin = t; bestX = ix; bestY = boxY; } }
+    }
+    // Bottom edge
+    if (vy !== 0) {
+        t = (boxY + boxH - cy) / vy;
+        if (t > 0) { ix = cx + t * vx; if (ix >= boxX && ix <= boxX + boxW && t < tMin) { tMin = t; bestX = ix; bestY = boxY + boxH; } }
+    }
+    return { x: bestX, y: bestY };
+}
+
 var smrLabelOffsets    = {};   // { reg: {ox, oy} } — persisted user-drag offsets
 var _smrLabelDragState = null;
 var _smrLabelDragInited = false;
@@ -635,8 +681,6 @@ function renderSMRLabel(pos, plan, column, phase) {
     var BOX_H   = LINE_DY * (annotation ? 6 : 5) + 2.0;
     var TXT_OX  = BOX_OX + SMR_LBL_TXT_MARGIN_X;
     var TXT_OY  = BOX_OY + SMR_LBL_TXT_MARGIN_Y;
-    var LINE_OY2 = BOX_OY + BOX_H / 2;   // leader ends at left-centre of box
-
     var eReg = escapeHtml(reg);
     var svg = '';
 
@@ -651,12 +695,12 @@ function renderSMRLabel(pos, plan, column, phase) {
         ' fill="rgba(4,12,22,0.85)" stroke="' + dotColor + '" stroke-width="0.15" rx="0.4"' +
         ' style="cursor:move"/>';
 
-    // Leader line: dot → left-centre of box
+    // Leader line: dot → nearest edge of label box
+    var lp = leaderAttachPoint(dx, dy, dx + BOX_OX, dy + BOX_OY, BOX_W, BOX_H);
     svg += '<line class="smr-label-line" data-reg="' + eReg + '"' +
         ' x1="' + dx + '" y1="' + dy + '"' +
-        ' x2="' + (dx + BOX_OX) + '" y2="' + (dy + LINE_OY2) + '"' +
+        ' x2="' + lp.x + '" y2="' + lp.y + '"' +
         ' data-dot-x="' + dx + '" data-dot-y="' + dy + '"' +
-        ' data-base-ox2="' + BOX_OX + '" data-base-oy2="' + LINE_OY2 + '"' +
         ' data-base-sw="0.12"' +
         ' stroke="' + dotColor + '" stroke-width="0.12" opacity="0.6"/>';
 
@@ -665,8 +709,8 @@ function renderSMRLabel(pos, plan, column, phase) {
         ' x="' + (dx + TXT_OX) + '" y="' + (dy + TXT_OY) + '"' +
         ' data-dot-x="' + dx + '" data-dot-y="' + dy + '"' +
         ' data-base-ox="' + TXT_OX + '" data-base-oy="' + TXT_OY + '"' +
-        ' data-lbl-fs="1.5" data-base-dy="' + LINE_DY + '"' +
-        ' font-size="1.5" font-family="monospace" style="cursor:move">';
+        ' data-lbl-fs="1.7" data-base-dy="' + LINE_DY + '"' +
+        ' font-size="1.7" font-family="monospace" style="cursor:move">';
     svg += '<tspan x="' + (dx + TXT_OX) + '" dy="0" fill="' + dotColor + '" font-weight="700">' + eReg + '</tspan>';
     svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + typeWtc + '</tspan>';
     svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + squawk + '</tspan>';
@@ -735,19 +779,12 @@ function initSMRLabelDrag() {
         var newBgOy = _smrLabelDragState.startBgOy + dOy;
 
         var bg   = _smrLabelElByReg(sv, 'smr-label-bg',   reg);
-        var line = _smrLabelElByReg(sv, 'smr-label-line', reg);
         var txt  = _smrLabelElByReg(sv, 'smr-label-text', reg);
 
         if (!bg) return;
-        var BOX_H = parseFloat(bg.getAttribute('data-base-h'));
 
         bg.setAttribute('data-base-ox', newBgOx);
         bg.setAttribute('data-base-oy', newBgOy);
-
-        if (line) {
-            line.setAttribute('data-base-ox2', newBgOx);
-            line.setAttribute('data-base-oy2', newBgOy + BOX_H / 2);
-        }
         if (txt) {
             txt.setAttribute('data-base-ox', newBgOx + SMR_LBL_TXT_MARGIN_X);
             txt.setAttribute('data-base-oy', newBgOy + SMR_LBL_TXT_MARGIN_Y);
