@@ -682,6 +682,8 @@ function renderSMRLabel(pos, plan, column, phase) {
     var TXT_OX  = BOX_OX + SMR_LBL_TXT_MARGIN_X;
     var TXT_OY  = BOX_OY + SMR_LBL_TXT_MARGIN_Y;
     var eReg = escapeHtml(reg);
+    var callsign = plan.callsign || reg;
+    var eCallsign = escapeHtml(callsign);
     var svg = '';
 
     // Background rect (cursor:move signals middle-drag)
@@ -711,7 +713,7 @@ function renderSMRLabel(pos, plan, column, phase) {
         ' data-base-ox="' + TXT_OX + '" data-base-oy="' + TXT_OY + '"' +
         ' data-lbl-fs="1.7" data-base-dy="' + LINE_DY + '"' +
         ' font-size="1.7" font-family="monospace" style="cursor:move">';
-    svg += '<tspan x="' + (dx + TXT_OX) + '" dy="0" fill="' + dotColor + '" font-weight="700">' + eReg + '</tspan>';
+    svg += '<tspan x="' + (dx + TXT_OX) + '" dy="0" fill="' + dotColor + '" font-weight="700">' + eCallsign + '</tspan>';
     svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + typeWtc + '</tspan>';
     svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + squawk + '</tspan>';
     svg += '<tspan x="' + (dx + TXT_OX) + '" dy="' + LINE_DY + '" fill="' + dimColor + '">' + depDest + '</tspan>';
