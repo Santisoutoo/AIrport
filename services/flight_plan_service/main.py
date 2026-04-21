@@ -11,11 +11,20 @@ from api.routes import (
     plans_router,
     reference_router,
 )
+from sqlalchemy import inspect, text
+
 from core.database.connection import engine, Base
 from core.database.models import FlightPlanModel
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+# Add callsign column if missing (no Alembic — manual migration)
+with engine.connect() as conn:
+    columns = [c["name"] for c in inspect(engine).get_columns("flight_plans")]
+    if "callsign" not in columns:
+        conn.execute(text("ALTER TABLE flight_plans ADD COLUMN callsign VARCHAR(10)"))
+        conn.commit()
 
 PREFIX = "/api/v1/flight-plan"
 

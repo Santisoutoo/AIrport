@@ -40,6 +40,78 @@ DISTANCES = {
     ("LEZL", "LEBL"): 500,
 }
 
+# Airline master data: ICAO code -> info
+AIRLINE_DATA = {
+    "VLG": {
+        "name": "Vueling",
+        "telephony": "Vueling",
+        "aircraft_types": ["A320", "A321"],
+        "country": "ES",
+    },
+    "RYR": {
+        "name": "Ryanair",
+        "telephony": "Ryanair",
+        "aircraft_types": ["B738", "B737"],
+        "country": "IE",
+    },
+    "IBE": {
+        "name": "Iberia",
+        "telephony": "Iberia",
+        "aircraft_types": ["A320", "A321"],
+        "country": "ES",
+    },
+    "AEA": {
+        "name": "Air Europa",
+        "telephony": "Air Europa",
+        "aircraft_types": ["B738", "E190"],
+        "country": "ES",
+    },
+    "BAW": {
+        "name": "British Airways",
+        "telephony": "Speedbird",
+        "aircraft_types": ["A320", "A321"],
+        "country": "GB",
+    },
+    "EZY": {
+        "name": "EasyJet",
+        "telephony": "EasyJet",
+        "aircraft_types": ["A320", "A321"],
+        "country": "GB",
+    },
+    "WZZ": {
+        "name": "Wizz Air",
+        "telephony": "Wizzair",
+        "aircraft_types": ["A320", "A321"],
+        "country": "HU",
+    },
+    "VOE": {
+        "name": "Volotea",
+        "telephony": "Volotea",
+        "aircraft_types": ["A320"],
+        "country": "ES",
+    },
+    "IBS": {
+        "name": "Iberia Express",
+        "telephony": "Iberexpres",
+        "aircraft_types": ["A320", "A321"],
+        "country": "ES",
+    },
+    "ANE": {
+        "name": "Air Nostrum",
+        "telephony": "Air Nostrum",
+        "aircraft_types": ["E190"],
+        "country": "ES",
+    },
+}
+
+# Registration prefix by airline country
+AIRLINE_REGISTRATION_PREFIX = {
+    "ES": "EC",
+    "IE": "EI",
+    "GB": "G-",
+    "HU": "HA",
+}
+
 # Common pilot names for random generation
 PILOT_NAMES = [
     "GARCIA MARTINEZ", "RODRIGUEZ LOPEZ", "FERNANDEZ SANCHEZ",

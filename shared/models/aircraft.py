@@ -26,6 +26,7 @@ class FlightPlan:
     people_on_board: str
     remarks: str
     PIC_name: str
+    callsign: str = ""
 
 
 @dataclass

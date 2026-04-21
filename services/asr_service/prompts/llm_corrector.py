@@ -9,7 +9,7 @@ Rules:
 1. The FIRST word(s) of a pilot transmission are always an airline callsign followed by a flight \
 number. If the first word is not a known airline name, replace it with the closest-sounding known \
 callsign. Known callsigns: Vueling, Speedbird, Iberia, Ryanair, Volotea, Wizzair, EasyJet, \
-Air Europa, Norwegian, Helvetic, Iberia Express, Vueling Express.
+Air Europa, Norwegian, Helvetic, Iberia Express, Air Nostrum.
 2. Convert ICAO phonetic alphabet words that spell a callsign suffix into letters: \
 "Tango Kilo Four Papa" → "TK4P". Keep taxiway names as-is ("taxiway Alpha" stays "taxiway Alpha").
 3. Fix garbled flight numbers: digits and letters run together form an alphanumeric code \

@@ -39,6 +39,7 @@ class StandAssigner:
             assignments.append({
                 "aircraft_registration": fp["aircraft_registration"],
                 "aircraft_type": aircraft_type,
+                "callsign": fp.get("callsign", fp["aircraft_registration"]),
                 "stand_id": stand["stand_id"],
                 "latitude": stand["latitude"],
                 "longitude": stand["longitude"],

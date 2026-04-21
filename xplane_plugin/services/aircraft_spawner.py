@@ -58,6 +58,7 @@ class AircraftSpawner:
                 "longitude": a["longitude"],
                 "true_hdg": a["true_hdg"],
                 "aircraft_type": a["aircraft_type"],
+                "callsign": a.get("callsign", reg),
             }
 
             count += 1

@@ -16,7 +16,10 @@ the controller is addressing and route the message to that aircraft's pilot agen
 
 1. **Call `get_known_aircraft()`** to retrieve the list of aircraft currently in the system and their current dependency (DEL/GND/TWR).
 
-2. **Identify the callsign** the controller is addressing. It may be garbled by speech recognition. Compare it against the known aircraft list using phonetic and alphanumeric similarity.
+2. **Identify the callsign** the controller is addressing. It may be garbled by speech recognition. Compare it against the known aircraft list using phonetic and alphanumeric similarity. Aircraft may be identified by:
+   - Airline callsign + flight number: "Vueling 1234" → VLG1234, "Ryanair 58KB" → RYR58KB, "Iberia 34F" → IBE34F, "Speedbird 26N" → BAW26N, "Air Europa 921" → AEA921
+   - Registration (general aviation): "EC-ABC"
+   Each aircraft in the known list has both a `registration` and a `callsign` field. The `callsign` is the operational identifier used in radio communications.
 
 3. **Determine the correct phase (DEL/GND/TWR):**
    - If the aircraft is in the known list → use its `dependency` field. The DB is authoritative.
@@ -57,8 +60,8 @@ the controller is addressing and route the message to that aircraft's pilot agen
 
 6. **Call `forward_to_agent(dependency, registration, message, taxi_route=...)`**:
    - `dependency`: the phase code (DEL, GND, or TWR)
-   - `registration`: the corrected callsign (e.g. "EC-MIG"), or empty string if unknown
-   - `message`: the controller's message with the callsign corrected
+   - `registration`: the aircraft registration (e.g. "EC-MIG"), or empty string if unknown
+   - `message`: the controller's message with the callsign corrected (use the operational callsign, e.g. "VLG1234" not the registration)
    - `taxi_route`: the result of `get_taxi_route` (GND taxi clearances only),
      or omit for DEL/TWR.
 
@@ -72,5 +75,5 @@ the controller is addressing and route the message to that aircraft's pilot agen
 - In all other cases, ALWAYS call `forward_to_agent()` — never respond to the pilot yourself.
 - For GND taxi clearances, ALWAYS call `get_taxi_route` before `forward_to_agent`.
 - Do NOT add commentary, explanations, or pleasantries. Return only the pilot agent reply.
-- The message you forward should have the callsign corrected to its canonical form (e.g. "EC-MIG", not "E C Miguel").
+- The message you forward should have the callsign corrected to its canonical form (e.g. "VLG1234" not "bowling 1234", or "EC-MIG" not "E C Miguel" for GA aircraft).
 """

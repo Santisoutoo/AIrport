@@ -18,6 +18,12 @@ _CALLSIGN_FIXES: list[tuple[re.Pattern, str]] = [
     (re.compile(r'\b(helvetica|helvetis|helvetick)\b', re.IGNORECASE), "Helvetic"),
     # Air Europa — normalise casing
     (re.compile(r'\bair\s*europa\b', re.IGNORECASE), "Air Europa"),
+    # Iberia
+    (re.compile(r'\b(iberia|iveria|hiberia)\b', re.IGNORECASE), "Iberia"),
+    # Iberia Express
+    (re.compile(r'\b(iberia\s*express|iberia\s*expres|iberexpres)\b', re.IGNORECASE), "Iberexpres"),
+    # Air Nostrum
+    (re.compile(r'\b(air\s*nostrum|air\s*nostrom|airnostrum)\b', re.IGNORECASE), "Air Nostrum"),
 ]
 
 

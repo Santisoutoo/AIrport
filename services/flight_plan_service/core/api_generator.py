@@ -8,7 +8,7 @@ from typing import Optional
 import httpx
 
 from models.schemas import FlightPlanResponse
-from core.data import AIRCRAFT_DATA, PILOT_NAMES
+from core.data import AIRCRAFT_DATA, PILOT_NAMES, AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -76,10 +76,23 @@ class APIFlightPlanGenerator:
         route_string = self._build_route_string(nodes)
 
         # Generate remaining fields locally
-        aircraft_reg = self._generate_registration()
         flight_rules = self._generate_flight_rules(aircraft_type)
         pic_name = random.choice(PILOT_NAMES)
         passengers = self._generate_passengers(aircraft_type)
+
+        # Determine airline and callsign
+        is_commercial = aircraft_type not in ("C172", "PA28")
+        if is_commercial:
+            airline_icao = self._select_airline(aircraft_type)
+            airline = AIRLINE_DATA[airline_icao]
+            callsign = self._generate_callsign(airline_icao)
+            prefix = AIRLINE_REGISTRATION_PREFIX.get(airline["country"], "EC")
+            aircraft_reg = self._generate_registration(prefix)
+            flight_type = "S"
+        else:
+            callsign = ""
+            aircraft_reg = self._generate_registration("EC")
+            flight_type = "G"
 
         # Calculate times
         eet_hours = api_distance / cruise_speed if cruise_speed > 0 else 1.0
@@ -104,7 +117,7 @@ class APIFlightPlanGenerator:
         return FlightPlanResponse(
             aircraft_registration=aircraft_reg,
             flight_rules=flight_rules,
-            flight_type="G",
+            flight_type=flight_type,
             aircraft_type=aircraft_type,
             wake_turbulence_category=aircraft["wtc"],
             equipment=aircraft["equipment"],
@@ -123,6 +136,7 @@ class APIFlightPlanGenerator:
             people_on_board=str(passengers),
             remarks="",
             PIC_name=pic_name,
+            callsign=callsign or aircraft_reg,
         )
 
     async def _generate_route(
@@ -199,9 +213,26 @@ class APIFlightPlanGenerator:
         return " ".join(parts) if parts else "DCT"
 
     @staticmethod
-    def _generate_registration() -> str:
+    def _generate_registration(prefix: str = "EC") -> str:
         letters = "".join(random.choices(string.ascii_uppercase, k=3))
-        return f"EC-{letters}"
+        if prefix.endswith("-"):
+            return f"{prefix}{letters}"
+        return f"{prefix}-{letters}"
+
+    @staticmethod
+    def _select_airline(aircraft_type: str) -> str:
+        """Select a random airline that operates the given aircraft type"""
+        compatible = [
+            icao for icao, data in AIRLINE_DATA.items()
+            if aircraft_type in data["aircraft_types"]
+        ]
+        return random.choice(compatible)
+
+    @staticmethod
+    def _generate_callsign(airline_icao: str) -> str:
+        """Generate airline callsign: ICAO prefix + 3-4 digit flight number"""
+        flight_number = random.randint(100, 9999)
+        return f"{airline_icao}{flight_number}"
 
     @staticmethod
     def _generate_flight_rules(aircraft_type: str) -> str:

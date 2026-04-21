@@ -104,12 +104,14 @@ def forward_to_agent(
 
     reply = ""
     clearance_data = None
+    taxi_data = None
     try:
         resp = httpx.post(target, json=payload, timeout=60)
         resp.raise_for_status()
         data = resp.json()
         reply = data.get("reply", "")
         clearance_data = data.get("clearance_data")
+        taxi_data = data.get("taxi_data")
         logger.info("[ORCH] %s reply: %r", dep, reply[:100])
     except httpx.HTTPStatusError as exc:
         reply = f"[ERROR] {dep} agent returned HTTP {exc.response.status_code}"
@@ -117,6 +119,27 @@ def forward_to_agent(
     except httpx.RequestError as exc:
         reply = f"[ERROR] could not reach {dep} agent at {target}: {exc}"
         logger.error("[ORCH] %s unreachable: %s", dep, exc)
+
+    # GND: once the pilot agent has produced a readback with pushback approved,
+    # merge controller + pilot waypoints and push the taxi plan to the plugin.
+    if dep == "GND" and registration and taxi_data and taxi_data.get("pushback_approved"):
+        try:
+            from shared.services.taxi_router import dispatch_taxi_plan
+            merged_clearance = {
+                "taxi_route": taxi_route,
+                "taxi_data": taxi_data,
+                "runway_in_use": taxi_data.get("runway_in_use"),
+                "instruction_text": reply,
+            }
+            dispatch_taxi_plan(
+                merged_clearance,
+                pilot_readback_text=reply,
+                registration=registration,
+                callsign=taxi_data.get("aircraft_registration") or registration,
+                session_id=tool_context.state.get("session_id", ""),
+            )
+        except Exception as exc:
+            logger.error("[ORCH] taxi dispatch failed for %s: %s", registration, exc)
 
     # Write results to session state — runner.py reads these after the agent finishes
     tool_context.state["reply"] = reply
