@@ -2,6 +2,7 @@
 plans the pushback leg, and dispatches multi-leg move commands to the plugin."""
 
 from .constraints import merge_constraints
+from .destination_parser import extract_destination
 from .errors import (
     InvalidPushbackError,
     RouteNotFoundError,
@@ -16,6 +17,7 @@ __all__ = [
     "compute_taxi_route",
     "dispatch_taxi_plan",
     "merge_constraints",
+    "extract_destination",
     "extract_taxiway_tokens",
     "parse_pushback_direction",
     "PushbackLeg",

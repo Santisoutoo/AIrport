@@ -120,21 +120,26 @@ def forward_to_agent(
         reply = f"[ERROR] could not reach {dep} agent at {target}: {exc}"
         logger.error("[ORCH] %s unreachable: %s", dep, exc)
 
-    # GND: once the pilot agent has produced a readback with pushback approved,
-    # merge controller + pilot waypoints and push the taxi plan to the plugin.
-    if dep == "GND" and registration and taxi_data and taxi_data.get("pushback_approved"):
+    # GND: dispatch a taxi plan when the pilot has acknowledged either a
+    # pushback clearance or a taxi route (or both). Taxi-only clearances are
+    # the typical follow-up after pushback completes.
+    _trigger_taxi = bool(taxi_data) and (
+        taxi_data.get("pushback_approved")
+        or (taxi_data.get("taxi_route") or "").strip()
+    )
+    if dep == "GND" and registration and _trigger_taxi:
         try:
             from shared.services.taxi_router import dispatch_taxi_plan
             merged_clearance = {
                 "taxi_route": taxi_route,
                 "taxi_data": taxi_data,
-                "runway_in_use": taxi_data.get("runway_in_use"),
                 "instruction_text": reply,
             }
             dispatch_taxi_plan(
                 merged_clearance,
                 pilot_readback_text=reply,
                 registration=registration,
+                controller_instruction=message,
                 callsign=taxi_data.get("aircraft_registration") or registration,
                 session_id=tool_context.state.get("session_id", ""),
             )

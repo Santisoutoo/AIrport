@@ -24,6 +24,7 @@ from typing import Optional
 
 from . import config
 from .constraints import merge_constraints
+from .destination_parser import extract_destination
 from .errors import RouteNotFoundError, UnknownTaxiwayError
 from .hmi_chat import format_readback_rejected, publish_pilot_message
 from .pushback import plan_pushback_leg
@@ -121,6 +122,7 @@ def dispatch_taxi_plan(
     pilot_readback_text: str,
     *,
     registration: str,
+    controller_instruction: Optional[str] = None,
     callsign: Optional[str] = None,
     delay_range_s: Optional[tuple[float, float]] = None,
     taxi_speed_kts: Optional[float] = None,
@@ -172,19 +174,58 @@ def dispatch_taxi_plan(
     taxi_route = clearance_data.get("taxi_route") or {}
     controller_via = list(taxi_route.get("taxiway_sequence") or [])
 
+    # A clearance can carry pushback, taxi, or both. Three legitimate cases:
+    #   - pushback only             → one pushback leg
+    #   - pushback + taxi via X     → pushback + waypoints
+    #   - taxi only (follow-up)     → waypoints leg, no pushback
+    pushback_approved = bool(taxi_data.get("pushback_approved")) if isinstance(taxi_data, dict) else False
+    has_taxi_clearance = bool(controller_via) or bool(readback_via)
+    pushback_dir = parse_pushback_direction(instruction_text)
+    delay = random.uniform(*delay_range)
+
+    if pushback_approved and not has_taxi_clearance:
+        pushback_leg = plan_pushback_leg(
+            stand_lat=stand_lat, stand_lon=stand_lon, stand_heading_deg=stand_hdg,
+            direction_deg=pushback_dir,
+        )
+        pushback_eta = pushback_leg.distance_m / max(0.5, pushback_leg.speed_kts * 0.514444)
+        ttl = int(delay + pushback_eta + 60.0)
+        plan = {
+            "version": 2,
+            "plan_id": str(uuid.uuid4()),
+            "started_at": time.time(),
+            "delay_before_start_s": round(delay, 2),
+            "legs": [pushback_leg.to_dict()],
+        }
+        key = config.MOVE_CMD_KEY.format(registration=registration)
+        r.set(key, json.dumps(plan), ex=ttl)
+        logger.info(
+            "[taxi_router] dispatched pushback-only %s for %s: delay=%.1fs pushback=%.1fm face=%.0f",
+            plan["plan_id"], registration, delay, pushback_leg.distance_m,
+            pushback_leg.final_heading_deg,
+        )
+        return {"success": True, "plan_id": plan["plan_id"], "ttl_s": ttl, "legs": 1}
+
+    if not has_taxi_clearance:
+        return {"success": False, "error": "no taxi clearance and no pushback"}
+
+    # Full taxi clearance: merge constraints and run A*
     merged = merge_constraints(controller_via, readback_via)
 
-    destination = taxi_data.get("runway_in_use") or clearance_data.get("runway_in_use")
+    # Destination comes ONLY from what the controller said. The DB's
+    # runway_in_use is not consulted. When the controller doesn't state
+    # an endpoint, the route ends at the last via-point.
+    destination = (
+        extract_destination(controller_instruction or "")
+        or extract_destination(pilot_readback_text or "")
+    )
     if not destination:
-        msg = "no destination runway in clearance"
-        logger.warning("[taxi_router] %s", msg)
-        _reject(
-            r, callsign=callsign, registration=registration,
-            reason="no runway assigned", session_id=session_id,
-        )
-        return {"success": False, "error": msg, "reason_to_pilot_chat": True}
+        if merged:
+            destination = merged[-1]
+            merged = merged[:-1]
+        else:
+            return {"success": False, "error": "no taxi clearance"}
 
-    # Run constrained A*
     route_result = graph.find_route_from_position(
         start_lat=stand_lat, start_lon=stand_lon,
         end_token=destination, via=merged,
@@ -206,17 +247,30 @@ def dispatch_taxi_plan(
     if not waypoints:
         return {"success": False, "error": "empty route"}
 
-    first = waypoints[0]
-    pushback_leg = plan_pushback_leg(
-        stand_lat=stand_lat, stand_lon=stand_lon, stand_heading_deg=stand_hdg,
-        first_wp_lat=first["lat"], first_wp_lon=first["lon"],
-        direction_deg=parse_pushback_direction(instruction_text),
-    )
+    legs: list[dict] = []
+    pushback_dist = 0.0
+    pushback_eta = 0.0
+    if pushback_approved:
+        first = waypoints[0]
+        pushback_leg = plan_pushback_leg(
+            stand_lat=stand_lat, stand_lon=stand_lon, stand_heading_deg=stand_hdg,
+            first_wp_lat=first["lat"], first_wp_lon=first["lon"],
+            direction_deg=pushback_dir,
+        )
+        legs.append(pushback_leg.to_dict())
+        pushback_dist = pushback_leg.distance_m
+        pushback_eta = pushback_leg.distance_m / max(0.5, pushback_leg.speed_kts * 0.514444)
 
-    delay = random.uniform(*delay_range)
+    legs.append({
+        "mode": "waypoints",
+        "waypoints": waypoints,
+        "taxiway_sequence": route_result.get("taxiway_sequence", []),
+        "speed_kts": taxi_speed,
+        "stop_at_end": True,
+    })
+
     speed_mps = max(0.5, taxi_speed * 0.514444)
     taxi_eta = float(route_result["total_distance_m"]) / speed_mps
-    pushback_eta = pushback_leg.distance_m / max(0.5, pushback_leg.speed_kts * 0.514444)
     ttl = int(delay + pushback_eta + taxi_eta + 60.0)
 
     plan = {
@@ -224,26 +278,17 @@ def dispatch_taxi_plan(
         "plan_id": str(uuid.uuid4()),
         "started_at": time.time(),
         "delay_before_start_s": round(delay, 2),
-        "legs": [
-            pushback_leg.to_dict(),
-            {
-                "mode": "waypoints",
-                "waypoints": waypoints,
-                "taxiway_sequence": route_result.get("taxiway_sequence", []),
-                "speed_kts": taxi_speed,
-                "stop_at_end": True,
-            },
-        ],
+        "legs": legs,
     }
 
     key = config.MOVE_CMD_KEY.format(registration=registration)
     r.set(key, json.dumps(plan), ex=ttl)
     logger.info(
-        "[taxi_router] dispatched plan %s for %s: delay=%.1fs pushback=%.1fm taxi=%dwp dest=%s",
-        plan["plan_id"], registration, delay, pushback_leg.distance_m,
-        len(waypoints), destination,
+        "[taxi_router] dispatched plan %s for %s: delay=%.1fs pushback=%.1fm taxi=%dwp dest=%s legs=%d",
+        plan["plan_id"], registration, delay, pushback_dist,
+        len(waypoints), destination, len(legs),
     )
-    return {"success": True, "plan_id": plan["plan_id"], "ttl_s": ttl}
+    return {"success": True, "plan_id": plan["plan_id"], "ttl_s": ttl, "legs": len(legs)}
 
 
 # -- Internal -----------------------------------------------------------------

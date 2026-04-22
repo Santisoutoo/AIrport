@@ -100,6 +100,7 @@ class _PlanState:
     pushback_start_heading: float = 0.0
     pushback_total_dist_m: float = 0.0
     pushback_traveled_m: float = 0.0
+    pushback_sub_phase: str = "reverse"  # reverse → pivot → (leg advances)
 
     # Taxi bookkeeping
     wp_index: int = 0
@@ -297,7 +298,9 @@ class AircraftMover:
             plan.pushback_start_heading = plan.heading
             plan.pushback_total_dist_m = float(leg.get("distance_m", 0.0))
             plan.pushback_traveled_m = 0.0
+            plan.pushback_sub_phase = "reverse"
             self._emit(plan.registration, "pushback_started")
+            self._emit(plan.registration, "pushback_reverse_started")
         elif mode == "waypoints":
             plan.phase = "taxi"
             plan.wp_index = self._first_unreached_wp(plan, leg)
@@ -318,35 +321,59 @@ class AircraftMover:
     # -- Pushback leg -------------------------------------------------------
 
     def _advance_pushback(self, plan: _PlanState, leg: dict, dt: float, now: float) -> None:
-        speed_mps = max(0.1, float(leg.get("speed_kts", 2.0)) * _KT_TO_MPS)
+        final_hdg = float(leg.get("final_heading_deg", plan.heading)) % 360.0
+
+        if plan.pushback_sub_phase == "reverse":
+            self._advance_pushback_reverse(plan, leg, dt, now)
+            return
+
+        if plan.pushback_sub_phase == "pivot":
+            self._advance_pushback_pivot(plan, leg, dt, now, final_hdg)
+            return
+
+        # Unknown sub-phase → fall through to next leg defensively
+        self._advance_leg(plan)
+
+    def _advance_pushback_reverse(self, plan: _PlanState, leg: dict, dt: float, now: float) -> None:
+        """Aircraft moves tail-first: advances along (heading + 180)°. Heading
+        stays fixed at the original parked heading. This matches real ICAO
+        pushback regardless of the stand's graph topology."""
+        speed_kts = float(leg.get("speed_kts", 2.0))
+        speed_mps = max(0.1, speed_kts * _KT_TO_MPS)
         step = speed_mps * dt
 
-        tgt_lat = float(leg["target_lat"])
-        tgt_lon = float(leg["target_lon"])
-        final_hdg = float(leg.get("final_heading_deg", plan.heading))
+        back_bearing = (plan.pushback_start_heading + 180.0) % 360.0
+        new_lat, new_lon = _advance(plan.lat, plan.lon, back_bearing, step)
+        plan.lat, plan.lon = new_lat, new_lon
+        plan.heading = plan.pushback_start_heading
+        plan.pushback_traveled_m += step
 
-        remaining = _haversine(plan.lat, plan.lon, tgt_lat, tgt_lon)
-        if remaining <= step or plan.pushback_traveled_m + step >= plan.pushback_total_dist_m:
-            plan.lat, plan.lon = tgt_lat, tgt_lon
-            plan.heading = final_hdg % 360.0
-            self._apply_position(plan, gs=0.0, phase="taxi_out")
+        self._apply_position(plan, gs=speed_kts, phase="pushback")
+        self._maybe_publish_state(plan, now, phase="pushback", gs=speed_kts)
+
+        if plan.pushback_traveled_m >= plan.pushback_total_dist_m:
+            plan.pushback_sub_phase = "pivot"
+            self._emit(plan.registration, "pushback_pivot_started")
+
+    def _advance_pushback_pivot(
+        self, plan: _PlanState, leg: dict, dt: float, now: float, final_hdg: float,
+    ) -> None:
+        """Position fixed; rotate heading toward final_hdg at pivot_deg_per_s."""
+        rate = float(leg.get("pivot_deg_per_s", 6.0))
+        delta = _shortest_angle(plan.heading, final_hdg)
+        if abs(delta) < 0.5:
+            plan.heading = final_hdg
+            self._apply_position(plan, gs=0.0, phase="pushback")
             self._advance_leg(plan)
             return
 
-        bearing = _bearing(plan.lat, plan.lon, tgt_lat, tgt_lon)
-        new_lat, new_lon = _advance(plan.lat, plan.lon, bearing, step)
-        plan.lat, plan.lon = new_lat, new_lon
-        plan.pushback_traveled_m += step
+        step_deg = min(abs(delta), max(0.5, rate) * dt)
+        if delta < 0:
+            step_deg = -step_deg
+        plan.heading = (plan.heading + step_deg) % 360.0
 
-        # Linearly rotate from start heading to final heading across the leg
-        total = max(1.0, plan.pushback_total_dist_m)
-        frac = min(1.0, plan.pushback_traveled_m / total)
-        delta = _shortest_angle(plan.pushback_start_heading, final_hdg)
-        plan.heading = (plan.pushback_start_heading + delta * frac) % 360.0
-
-        self._apply_position(plan, gs=float(leg.get("speed_kts", 2.0)), phase="taxi_out")
-        self._maybe_publish_state(plan, now, phase="taxi_out",
-                                  gs=float(leg.get("speed_kts", 2.0)))
+        self._apply_position(plan, gs=0.0, phase="pushback")
+        self._maybe_publish_state(plan, now, phase="pushback", gs=0.0)
 
     # -- Waypoint taxi leg --------------------------------------------------
 
