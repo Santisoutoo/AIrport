@@ -68,6 +68,7 @@ def plan_pushback_leg(
     first_wp_lat: Optional[float] = None,
     first_wp_lon: Optional[float] = None,
     direction_deg: Optional[float] = None,
+    override_distance_m: Optional[float] = None,
 ) -> PushbackLeg:
     """Build the pushback leg.
 
@@ -87,8 +88,12 @@ def plan_pushback_leg(
     else:
         final_hdg = direction_deg % 360.0
 
-    if first_wp_lat is None or first_wp_lon is None:
-        # Pushback-only: back-step opposite of the final heading.
+    if override_distance_m is not None:
+        dist = max(config.PUSHBACK_MIN_DIST_M, min(config.PUSHBACK_MAX_DIST_M, override_distance_m))
+        back_bearing = (stand_heading_deg + 180.0) % 360.0
+        tgt_lat, tgt_lon = _advance_point(stand_lat, stand_lon, back_bearing, dist)
+    elif first_wp_lat is None or first_wp_lon is None:
+        # Pushback-only fallback: back-step opposite of the final heading.
         back_bearing = (final_hdg + 180.0) % 360.0
         dist = config.PUSHBACK_MIN_DIST_M
         tgt_lat, tgt_lon = _advance_point(stand_lat, stand_lon, back_bearing, dist)

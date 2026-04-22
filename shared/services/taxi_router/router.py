@@ -80,6 +80,35 @@ def _aircraft_position(redis_client, registration: str) -> Optional[tuple[float,
         return None
 
 
+def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    import math
+    R = 6371000.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dl / 2) ** 2
+    return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _pushback_distance_from_apt(graph, lat: float, lon: float) -> Optional[float]:
+    """Find the nearest init/both taxi-route node (per apt.dat row 1201) and
+    return the haversine distance to it. That's where X-Plane's ATC engine
+    assumes an aircraft enters/exits the taxi network from a stand — the
+    right endpoint for pushback. Returns None when no such node is near."""
+    best_dist: Optional[float] = None
+    for node_id, data in graph.graph.nodes(data=True):
+        usage = data.get("usage") or data.get("use")
+        if usage not in ("init", "both"):
+            continue
+        if node_id not in graph._main_cc:
+            continue
+        d = _haversine_m(lat, lon, data["lat"], data["lon"])
+        if best_dist is None or d < best_dist:
+            best_dist = d
+    return best_dist
+
+
 # -- Public API ---------------------------------------------------------------
 
 def compute_taxi_route(
@@ -184,9 +213,11 @@ def dispatch_taxi_plan(
     delay = random.uniform(*delay_range)
 
     if pushback_approved and not has_taxi_clearance:
+        apt_dist = _pushback_distance_from_apt(graph, stand_lat, stand_lon)
         pushback_leg = plan_pushback_leg(
             stand_lat=stand_lat, stand_lon=stand_lon, stand_heading_deg=stand_hdg,
             direction_deg=pushback_dir,
+            override_distance_m=apt_dist,
         )
         pushback_eta = pushback_leg.distance_m / max(0.5, pushback_leg.speed_kts * 0.514444)
         ttl = int(delay + pushback_eta + 60.0)
@@ -251,11 +282,13 @@ def dispatch_taxi_plan(
     pushback_dist = 0.0
     pushback_eta = 0.0
     if pushback_approved:
+        apt_dist = _pushback_distance_from_apt(graph, stand_lat, stand_lon)
         first = waypoints[0]
         pushback_leg = plan_pushback_leg(
             stand_lat=stand_lat, stand_lon=stand_lon, stand_heading_deg=stand_hdg,
             first_wp_lat=first["lat"], first_wp_lon=first["lon"],
             direction_deg=pushback_dir,
+            override_distance_m=apt_dist,
         )
         legs.append(pushback_leg.to_dict())
         pushback_dist = pushback_leg.distance_m
