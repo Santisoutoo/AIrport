@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.routes import router
 from api.plugin_routes import router as plugin_router
+from api.chat import router as chat_router
 
 PREFIX = "/api/v1/hmi"
 
@@ -48,6 +49,7 @@ app.add_middleware(
 # API routes
 app.include_router(router, prefix=PREFIX, tags=["HMI"])
 app.include_router(plugin_router)
+app.include_router(chat_router)
 
 
 @app.get("/setup", include_in_schema=False)

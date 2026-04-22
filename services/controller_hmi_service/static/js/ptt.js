@@ -426,7 +426,9 @@ const Ptt = (() => {
         return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    return { init, addAgentMessage, toggleConfig, capturePttKey, saveQuickConfig };
+    function getSessionId() { return _sessionId; }
+
+    return { init, addAgentMessage, toggleConfig, capturePttKey, saveQuickConfig, getSessionId };
 
 })();
 

@@ -12,6 +12,8 @@ from api.weather import router as weather_router
 from api.clearances import router as clearances_router
 from api.aircraft import router as aircraft_router
 from api.dispatch import router as dispatch_router
+from api.debrief import router as debrief_router
+from api.events_subscriber import start_subscriber, stop_subscriber
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "info").upper()
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
@@ -22,7 +24,9 @@ logger = logging.getLogger(__name__)
 async def lifespan(_app: FastAPI):
     init_db()
     logger.info("[orchestrator] DB tables ready | model: %s", os.environ.get("AGENT_MODEL", "<not set>"))
+    await start_subscriber()
     yield
+    await stop_subscriber()
     logger.info("[orchestrator] shutting down")
 
 
@@ -45,6 +49,7 @@ app.include_router(weather_router)
 app.include_router(clearances_router)
 app.include_router(aircraft_router)
 app.include_router(dispatch_router)
+app.include_router(debrief_router)
 
 
 @app.get("/health")

@@ -235,6 +235,7 @@ function createStripElement(plan, phase, isArrival) {
     });
 
     var reg      = plan.aircraft_registration;
+    var callsign = plan.callsign || reg;
     var isIFR    = plan.flight_rules !== 'V';
     var cfl      = formatFL(plan.cruising_altitude);
     var spd      = formatSpeed(plan.cruising_speed);
@@ -261,7 +262,7 @@ function createStripElement(plan, phase, isArrival) {
             // Row 1
             '<div class="fs-cell fs-dep">' + depIcao + '</div>' +
             '<div class="fs-cell fs-cfl">' + cfl + '</div>' +
-            '<div class="fs-cell fs-call">' + escapeHtml(reg) + '</div>' +
+            '<div class="fs-cell fs-call">' + escapeHtml(callsign) + '</div>' +
             '<div class="fs-cell fs-dest' + (isArrival ? ' fs-arr-dest' : '') + '">' + destIcao + '</div>' +
             '<div class="fs-cell fs-route">' + route + '</div>' +
             // Row 2

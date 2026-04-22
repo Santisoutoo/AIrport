@@ -1,91 +1,109 @@
-<mxfile host="app.diagrams.net">
-  <diagram id="d08-asr" name="08 — Pipeline de Reconocimiento de Voz (ASR)">
-    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
-      <root>
-        <mxCell id="0"/>
-        <mxCell id="1" parent="0"/>
-
-        <!-- TÍTULO -->
-        <mxCell id="title" value="&lt;b&gt;&lt;font style=&quot;font-size:18px;&quot;&gt;AIrport — Pipeline de Reconocimiento de Voz (ASR Service)&lt;/font&gt;&lt;/b&gt;" style="text;html=1;align=center;" vertex="1" parent="1">
-          <mxGeometry x="350" y="20" width="900" height="40" as="geometry"/>
-        </mxCell>
-
-        <!-- Subtítulo -->
-        <mxCell id="subtitle" value="Módulo: services/asr_service/ · Puerto: :8000" style="text;html=1;align=center;fontStyle=2;fontSize=11;fontColor=#666;" vertex="1" parent="1">
-          <mxGeometry x="500" y="58" width="600" height="25" as="geometry"/>
-        </mxCell>
-
-        <!-- ===== PASO 1: Entrada de audio ===== -->
-        <mxCell id="step1-box" value="&lt;b&gt;PASO 1 — Entrada de Audio&lt;/b&gt;" style="swimlane;startSize=30;fillColor=#e3f2fd;strokeColor=#1565c0;fontStyle=1;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="30" y="100" width="320" height="180" as="geometry"/>
-        </mxCell>
-        <mxCell id="mic" value="&lt;b&gt;Micrófono del Controlador&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;PTT (Push to Talk)&lt;br/&gt;Captura audio raw&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;arcSize=8;fontSize=10;" vertex="1" parent="step1-box">
-          <mxGeometry x="20" y="50" width="200" height="60" as="geometry"/>
-        </mxCell>
-        <mxCell id="audio-buf" value="&lt;b&gt;WAV / PCM Buffer&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;16 kHz mono&lt;br/&gt;HMI captura en navegador&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;arcSize=8;fontSize=10;" vertex="1" parent="step1-box">
-          <mxGeometry x="20" y="130" width="200" height="35" as="geometry"/>
-        </mxCell>
-
-        <!-- ===== PASO 2: Whisper Transcription ===== -->
-        <mxCell id="step2-box" value="&lt;b&gt;PASO 2 — Transcripción Whisper&lt;/b&gt;" style="swimlane;startSize=30;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="410" y="100" width="380" height="220" as="geometry"/>
-        </mxCell>
-        <mxCell id="whisper-ctx" value="&lt;b&gt;whisper_context.py&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;Initial prompt con callsigns&lt;br/&gt;conocidos en sesión activa&lt;br/&gt;Mejora transcripción de matrículas&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;arcSize=8;fontSize=9;" vertex="1" parent="step2-box">
-          <mxGeometry x="20" y="40" width="250" height="65" as="geometry"/>
-        </mxCell>
-        <mxCell id="whisper-model" value="&lt;b&gt;Whisper Model (faster-whisper)&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;jacktol/whisper-medium.en-fine-tuned-for-ATC&lt;br/&gt;Hardware: CPU o CUDA (configurable)&lt;br/&gt;Compute type: int8 / float16&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#2e7d32;arcSize=8;fontSize=9;" vertex="1" parent="step2-box">
-          <mxGeometry x="20" y="120" width="250" height="75" as="geometry"/>
-        </mxCell>
-
-        <!-- Salida Whisper -->
-        <mxCell id="raw-transcription" value="&lt;b&gt;Transcripción cruda:&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#555;&quot;&gt;&quot;november seven seven echo mike&lt;br/&gt;request start up approved&quot;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#999;arcSize=8;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="410" y="340" width="380" height="70" as="geometry"/>
-        </mxCell>
-
-        <!-- ===== PASO 3: LLM Corrector ===== -->
-        <mxCell id="step3-box" value="&lt;b&gt;PASO 3 — Corrección LLM (Gemini)&lt;/b&gt;" style="swimlane;startSize=30;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontStyle=1;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="850" y="100" width="380" height="220" as="geometry"/>
-        </mxCell>
-        <mxCell id="llm-corrector" value="&lt;b&gt;corrections.py — correct_transcription()&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;Input: transcripción + lista aeronaves activas&lt;br/&gt;Prompt a Gemini: corregir callsigns garbled,&lt;br/&gt;palabras clave ATC, errores fonéticos&lt;br/&gt;Ejemplo: &quot;november 7 7&quot; → &quot;N77EM&quot;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#7b1fa2;arcSize=8;fontSize=9;" vertex="1" parent="step3-box">
-          <mxGeometry x="20" y="40" width="340" height="90" as="geometry"/>
-        </mxCell>
-        <mxCell id="phonetic-match" value="&lt;b&gt;phonetics.py — phonetic_match()&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;Fuzzy matching de callsigns&lt;br/&gt;Fonética ICAO: November→N, Echo→E...&lt;br/&gt;Valida contra lista de aeronaves conocidas&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#7b1fa2;arcSize=8;fontSize=9;" vertex="1" parent="step3-box">
-          <mxGeometry x="20" y="150" width="340" height="55" as="geometry"/>
-        </mxCell>
-
-        <!-- Salida corregida -->
-        <mxCell id="corrected" value="&lt;b&gt;Transcripción corregida:&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#555;&quot;&gt;&quot;N77EM request startup approved&quot;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#999;arcSize=8;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="850" y="340" width="380" height="70" as="geometry"/>
-        </mxCell>
-
-        <!-- ===== PASO 4: API Response ===== -->
-        <mxCell id="step4-box" value="&lt;b&gt;PASO 4 — Respuesta API&lt;/b&gt;" style="swimlane;startSize=30;fillColor=#fff3e0;strokeColor=#e65100;fontStyle=1;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="1290" y="100" width="280" height="180" as="geometry"/>
-        </mxCell>
-        <mxCell id="api-resp" value="&lt;b&gt;POST /api/v1/asr/transcribe&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;Response 200:&lt;br/&gt;{&lt;br/&gt;  &quot;transcription&quot;: &quot;N77EM request...&quot;,&lt;br/&gt;  &quot;confidence&quot;: 0.95,&lt;br/&gt;  &quot;language&quot;: &quot;en&quot;&lt;br/&gt;}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;arcSize=8;fontSize=9;" vertex="1" parent="step4-box">
-          <mxGeometry x="15" y="40" width="250" height="120" as="geometry"/>
-        </mxCell>
-
-        <!-- ===== DESTINO FINAL ===== -->
-        <mxCell id="orchestrator-dest" value="&lt;b&gt;→ Orchestrator Service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;&quot;&gt;POST /api/v1/dispatch/transmit&lt;br/&gt;{message: &quot;N77EM request startup&quot;,&lt;br/&gt; session_id: &quot;sess-001&quot;}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;arcSize=8;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="1290" y="340" width="280" height="80" as="geometry"/>
-        </mxCell>
-
-        <!-- Contexto -->
-        <mxCell id="context-note" value="&lt;b&gt;Contexto disponible en corrección:&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;• Lista de registrations activas (Redis)&lt;br/&gt;• Callsigns ICAO de aeronaves en sesión&lt;br/&gt;• Vocabulario ATC estándar (ICAO Doc 4444)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f57f17;arcSize=8;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="850" y="440" width="380" height="90" as="geometry"/>
-        </mxCell>
-
-        <!-- ===== FLECHAS ===== -->
-        <mxCell id="arr1" value="POST /transcribe" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565c0;fontSize=9;" edge="1" source="step1-box" target="step2-box" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="arr2" value="Texto crudo" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" edge="1" source="step2-box" target="raw-transcription" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="arr3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;" edge="1" source="raw-transcription" target="step3-box" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="arr4" value="Texto corregido" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" edge="1" source="step3-box" target="corrected" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="arr5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;" edge="1" source="corrected" target="step4-box" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="arr6" value="HTTP Response" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" edge="1" source="step4-box" target="orchestrator-dest" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="arr-ctx" value="usa callsigns" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#f57f17;dashed=1;fontSize=9;" edge="1" source="context-note" target="step3-box" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="d08-asr" name="08 — Pipeline de Reconocimiento de Voz (ASR)">
+        <mxGraphModel dx="1205" dy="719" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="&lt;b&gt;&lt;font style=&quot;font-size:18px;&quot;&gt;AIrport — Pipeline de Reconocimiento de Voz&lt;/font&gt;&lt;/b&gt;" style="text;html=1;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="660" y="30" width="540" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="step1-box" value="PASO 1 — Entrada de Audio&lt;" style="swimlane;startSize=30;fillColor=#e3f2fd;strokeColor=#1565c0;fontStyle=1;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry y="120" width="320" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="mic" value="&lt;b&gt;Micrófono del Controlador&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;PTT (Push to Talk)&lt;br/&gt;Captura audio raw&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;arcSize=8;fontSize=10;" parent="step1-box" vertex="1">
+                    <mxGeometry x="60" y="50" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="audio-buf" value="&lt;b&gt;WAV / PCM Buffer&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;16 kHz mono&lt;br/&gt;HMI captura en navegador&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;arcSize=8;fontSize=10;" parent="step1-box" vertex="1">
+                    <mxGeometry x="60" y="130" width="200" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="step2-box" value="PASO 2 — Transcripción Whisper" style="swimlane;startSize=30;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="100" width="380" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="whisper-model" value="&lt;b&gt;Whisper Model (faster-whisper)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px; color: rgb(68, 68, 68);&quot;&gt;jacktol/whisper-medium.&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px; color: rgb(68, 68, 68);&quot;&gt;fine-tuned-for-ATC domanin&lt;br&gt;&lt;/font&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#2e7d32;arcSize=8;fontSize=9;" parent="step2-box" vertex="1">
+                    <mxGeometry x="65" y="75" width="250" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="raw-transcription" value="&lt;b&gt;Transcripción cruda:&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px; color: rgb(85, 85, 85);&quot;&gt;&quot;echo charlie seven echo mike&lt;br&gt;request start up approved&quot;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#999;arcSize=8;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="510" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="step3-box" value="PASO 3 — Corrección LLM (Gemini)" style="swimlane;startSize=30;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontStyle=1;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="850" y="100" width="380" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="llm-corrector" value="&lt;b&gt;corrections.py — correct_transcription()&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;Input: transcripción + lista aeronaves activas&lt;br/&gt;Prompt a Gemini: corregir callsigns garbled,&lt;br/&gt;palabras clave ATC, errores fonéticos&lt;br/&gt;Ejemplo: &quot;november 7 7&quot; → &quot;N77EM&quot;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#7b1fa2;arcSize=8;fontSize=9;" parent="step3-box" vertex="1">
+                    <mxGeometry x="20" y="40" width="340" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="phonetic-match" value="&lt;b&gt;phonetics.py — phonetic_match()&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#444;&quot;&gt;Fuzzy matching de callsigns&lt;br/&gt;Fonética ICAO: November→N, Echo→E...&lt;br/&gt;Valida contra lista de aeronaves conocidas&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#7b1fa2;arcSize=8;fontSize=9;" parent="step3-box" vertex="1">
+                    <mxGeometry x="20" y="150" width="340" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="corrected" value="&lt;b&gt;Transcripción corregida:&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;color:#555;&quot;&gt;&quot;N77EM request startup approved&quot;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#999;arcSize=8;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1080" y="510" width="200" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="step4-box" value="PASO 4 — Respuesta API" style="swimlane;startSize=30;fillColor=#fff3e0;strokeColor=#e65100;fontStyle=1;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1290" y="100" width="280" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="api-resp" value="&lt;b&gt;POST /api/v1/asr/transcribe&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px; color: rgb(68, 68, 68);&quot;&gt;Response 200:&lt;br&gt;{&lt;br&gt;  &quot;transcription&quot;: &quot;N77EM request...&quot;,&lt;br&gt;}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;arcSize=8;fontSize=9;" parent="step4-box" vertex="1">
+                    <mxGeometry x="15" y="40" width="250" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="orchestrator-dest" target="2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="orchestrator-dest" target="5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="orchestrator-dest" value="&lt;b&gt;&amp;nbsp;Orchestrator Service&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px;&quot;&gt;POST /api/v1/dispatch/transmit&lt;br&gt;{message: &quot;N77EM request startup}&lt;br&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;arcSize=8;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1460" y="640" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr1" value="POST /transcribe" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565c0;fontSize=9;" parent="1" source="step1-box" target="step2-box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr2" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" parent="1" source="step2-box" target="raw-transcription" edge="1">
+                    <mxGeometry x="-0.0526" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="arr3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;" parent="1" source="raw-transcription" target="step3-box" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="770" y="415"/>
+                            <mxPoint x="1020" y="415"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="arr4" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;fontSize=9;" parent="1" source="step3-box" target="corrected" edge="1">
+                    <mxGeometry y="15" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="arr5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;" parent="1" source="corrected" target="step4-box" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1190" y="414"/>
+                            <mxPoint x="1410" y="414"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="4" style="edgeStyle=none;html=1;" edge="1" parent="1" source="2" target="orchestrator-dest">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="Agentes&lt;div&gt;(DEL, GND, TWR)&lt;/div&gt;" style="whiteSpace=wrap;html=1;fontSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;rounded=1;arcSize=8;" vertex="1" parent="1">
+                    <mxGeometry x="1540" y="780" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="5" target="orchestrator-dest">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="&lt;b&gt;&amp;nbsp;CHAT HMI&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px;&quot;&gt;Muestra las transcripciones tanto de controlador como de piloto&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="1460" y="505" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="step4-box" target="5">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1190" y="520" as="sourcePoint"/>
+                        <mxPoint x="1440" y="290" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="1430" y="413"/>
+                            <mxPoint x="1600" y="413"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>

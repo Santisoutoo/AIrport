@@ -3,7 +3,10 @@ import string
 from datetime import datetime, timedelta
 
 from models.schemas import FlightPlanResponse
-from core.data import AIRCRAFT_DATA, AIRPORT_DATA, DISTANCES, PILOT_NAMES
+from core.data import (
+    AIRCRAFT_DATA, AIRPORT_DATA, DISTANCES, PILOT_NAMES,
+    AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX,
+)
 
 
 class FlightPlanGenerator:
@@ -18,11 +21,24 @@ class FlightPlanGenerator:
 
         # Generate random values
         aircraft_type = self._generate_aircraft_type()
-        aircraft_reg = self._generate_registration()
         departure, destination = self._generate_route_pair()
         flight_rules = self._generate_flight_rules(aircraft_type)
         pic_name = self._generate_pilot_name()
         passengers = self._generate_passengers(aircraft_type)
+
+        # Determine airline and callsign
+        is_commercial = aircraft_type not in ("C172", "PA28")
+        if is_commercial:
+            airline_icao = self._select_airline(aircraft_type)
+            airline = AIRLINE_DATA[airline_icao]
+            callsign = self._generate_callsign(airline_icao)
+            prefix = AIRLINE_REGISTRATION_PREFIX.get(airline["country"], "EC")
+            aircraft_reg = self._generate_registration(prefix)
+            flight_type = "S"  # Scheduled
+        else:
+            callsign = ""
+            aircraft_reg = self._generate_registration("EC")
+            flight_type = "G"  # General aviation
 
         # Get aircraft data
         aircraft = AIRCRAFT_DATA[aircraft_type]
@@ -58,7 +74,7 @@ class FlightPlanGenerator:
         return FlightPlanResponse(
             aircraft_registration=aircraft_reg,
             flight_rules=flight_rules,
-            flight_type="G",  # General aviation
+            flight_type=flight_type,
             aircraft_type=aircraft_type,
             wake_turbulence_category=aircraft["wtc"],
             equipment=aircraft["equipment"],
@@ -77,16 +93,32 @@ class FlightPlanGenerator:
             people_on_board=str(passengers),
             remarks="",
             PIC_name=pic_name,
+            callsign=callsign or aircraft_reg,
         )
 
     def _generate_aircraft_type(self) -> str:
         """Generate random aircraft type"""
         return random.choice(self.aircraft_types)
 
-    def _generate_registration(self) -> str:
-        """Generate random Spanish aircraft registration (EC-XXX)"""
+    def _generate_registration(self, prefix: str = "EC") -> str:
+        """Generate random aircraft registration with country prefix"""
         letters = ''.join(random.choices(string.ascii_uppercase, k=3))
-        return f"EC-{letters}"
+        if prefix.endswith("-"):
+            return f"{prefix}{letters}"
+        return f"{prefix}-{letters}"
+
+    def _select_airline(self, aircraft_type: str) -> str:
+        """Select a random airline that operates the given aircraft type"""
+        compatible = [
+            icao for icao, data in AIRLINE_DATA.items()
+            if aircraft_type in data["aircraft_types"]
+        ]
+        return random.choice(compatible)
+
+    def _generate_callsign(self, airline_icao: str) -> str:
+        """Generate airline callsign: ICAO prefix + 3-4 digit flight number"""
+        flight_number = random.randint(100, 9999)
+        return f"{airline_icao}{flight_number}"
 
     def _generate_route_pair(self) -> tuple[str, str]:
         """Generate random departure and destination pair"""

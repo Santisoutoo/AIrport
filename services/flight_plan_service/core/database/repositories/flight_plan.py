@@ -34,6 +34,7 @@ class FlightPlanRepository:
             people_on_board=flight_plan.people_on_board,
             remarks=flight_plan.remarks,
             pic_name=flight_plan.PIC_name,
+            callsign=flight_plan.callsign,
         )
         self.db.add(db_flight_plan)
         self.db.commit()
@@ -97,4 +98,5 @@ class FlightPlanRepository:
             people_on_board=model.people_on_board,
             remarks=model.remarks or "",
             PIC_name=model.pic_name,
+            callsign=model.callsign or "",
         )

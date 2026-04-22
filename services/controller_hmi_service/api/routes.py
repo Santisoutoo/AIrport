@@ -3,12 +3,16 @@ import sys
 import logging
 from pathlib import Path
 
+import redis as redis_lib
 from fastapi import APIRouter, HTTPException, Request
 import httpx
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+_redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+_redis = redis_lib.from_url(_redis_url, decode_responses=True)
 
 # Locate data/scripts dir: Docker mount or local dev path
 _DOCKER_SCRIPTS = Path("/app/data_scripts")
@@ -183,6 +187,45 @@ async def generate_atis(data: dict):
             )
 
 
+@router.get("/aircraft/positions")
+async def get_aircraft_positions():
+    """Live aircraft positions from Redis state store.
+
+    Returns a list of {registration, callsign, latitude, longitude,
+    heading, phase, ground_speed} for every aircraft in the active set.
+    Used by the SMR map to render dots at their real coordinates instead
+    of guessing from the strip order."""
+    try:
+        regs = _redis.smembers("aircraft:active_set") or set()
+    except Exception as exc:
+        logger.error("redis unavailable: %s", exc)
+        raise HTTPException(status_code=502, detail="redis unavailable")
+
+    out = []
+    for reg in regs:
+        if reg == "USER":
+            continue
+        try:
+            h = _redis.hgetall(f"aircraft:state:{reg}")
+        except Exception:
+            continue
+        if not h:
+            continue
+        try:
+            out.append({
+                "registration": reg,
+                "callsign": h.get("callsign", reg),
+                "latitude": float(h.get("latitude", 0.0) or 0.0),
+                "longitude": float(h.get("longitude", 0.0) or 0.0),
+                "heading": float(h.get("heading", 0.0) or 0.0),
+                "ground_speed": float(h.get("ground_speed", 0.0) or 0.0),
+                "phase": h.get("phase", ""),
+            })
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 @router.get("/strips/states")
 async def get_strip_states():
     """Return all strip states"""
@@ -290,6 +333,33 @@ async def proxy_orchestrator_dispatch(request: Request):
             raise HTTPException(status_code=e.response.status_code, detail=detail)
         except httpx.RequestError as e:
             logger.error("Orchestrator proxy error: %s", e)
+            raise HTTPException(status_code=502, detail="Orchestrator service unreachable")
+
+
+@router.post("/debrief/generate")
+async def proxy_debrief(request: Request):
+    """Proxy: forward debrief generation request to the orchestrator."""
+    orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://orchestrator_service:8006")
+    body = await request.body()
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        try:
+            resp = await client.post(
+                f"{orchestrator_url}/debrief/generate",
+                content=body,
+                headers={"content-type": "application/json"},
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            detail = f"Debrief error {e.response.status_code}"
+            try:
+                detail = e.response.json().get("detail", detail)
+            except Exception:
+                pass
+            logger.error("Debrief proxy error: %s", e)
+            raise HTTPException(status_code=e.response.status_code, detail=detail)
+        except httpx.RequestError as e:
+            logger.error("Debrief proxy error: %s", e)
             raise HTTPException(status_code=502, detail="Orchestrator service unreachable")
 
 

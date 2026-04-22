@@ -5,6 +5,8 @@ from typing import Any
 import httpx
 from google.adk.tools import ToolContext
 
+from session_log import append_agent_reply
+
 logger = logging.getLogger(__name__)
 
 _FLIGHT_PLAN_URL = os.environ.get("FLIGHT_PLAN_SERVICE_URL", "")
@@ -104,12 +106,14 @@ def forward_to_agent(
 
     reply = ""
     clearance_data = None
+    taxi_data = None
     try:
         resp = httpx.post(target, json=payload, timeout=60)
         resp.raise_for_status()
         data = resp.json()
         reply = data.get("reply", "")
         clearance_data = data.get("clearance_data")
+        taxi_data = data.get("taxi_data")
         logger.info("[ORCH] %s reply: %r", dep, reply[:100])
     except httpx.HTTPStatusError as exc:
         reply = f"[ERROR] {dep} agent returned HTTP {exc.response.status_code}"
@@ -117,6 +121,43 @@ def forward_to_agent(
     except httpx.RequestError as exc:
         reply = f"[ERROR] could not reach {dep} agent at {target}: {exc}"
         logger.error("[ORCH] %s unreachable: %s", dep, exc)
+
+    # Persist the reply for the debrief timeline (fire-and-forget).
+    if reply and session_id:
+        append_agent_reply(
+            session_id=session_id,
+            dep=dep,
+            registration=registration,
+            callsign=(taxi_data or {}).get("aircraft_registration") if taxi_data else None,
+            reply=reply,
+            taxi_data=taxi_data,
+        )
+
+    # GND: dispatch a taxi plan when the pilot has acknowledged either a
+    # pushback clearance or a taxi route (or both). Taxi-only clearances are
+    # the typical follow-up after pushback completes.
+    _trigger_taxi = bool(taxi_data) and (
+        taxi_data.get("pushback_approved")
+        or (taxi_data.get("taxi_route") or "").strip()
+    )
+    if dep == "GND" and registration and _trigger_taxi:
+        try:
+            from shared.services.taxi_router import dispatch_taxi_plan
+            merged_clearance = {
+                "taxi_route": taxi_route,
+                "taxi_data": taxi_data,
+                "instruction_text": reply,
+            }
+            dispatch_taxi_plan(
+                merged_clearance,
+                pilot_readback_text=reply,
+                registration=registration,
+                controller_instruction=message,
+                callsign=taxi_data.get("aircraft_registration") or registration,
+                session_id=tool_context.state.get("session_id", ""),
+            )
+        except Exception as exc:
+            logger.error("[ORCH] taxi dispatch failed for %s: %s", registration, exc)
 
     # Write results to session state — runner.py reads these after the agent finishes
     tool_context.state["reply"] = reply

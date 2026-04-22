@@ -113,6 +113,8 @@ class Stand:
     stand_type: str
     allowed_aircraft_types: str
     stand_id: str
+    icao_width_code: str = ""       # Row 1301: A, B, C, D, E, F
+    operation_type: str = ""         # Row 1301: general_aviation, airline, cargo, military, none
 
 @dataclass
 class TrafficPattern():
