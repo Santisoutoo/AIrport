@@ -22,7 +22,9 @@ class AircraftSpawner:
         count = 0
 
         for a in assignments:
-            obj_path = get_obj_path(a["aircraft_type"])
+            callsign = a.get("callsign", "")
+            airline_icao = callsign[:3] if len(callsign) >= 3 else None
+            obj_path = get_obj_path(a["aircraft_type"], airline_icao)
             obj = xp.loadObject(obj_path)
 
             if obj is None:
