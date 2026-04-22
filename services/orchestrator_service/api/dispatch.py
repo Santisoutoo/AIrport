@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from db.connection import get_db
 from runner import run_orchestrator_agent
+from session_log import append_transcript
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,10 @@ async def dispatch(req: DispatchRequest, db: Session = Depends(get_db)):
       4. Forwards the message to DEL / GND / TWR and returns the reply.
     """
     loop = asyncio.get_event_loop()
+
+    # Capture the controller transmission before dispatch so the debrief
+    # has the exact text that arrived from ASR, even if the agent errors.
+    append_transcript(req.session_id, req.message)
 
     try:
         result = await loop.run_in_executor(

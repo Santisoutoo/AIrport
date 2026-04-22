@@ -5,6 +5,8 @@ from typing import Any
 import httpx
 from google.adk.tools import ToolContext
 
+from session_log import append_agent_reply
+
 logger = logging.getLogger(__name__)
 
 _FLIGHT_PLAN_URL = os.environ.get("FLIGHT_PLAN_SERVICE_URL", "")
@@ -119,6 +121,17 @@ def forward_to_agent(
     except httpx.RequestError as exc:
         reply = f"[ERROR] could not reach {dep} agent at {target}: {exc}"
         logger.error("[ORCH] %s unreachable: %s", dep, exc)
+
+    # Persist the reply for the debrief timeline (fire-and-forget).
+    if reply and session_id:
+        append_agent_reply(
+            session_id=session_id,
+            dep=dep,
+            registration=registration,
+            callsign=(taxi_data or {}).get("aircraft_registration") if taxi_data else None,
+            reply=reply,
+            taxi_data=taxi_data,
+        )
 
     # GND: dispatch a taxi plan when the pilot has acknowledged either a
     # pushback clearance or a taxi route (or both). Taxi-only clearances are

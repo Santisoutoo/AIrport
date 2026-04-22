@@ -336,6 +336,33 @@ async def proxy_orchestrator_dispatch(request: Request):
             raise HTTPException(status_code=502, detail="Orchestrator service unreachable")
 
 
+@router.post("/debrief/generate")
+async def proxy_debrief(request: Request):
+    """Proxy: forward debrief generation request to the orchestrator."""
+    orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://orchestrator_service:8006")
+    body = await request.body()
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        try:
+            resp = await client.post(
+                f"{orchestrator_url}/debrief/generate",
+                content=body,
+                headers={"content-type": "application/json"},
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            detail = f"Debrief error {e.response.status_code}"
+            try:
+                detail = e.response.json().get("detail", detail)
+            except Exception:
+                pass
+            logger.error("Debrief proxy error: %s", e)
+            raise HTTPException(status_code=e.response.status_code, detail=detail)
+        except httpx.RequestError as e:
+            logger.error("Debrief proxy error: %s", e)
+            raise HTTPException(status_code=502, detail="Orchestrator service unreachable")
+
+
 async def _check_upstream(url: str) -> bool:
     """Check if an upstream service is reachable"""
     try:
