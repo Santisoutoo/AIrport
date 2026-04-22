@@ -3,12 +3,16 @@ import sys
 import logging
 from pathlib import Path
 
+import redis as redis_lib
 from fastapi import APIRouter, HTTPException, Request
 import httpx
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+_redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+_redis = redis_lib.from_url(_redis_url, decode_responses=True)
 
 # Locate data/scripts dir: Docker mount or local dev path
 _DOCKER_SCRIPTS = Path("/app/data_scripts")
@@ -181,6 +185,45 @@ async def generate_atis(data: dict):
             raise HTTPException(
                 status_code=502, detail="Weather service unavailable"
             )
+
+
+@router.get("/aircraft/positions")
+async def get_aircraft_positions():
+    """Live aircraft positions from Redis state store.
+
+    Returns a list of {registration, callsign, latitude, longitude,
+    heading, phase, ground_speed} for every aircraft in the active set.
+    Used by the SMR map to render dots at their real coordinates instead
+    of guessing from the strip order."""
+    try:
+        regs = _redis.smembers("aircraft:active_set") or set()
+    except Exception as exc:
+        logger.error("redis unavailable: %s", exc)
+        raise HTTPException(status_code=502, detail="redis unavailable")
+
+    out = []
+    for reg in regs:
+        if reg == "USER":
+            continue
+        try:
+            h = _redis.hgetall(f"aircraft:state:{reg}")
+        except Exception:
+            continue
+        if not h:
+            continue
+        try:
+            out.append({
+                "registration": reg,
+                "callsign": h.get("callsign", reg),
+                "latitude": float(h.get("latitude", 0.0) or 0.0),
+                "longitude": float(h.get("longitude", 0.0) or 0.0),
+                "heading": float(h.get("heading", 0.0) or 0.0),
+                "ground_speed": float(h.get("ground_speed", 0.0) or 0.0),
+                "phase": h.get("phase", ""),
+            })
+        except (TypeError, ValueError):
+            continue
+    return out
 
 
 @router.get("/strips/states")

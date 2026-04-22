@@ -3,8 +3,10 @@
 var STRIP_REFRESH_MS = 15000;
 var WEATHER_REFRESH_MS = 60000;
 var AIRPORT_REFRESH_MS = 30000;
+var POSITIONS_REFRESH_MS = 1000;   // live aircraft positions
 
 var flightPlans = [];
+var livePositions = {};   // { registration: {lat, lon, heading, phase, ground_speed} }
 
 // ---- Initialization ----
 
@@ -28,7 +30,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }, STRIP_REFRESH_MS);
     setInterval(loadWeather, WEATHER_REFRESH_MS);
     setInterval(loadTaf, WEATHER_REFRESH_MS);
+
+    // Live aircraft positions for the SMR map — faster cadence so dots track movement
+    loadAircraftPositions();
+    setInterval(loadAircraftPositions, POSITIONS_REFRESH_MS);
 });
+
+function loadAircraftPositions() {
+    fetch('/api/v1/hmi/aircraft/positions')
+        .then(function (resp) { return resp.ok ? resp.json() : []; })
+        .then(function (arr) {
+            var next = {};
+            (arr || []).forEach(function (a) {
+                if (a && a.registration) next[a.registration] = a;
+            });
+            livePositions = next;
+            if (typeof updateSMRAircraft === 'function') {
+                updateSMRAircraft(flightPlans);
+            }
+        })
+        .catch(function () { /* ignore transient failures */ });
+}
 
 // ---- Data Loading ----
 
@@ -863,7 +885,13 @@ function updateSMRAircraft(plans) {
         var idx = counters[column]++;
         var pos;
 
-        if (column === 'PRE_TAXI' && standPositions.length > 0) {
+        // 1) Preferred: live lat/lon from the Redis state store
+        var live = livePositions && livePositions[reg];
+        if (live && isFinite(live.latitude) && isFinite(live.longitude)) {
+            pos = geoToSVG(live.latitude, live.longitude);
+        }
+        // 2) Fallback: place by column index when no live position is available
+        else if (column === 'PRE_TAXI' && standPositions.length > 0) {
             pos = standPositions[idx % standPositions.length];
         } else if (column === 'TAXI' && taxiPositions.length > 0) {
             pos = taxiPositions[idx % taxiPositions.length];
