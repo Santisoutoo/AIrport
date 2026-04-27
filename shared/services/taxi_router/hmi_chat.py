@@ -37,6 +37,7 @@ def publish_pilot_message(
         "text": text,
     }
     redis_client.publish(config.HMI_CHAT_CHANNEL, json.dumps(payload))
+    redis_client.rpush("tts:queue", json.dumps({"text": text}))
 
     key = config.LAST_ERROR_KEY.format(registration=registration)
     redis_client.setex(key, config.LAST_ERROR_TTL_S, json.dumps(payload))
