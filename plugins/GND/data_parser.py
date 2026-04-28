@@ -98,28 +98,50 @@ class AptDatParser:
         return edges
 
     def parse_stands(self) -> List[Stand]:
-        """CODE: 1300"""
+        """CODES: 1300 + 1301"""
 
         stands = []
-        for line in self.raw_data:
-            parts = line.strip().split()
+        lines = self.raw_data
+        i = 0
+        while i < len(lines):
+            parts = lines[i].strip().split()
+            try:
+                code = int(parts[0])
+            except (ValueError, IndexError):
+                i += 1
+                continue
 
-            code = int(parts[0])
             if code == RowCode.START_LOCATION_NEW:  # 1300
-                if len(parts) >= 5: 
+                if len(parts) >= 7:
                     try:
+                        icao_width_code = ""
+                        operation_type = ""
+
+                        # Look ahead for row code 1301 (metadata)
+                        if i + 1 < len(lines):
+                            next_parts = lines[i + 1].strip().split()
+                            try:
+                                if int(next_parts[0]) == RowCode.START_LOCATION_EXT:  # 1301
+                                    icao_width_code = next_parts[1] if len(next_parts) > 1 else ""
+                                    operation_type = next_parts[2] if len(next_parts) > 2 else ""
+                                    i += 1  # Skip the 1301 line
+                            except (ValueError, IndexError):
+                                pass
+
                         stands.append(Stand(
                             latitude=float(parts[1]),
-                            longitude=float(parts[2]), 
+                            longitude=float(parts[2]),
                             true_hdg=float(parts[3]),
                             stand_type=parts[4],
                             allowed_aircraft_types=str(parts[5]),
-                            stand_id=str(parts[6:])
+                            stand_id=" ".join(parts[6:]),
+                            icao_width_code=icao_width_code,
+                            operation_type=operation_type,
                         ))
 
                     except (ValueError, IndexError) as e:
-                        print(f"Error parsing stand line: {line.strip()} - {e}")
-                        continue
+                        print(f"Error parsing stand line: {lines[i].strip()} - {e}")
+            i += 1
         return stands
 
     def parse_runways(self) -> List[Runway]:
@@ -221,7 +243,7 @@ if __name__ == "__main__":
     import json
     from pathlib import Path
 
-    ICAO = "LEBL".upper()
+    ICAO = (sys.argv[1] if len(sys.argv) > 1 else "LEBL").upper()
 
     BASE_DIR = Path(__file__).resolve().parents[2]
     INPUT_FILE = BASE_DIR / "data" / "airport_data" / ICAO / f"{ICAO}.dat"

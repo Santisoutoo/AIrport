@@ -31,6 +31,7 @@ class FlightPlanModel(Base):
     people_on_board = Column(String(10))
     remarks = Column(String(500))
     pic_name = Column(String(100))
+    callsign = Column(String(10), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

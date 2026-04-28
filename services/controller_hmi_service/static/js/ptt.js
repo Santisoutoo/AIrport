@@ -179,7 +179,7 @@ const Ptt = (() => {
                     if (orchRes.ok) {
                         const orch = await orchRes.json();
                         const reply = (orch.reply || '').trim();
-                        const callsign = orch.aircraft_registration || orch.agent || 'ATC';
+                        const callsign = orch.callsign || orch.aircraft_registration || orch.agent || 'ATC';
                         const dep = orch.agent || null;
                         if (reply) _pushMessage({ type: 'agent', callsign, dep, text: reply });
                     } else {
@@ -426,7 +426,9 @@ const Ptt = (() => {
         return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    return { init, addAgentMessage, toggleConfig, capturePttKey, saveQuickConfig };
+    function getSessionId() { return _sessionId; }
+
+    return { init, addAgentMessage, toggleConfig, capturePttKey, saveQuickConfig, getSessionId };
 
 })();
 

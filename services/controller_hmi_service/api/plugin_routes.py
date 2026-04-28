@@ -110,8 +110,19 @@ def start_session(req: StartSessionRequest):
 
 @router.post("/session/stop")
 def stop_session():
+    # Snapshot the outgoing session_id so the HMI can request a debrief
+    # before the plugin clears the hash.
+    try:
+        sid_raw = _r.hget("airport:session_request", "session_id")
+        if isinstance(sid_raw, bytes):
+            sid = sid_raw.decode()
+        else:
+            sid = sid_raw or ""
+    except Exception:
+        sid = ""
+    icao = current_airport.get("icao", "")
     _r.hset("airport:session_request", "status", "stop_pending")
-    return {"success": True}
+    return {"success": True, "session_id": sid or None, "icao": icao}
 
 
 @router.get("/session/status")

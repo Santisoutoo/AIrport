@@ -323,19 +323,10 @@ function updateCardWind(card, rwyHdg) {
     var hwVal = document.getElementById('hw-' + rwyHdg + '-value');
     if (hwVal) hwVal.textContent = hwDisplay + ' kt';
 
-    // Runway change alert
     var alertEl = document.getElementById('rwy-alert-' + rwyHdg);
     if (alertEl) {
-        if (tailwind > windState.TW_LIMIT) {
-            var reciprocal = findReciprocalGroup(rwyHdg);
-            alertEl.textContent = 'TW ' + tailwind + 'kt > ' + windState.TW_LIMIT + 'kt | SUGGEST: ' + reciprocal;
-            alertEl.classList.remove('hidden');
-        } else if (crosswind > windState.XW_LIMIT) {
-            alertEl.textContent = 'XW ' + crosswind + 'kt > ' + windState.XW_LIMIT + 'kt';
-            alertEl.classList.remove('hidden');
-        } else {
-            alertEl.classList.add('hidden');
-        }
+        alertEl.classList.add('hidden');
+        alertEl.textContent = '';
     }
 }
 
@@ -357,13 +348,3 @@ function updateLimitBar(prefix, value, limit) {
     }
 }
 
-function findReciprocalGroup(hdg) {
-    var recipHdg = (hdg + 180) % 360;
-    if (recipHdg === 0) recipHdg = 360;
-    for (var i = 0; i < windState.runwayGroups.length; i++) {
-        if (windState.runwayGroups[i].hdg === recipHdg) {
-            return windState.runwayGroups[i].labels.join('/');
-        }
-    }
-    return 'RWY ' + String(Math.round(recipHdg / 10)).padStart(2, '0');
-}

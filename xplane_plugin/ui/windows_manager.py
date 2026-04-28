@@ -1,3 +1,4 @@
+import json
 import os
 import traceback
 import webbrowser
@@ -28,6 +29,7 @@ class WindowManager:
         # Instancias activas de sesion (creadas en el hilo X-Plane)
         self._aircraft_spawner = None
         self._tracker = None
+        self._mover = None
         self._state_store = None
         self._store = None
 
@@ -96,6 +98,16 @@ class WindowManager:
             elif status == "stop_pending":
                 self._execute_stop_session()
                 r.delete("airport:session_request")
+            # Drain TTS queue — speak all pending agent replies
+            from ..communication import speak
+            while True:
+                raw = r.lpop("tts:queue")
+                if raw is None:
+                    break
+                try:
+                    speak(json.loads(raw)["text"])
+                except Exception as tts_exc:
+                    xp.log(f"AIrport: TTS speak error: {tts_exc}")
         except ImportError as e:
             xp.log(f"AIrport: redis ImportError — {e}")
         except Exception as e:
@@ -105,6 +117,7 @@ class WindowManager:
     def _execute_start_from_redis(self, r, data: dict):
         """Ejecuta el inicio de sesion leyendo los parametros de Redis."""
         from ..services.aircraft_spawner import AircraftSpawner
+        from ..services.aircraft_mover import AircraftMover, set_mover
         from ..services.flight_plan_service import FlightPlanService
         from ...shared.services.aircraft_tracker import AircraftTracker
         from ...shared.services.aircraft_state_store import AircraftStateStore
@@ -172,7 +185,7 @@ class WindowManager:
                     session_id=session_id,
                     registration=reg,
                     aircraft_type=info["aircraft_type"],
-                    callsign=reg,
+                    callsign=info.get("callsign", reg),
                     latitude=info["latitude"],
                     longitude=info["longitude"],
                     altitude_msl=0.0,
@@ -190,7 +203,11 @@ class WindowManager:
                 self._state_store.update(state)
 
             self._tracker.start()
-            xp.log(f"AIrport: Session {session_id} started — tracker at 2Hz")
+
+            self._mover = AircraftMover(self._aircraft_spawner, self._state_store)
+            self._mover.start()
+            set_mover(self._mover)
+            xp.log(f"AIrport: Session {session_id} started — tracker at 2Hz, mover active")
 
             # Confirmar al HMI que la sesion esta activa
             r.hset("airport:session_request", mapping={
@@ -205,6 +222,15 @@ class WindowManager:
 
     def _execute_stop_session(self):
         """Para el tracker y limpia la sesion activa."""
+        if self._mover:
+            self._mover.stop()
+            self._mover = None
+            try:
+                from ..services.aircraft_mover import set_mover
+                set_mover(None)
+            except Exception:
+                pass
+
         if self._tracker:
             self._tracker.stop()
             self._tracker = None
