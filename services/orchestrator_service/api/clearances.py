@@ -20,6 +20,7 @@ class ClearanceRequest(BaseModel):
     altimeter: float
     destination_icao: str
     clearance_text: str
+    dependency: Optional[str] = "DEL"  # DEL | GND | TWR — permite saltar fases en testing
 
 
 class DependencyUpdate(BaseModel):
@@ -40,6 +41,7 @@ async def upsert_clearance(req: ClearanceRequest, db: Session = Depends(get_db))
         altimeter=req.altimeter,
         destination_icao=req.destination_icao,
         clearance_text=req.clearance_text,
+        dependency=req.dependency or "DEL",
     )
     return {
         "status": "issued",

@@ -38,7 +38,7 @@ do not repeat the station name in readbacks.
 ## Output format
 Respond with ONLY the following JSON — no extra text, no markdown fences:
 
-{{
+{
   "instruction_text": "<full pilot readback phrase>",
   "taxi_data": {
     "aircraft_registration": "<e.g. EC-KSG>",
@@ -47,5 +47,5 @@ Respond with ONLY the following JSON — no extra text, no markdown fences:
     "runway_in_use": "<e.g. 06R>",
     "instruction_text": "<same as above>"
   }
-}}
+}
 """

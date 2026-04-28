@@ -52,10 +52,9 @@ the controller is addressing and route the message to that aircraft's pilot agen
 5. **If routing to GND and the controller's message contains a taxi clearance**
    (keywords: "taxi", "hold short", "runway"), call `get_taxi_route` BEFORE
    `forward_to_agent`:
-   - Extract the destination runway (e.g. "06R") from the message.
-   - Extract the via taxiways as a list (e.g. ["B", "D", "E"]) — use an empty
-     list if none are mentioned.
-   - Call `get_taxi_route(registration, destination, via=["B","D","E"])`.
+   - Call `get_taxi_route(registration, instruction_text)` passing the full
+     controller message verbatim as `instruction_text`. Do NOT pre-parse the
+     destination or via taxiways — the tool extracts them internally from the text.
    - Pass the result as `taxi_route` to `forward_to_agent`.
 
 6. **Call `forward_to_agent(dependency, registration, message, taxi_route=...)`**:
