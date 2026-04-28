@@ -77,12 +77,15 @@ def _fetch_known_aircraft(db: Session) -> list[dict[str, Any]]:
         except Exception as exc:
             logger.warning("[ORCH] flight_plan_service unavailable: %s", exc)
 
-    # 3. Redis active set — aircraft with live position data
+    # 3. Redis active set — aircraft with live position data; callsign lives in the state hash
     try:
         r = redis_lib.Redis(host=_REDIS_HOST, port=_REDIS_PORT, db=0, decode_responses=True)
         for reg in r.smembers("aircraft:active_set"):
+            state_callsign = r.hget(f"aircraft:state:{reg}", "callsign") or None
             if reg not in aircraft:
-                aircraft[reg] = {"registration": reg, "dependency": "DEL", "source": "redis"}
+                aircraft[reg] = {"registration": reg, "callsign": state_callsign, "dependency": "DEL", "source": "redis"}
+            elif state_callsign and not aircraft[reg].get("callsign"):
+                aircraft[reg]["callsign"] = state_callsign
     except Exception as exc:
         logger.warning("[ORCH] Redis unavailable: %s", exc)
 
@@ -194,8 +197,16 @@ def run_orchestrator_agent(
         except Exception as exc:
             logger.error("[ORCH] failed to advance %s to TWR: %s", advance_reg_twr, exc)
 
+    registration = result["registration"]
+    callsign = None
+    if registration:
+        aircraft = next((a for a in known_aircraft if a.get("registration") == registration), None)
+        if aircraft:
+            callsign = aircraft.get("callsign")
+
     return {
         "reply": result["reply"],
         "dependency": result["dependency"],
-        "registration": result["registration"],
+        "registration": registration,
+        "callsign": callsign,
     }

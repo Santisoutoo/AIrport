@@ -30,6 +30,7 @@ class DispatchResponse(BaseModel):
     reply: str
     agent: str                          # DEL | GND | TWR
     aircraft_registration: str | None   # corrected callsign, if found
+    callsign: str | None = None         # operational callsign (e.g. BAW5939); falls back to registration
 
 
 @router.post("", response_model=DispatchResponse)
@@ -76,4 +77,5 @@ async def dispatch(req: DispatchRequest, db: Session = Depends(get_db)):
         reply=result["reply"],
         agent=result["dependency"],
         aircraft_registration=result["registration"],
+        callsign=result.get("callsign"),
     )

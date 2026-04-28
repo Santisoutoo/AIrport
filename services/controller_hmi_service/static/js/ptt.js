@@ -179,7 +179,7 @@ const Ptt = (() => {
                     if (orchRes.ok) {
                         const orch = await orchRes.json();
                         const reply = (orch.reply || '').trim();
-                        const callsign = orch.aircraft_registration || orch.agent || 'ATC';
+                        const callsign = orch.callsign || orch.aircraft_registration || orch.agent || 'ATC';
                         const dep = orch.agent || null;
                         if (reply) _pushMessage({ type: 'agent', callsign, dep, text: reply });
                     } else {
