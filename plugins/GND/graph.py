@@ -235,6 +235,28 @@ class AirportGraph:
             heuristic=heuristic, weight='weight',
         )
 
+    def _find_nearest_via_start(
+        self, start_lat: float, start_lon: float, via: list
+    ) -> tuple:
+        """Return (via_idx, node_id) of the via-point node closest to (start_lat, start_lon).
+
+        Iterates every node that belongs to any taxiway in ``via`` and returns
+        the (list-index, node_id) pair with minimum haversine distance to the
+        given position. This determines which via-point the aircraft is closest
+        to so earlier ones can be skipped without backtracking.
+        """
+        best_dist = float('inf')
+        best_idx = 0
+        best_node = None
+        for i, tw in enumerate(via):
+            key = str(tw).upper()
+            for nid in self._nodes_by_taxiway.get(key, []):
+                n = self.graph.nodes[nid]
+                d = self._calculate_distance(start_lat, start_lon, n['lat'], n['lon'])
+                if d < best_dist:
+                    best_dist, best_idx, best_node = d, i, nid
+        return best_idx, best_node
+
     def _pick_node_by_distance(self, candidates: list, hint_lat, hint_lon) -> str:
         """Return the node id (from candidates) closest to the hint, or the
         first candidate if no hint is provided."""
@@ -343,26 +365,42 @@ class AirportGraph:
         if end is None:
             return {"success": False, "error": f"Could not resolve end token: {end_token!r}"}
 
-        # Resolve via points, each anchored to the previous waypoint
+        # Find the nearest via-point to the start and skip earlier ones so the
+        # aircraft never needs to backtrack in mid-taxi re-routing scenarios.
+        via_list = list(via or [])
+        if via_list:
+            start_idx, nearest_node_id = self._find_nearest_via_start(
+                start[1], start[2], via_list
+            )
+            remaining_via = via_list[start_idx:]
+        else:
+            remaining_via = []
+            nearest_node_id = None
+
+        # Build resolved waypoint sequence starting from the nearest via-point.
         resolved = [start]
         cur_lat, cur_lon = start[1], start[2]
-        for v in (via or []):
-            # Prefer taxiway-name resolution: pick the node on that taxiway
-            # closest to where we currently are.
+
+        if nearest_node_id is not None and nearest_node_id != start[0]:
+            n = self.graph.nodes[nearest_node_id]
+            resolved.append((nearest_node_id, n['lat'], n['lon']))
+            cur_lat, cur_lon = n['lat'], n['lon']
+
+        for v in remaining_via[1:]:  # remaining via-points after the nearest
             node_id = self._pick_via_node_on_taxiway(v, cur_lat, cur_lon)
             if node_id is not None:
                 n = self.graph.nodes[node_id]
                 resolved.append((node_id, n['lat'], n['lon']))
             else:
-                # Fall back to general resolution (stand, runway, node name)
                 r = self.resolve_point(v, cur_lat, cur_lon)
                 if r is None:
                     return {"success": False, "error": f"Could not resolve via point: {v!r}"}
                 resolved.append(r)
             cur_lat, cur_lon = resolved[-1][1], resolved[-1][2]
+
         resolved.append(end)
 
-        # Run A* on each leg and stitch
+        # Stitch legs with unconstrained A* (shortest path between each pair).
         full_path: list = []
         total_distance = 0.0
         for i in range(len(resolved) - 1):

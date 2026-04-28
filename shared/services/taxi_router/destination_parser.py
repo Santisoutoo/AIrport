@@ -24,6 +24,10 @@ _PATTERNS: list[re.Pattern] = [
     re.compile(r"\bto\s+(?:the\s+)?(?:stand|gate|ramp)\s+([a-z0-9]+)\b"),
     # "to (the) holding point G1"
     re.compile(r"\bto\s+(?:the\s+)?holding\s+point\s+([a-z]\d*)\b"),
+    # "holding point E1" without "to the" — common in ATC taxi instructions
+    re.compile(r"\bholding\s+point\s+([a-z]\d*)\b"),
+    # "runway 17" standalone — fallback when no more specific phrase matches
+    re.compile(r"\brunway\s+(\d{1,2}[lrc]?)\b"),
 ]
 
 

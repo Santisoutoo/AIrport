@@ -66,8 +66,13 @@ def _fetch_known_aircraft(db: Session) -> list[dict[str, Any]]:
             if resp.status_code == 200:
                 for plan in resp.json():
                     reg = plan.get("aircraft_registration")
-                    if reg and reg not in aircraft:
-                        callsign = plan.get("callsign", reg)
+                    if not reg:
+                        continue
+                    callsign = plan.get("callsign", reg)
+                    if reg in aircraft:
+                        # Merge callsign into DB-sourced entry (DB has no callsign column)
+                        aircraft[reg]["callsign"] = callsign
+                    else:
                         aircraft[reg] = {"registration": reg, "callsign": callsign, "dependency": "DEL", "source": "flight_plan"}
         except Exception as exc:
             logger.warning("[ORCH] flight_plan_service unavailable: %s", exc)

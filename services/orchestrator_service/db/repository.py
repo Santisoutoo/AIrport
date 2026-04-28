@@ -22,6 +22,7 @@ class ClearanceRepository:
         altimeter: float,
         destination_icao: str,
         clearance_text: str,
+        dependency: str = "DEL",
     ) -> AircraftClearance:
         record = (
             self._db.query(AircraftClearance)
@@ -40,7 +41,7 @@ class ClearanceRepository:
         record.altimeter = altimeter
         record.destination_icao = destination_icao
         record.clearance_text = clearance_text
-        record.dependency = "DEL"
+        record.dependency = dependency
         record.cleared_at = datetime.now(timezone.utc)
         record.updated_at = datetime.now(timezone.utc)
 
