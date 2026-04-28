@@ -19,7 +19,10 @@ def advance_to_gnd(registration: str, frequency: str, tool_context: ToolContext)
     Returns:
         The standard ICAO pilot readback for a frequency change.
     """
-    readback = f"{frequency}, {registration}"
+    known = tool_context.state.get("known_aircraft", [])
+    aircraft_data = next((a for a in known if a.get("registration") == registration), {})
+    callsign = aircraft_data.get("callsign") or registration
+    readback = f"{frequency}, {callsign}"
     tool_context.state["advance_registration_gnd"] = registration
     tool_context.state["reply"] = readback
     tool_context.state["dependency"] = "GND"
