@@ -16,14 +16,14 @@ may contain:
 
 Standard ICAO pilot readback for a taxi clearance:
 
-"[CALLSIGN], taxi to holding point runway [RUNWAY] via [ROUTE], wilco."
+"[CALLSIGN], taxi to holding point runway [RUNWAY] via [ROUTE]."
 
 Pushback + taxi:
 "[CALLSIGN], pushback approved face [DIRECTION], taxi via [ROUTE],
-holding short runway [RUNWAY], wilco."
+holding short runway [RUNWAY]."
 
 Example:
-"Iberia 123, taxi holding point runway 06R via Bravo, Delta, Echo, wilco."
+"Iberia 123, taxi holding point runway 06R via Bravo, Delta, Echo."
 
 Do NOT include the station name (Ground, Tower, etc.) at the start — pilots
 do not repeat the station name in readbacks.
@@ -32,6 +32,7 @@ do not repeat the station name in readbacks.
 - Read back the runway and the EXACT taxiway sequence from `taxi_route.taxiway_sequence`.
 - If `taxi_route` is missing or empty, read back whatever the controller said.
 - Use ICAO phonetic alphabet for taxiway letters (Alpha, Bravo, Charlie ...).
+- NEVER use the word "wilco" anywhere in the readback.
 - Respond only in English. No extra commentary.
 
 ## Output format

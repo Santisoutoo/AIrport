@@ -1,3 +1,4 @@
+import json
 import os
 import traceback
 import webbrowser
@@ -97,6 +98,16 @@ class WindowManager:
             elif status == "stop_pending":
                 self._execute_stop_session()
                 r.delete("airport:session_request")
+            # Drain TTS queue — speak all pending agent replies
+            from ..communication import speak
+            while True:
+                raw = r.lpop("tts:queue")
+                if raw is None:
+                    break
+                try:
+                    speak(json.loads(raw)["text"])
+                except Exception as tts_exc:
+                    xp.log(f"AIrport: TTS speak error: {tts_exc}")
         except ImportError as e:
             xp.log(f"AIrport: redis ImportError — {e}")
         except Exception as e:

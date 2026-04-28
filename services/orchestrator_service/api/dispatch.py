@@ -1,11 +1,14 @@
 import asyncio
+import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
+import redis as _redis
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from config import config
 from db.connection import get_db
 from runner import run_orchestrator_agent
 from session_log import append_transcript
@@ -58,6 +61,15 @@ async def dispatch(req: DispatchRequest, db: Session = Depends(get_db)):
         logger.error("Orchestrator agent failed: %s", exc)
         raise HTTPException(
             status_code=500, detail=f"Orchestrator error: {exc}") from exc
+
+    try:
+        _r = _redis.from_url(
+            f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
+            decode_responses=True,
+        )
+        _r.rpush("tts:queue", json.dumps({"text": result["reply"]}))
+    except Exception as _exc:
+        logger.warning("TTS publish failed: %s", _exc)
 
     return DispatchResponse(
         session_id=req.session_id,
