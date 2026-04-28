@@ -1,3 +1,4 @@
+import random
 
 # ICAO width code ordering for size comparison
 _WIDTH_ORDER = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5}
@@ -26,6 +27,7 @@ class StandAssigner:
         """
         assignments = []
         available = [s for s in stands if not s["occupied"]]
+        random.shuffle(available)
 
         for fp in flight_plans:
             aircraft_type = fp["aircraft_type"]
@@ -73,6 +75,10 @@ class StandAssigner:
             # Check 3: GA aircraft must not use airline/cargo gates
             operation_type = stand.get("operation_type", "")
             if is_ga and operation_type in _AIRLINE_OPERATION_TYPES:
+                continue
+
+            # Check 4: airline aircraft must use gate stands only (terminal-integrated)
+            if not is_ga and stand.get("stand_type", "") != "gate":
                 continue
 
             return stand

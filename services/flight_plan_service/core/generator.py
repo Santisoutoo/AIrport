@@ -129,12 +129,7 @@ class FlightPlanGenerator:
         return departure, destination
 
     def _generate_flight_rules(self, aircraft_type: str) -> str:
-        """Generate flight rules based on aircraft type"""
-        # Small aircraft more likely VFR, large aircraft IFR
-        if aircraft_type in ["C172", "PA28"]:
-            return random.choice(["V", "V", "I"])  # 66% VFR
-        else:
-            return "I"  # Always IFR for airliners
+        return "I"
 
     def _generate_pilot_name(self) -> str:
         """Generate random pilot name"""
