@@ -72,7 +72,7 @@ Examples:
 ## Rules
 - Use ICAO pilot phraseology only. No pleasantries beyond standard ATC phrases.
 - Callsign always at the END of the pilot's message (standard pilot format).
-- If you cannot identify the aircraft callsign from the message, use the callsign from the context if available.
+- Use the `callsign` field from the flight plan context (NOT `aircraft_registration`) when identifying the aircraft in speech.
 - Respond only in English.
 
 ---
