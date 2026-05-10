@@ -1,6 +1,6 @@
 # Corpus WER — GND (Ground)
-# > instrucción ATC (referencia ASR)
-# < readback esperado del piloto
+# > ATC
+# < Pilot
 
 [gnd_001]
 > Ryanair four seven three, pushback approved, facing east.
