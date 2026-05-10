@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="d05-aircraft" name="05 — Máquina de Estados Aeronave (Fases ATC)">
-        <mxGraphModel dx="1559" dy="988" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+        <mxGraphModel dx="1626" dy="789" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -20,7 +20,7 @@
                     <mxGeometry x="510" y="290" width="320" height="150" as="geometry"/>
                 </mxCell>
                 <mxCell id="del-agent-note" value="&lt;b&gt;DEL Agent (Cloud Run)&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;&quot;&gt;Input: flight_plan + ATIS + msg&lt;br/&gt;Output: clearance_text + clearance_data&lt;br/&gt;{squawk, initial_alt, SID, runway, QNH}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" parent="1" vertex="1">
-                    <mxGeometry x="900" y="300" width="250" height="85" as="geometry"/>
+                    <mxGeometry x="905" y="322.5" width="250" height="85" as="geometry"/>
                 </mxCell>
                 <mxCell id="note-del-arr" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;dashed=1;fontSize=9;" parent="1" source="del-state" target="del-agent-note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
@@ -29,7 +29,7 @@
                     <mxGeometry x="510" y="500" width="320" height="170" as="geometry"/>
                 </mxCell>
                 <mxCell id="gnd-agent-note" value="&lt;b&gt;GND Agent (Cloud Run)&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;&quot;&gt;Input: flight_plan + position + taxi_route + msg&lt;br/&gt;Tools: move_aircraft(), get_taxi_route()&lt;br/&gt;Output: clearance_text (taxi instruction)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" parent="1" vertex="1">
-                    <mxGeometry x="900" y="525" width="260" height="80" as="geometry"/>
+                    <mxGeometry x="900" y="545" width="260" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="note-gnd-arr" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;dashed=1;fontSize=9;" parent="1" source="gnd-state" target="gnd-agent-note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
@@ -44,7 +44,7 @@
                     <mxGeometry x="510" y="730" width="320" height="160" as="geometry"/>
                 </mxCell>
                 <mxCell id="twr-agent-note" value="&lt;b&gt;TWR Agent (Cloud Run)&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:9px;&quot;&gt;Input: flight_plan + position + weather + msg&lt;br/&gt;Output: clearance_text (takeoff clearance)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" parent="1" vertex="1">
-                    <mxGeometry x="900" y="760" width="260" height="70" as="geometry"/>
+                    <mxGeometry x="900" y="775" width="260" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="note-twr-arr" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;dashed=1;fontSize=9;" parent="1" source="twr-state" target="twr-agent-note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>

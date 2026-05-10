@@ -1,0 +1,71 @@
+<mxfile host="65bd71144e">
+    <diagram id="atc-lifecycle" name="ATC Lifecycle FSM">
+        <mxGraphModel dx="897" dy="789" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="ATC Lifecycle — Máquina de Estados" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="30" width="740" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="s0" value="" style="ellipse;aspect=fixed;fillColor=#000000;strokeColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry y="440" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="s1" value="&lt;b style=&#39;font-size:15px;&#39;&gt;DEL&lt;/b&gt;&lt;br&gt;&lt;i&gt;Delivery&lt;/i&gt;&lt;hr/&gt;&lt;span style=&#39;font-size:11px;&#39;&gt;Emite clearance IFR:&lt;br&gt;squawk · SID · ALT inicial&lt;br&gt;pista en uso · QNH · destino&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="290" width="200" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2" value="&lt;b style=&#39;font-size:15px;&#39;&gt;GND&lt;/b&gt;&lt;br&gt;&lt;i&gt;Ground Control&lt;/i&gt;&lt;hr/&gt;&lt;span style=&#39;font-size:11px;&#39;&gt;Aprueba pushback&lt;br&gt;Emite ruta de rodaje&lt;br&gt;(taxi_route JSONB)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;verticalAlign=top;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="470" y="290" width="200" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" value="&lt;b style=&#39;font-size:15px;&#39;&gt;TWR&lt;/b&gt;&lt;br&gt;&lt;i&gt;Tower&lt;/i&gt;&lt;hr/&gt;&lt;span style=&#39;font-size:11px;&#39;&gt;Clearance despegue&lt;br&gt;Lineup and wait&lt;br&gt;Clearance aterrizaje&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="780" y="290" width="200" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="s4" value="" style="ellipse;aspect=fixed;fillColor=#ffffff;strokeColor=#000000;double=1;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="370" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="t01" value="Aircraft creado en sesión&lt;br&gt;dependency = &#39;DEL&#39; (default)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="s0" target="s1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="t11" value="DEL agent responde&lt;br&gt;→ persist: squawk, SID,&lt;br&gt;ALT, RWY, QNH, destino" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="s1" target="s1" edge="1">
+                    <mxGeometry x="-0.1026" y="25" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="210" y="185"/>
+                            <mxPoint x="350" y="185"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="t12" value="&lt;b&gt;advance_to_gnd()&lt;/b&gt;&lt;br&gt;&lt;i&gt;&#39;contact ground on 121.655&#39;&lt;/i&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;strokeWidth=2;" parent="1" source="s1" target="s2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="t22" value="GND agent responde&lt;br&gt;→ persist: taxi_route&lt;br&gt;(JSONB, secuencia taxiway)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="s2" target="s2" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="520" y="185"/>
+                            <mxPoint x="620" y="185"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="t23" value="&lt;b&gt;advance_to_twr()&lt;/b&gt;&lt;br&gt;&lt;i&gt;&#39;contact tower on 118.330&#39;&lt;/i&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" parent="1" source="s2" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="t33" value="TWR agent responde&lt;br&gt;→ clearance_type:&lt;br&gt;takeoff / lineup / landing&lt;br&gt;/ goaround" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="s3" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="830" y="185"/>
+                            <mxPoint x="930" y="185"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="t34" value="Sesión finalizada" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="s3" target="s4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="orch" value="&lt;b&gt;Orchestrator Agent (Gemini)&lt;/b&gt; — por cada mensaje de voz transcrito, lee la columna &lt;code&gt;dependency&lt;/code&gt; en PostgreSQL e identifica el callsign para enrutar al sub-agente correcto (DEL / GND / TWR). Las transiciones las disparan las tools &lt;code&gt;advance_to_gnd()&lt;/code&gt; y &lt;code&gt;advance_to_twr()&lt;/code&gt; dentro del propio LLM." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;arcSize=5;fontSize=11;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="520" width="820" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_note" value="&lt;b&gt;tabla aircraft_clearances (PostgreSQL)&lt;/b&gt; — columna &lt;code&gt;dependency&lt;/code&gt; STRING DEFAULT &#39;DEL&#39; determina el estado activo de cada aeronave" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="598" width="820" height="36" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
