@@ -1,6 +1,6 @@
 # Corpus WER — DEL (Delivery)
-# > instrucción ATC (referencia ASR)
-# < readback esperado del piloto
+# > ATC
+# < Pilot
 
 [del_001]
 > Ryanair four seven three, cleared to Dublin via the BELEN one GOLF departure, initial climb five thousand feet, squawk two three four one, QNH one zero one three, runway three two left.

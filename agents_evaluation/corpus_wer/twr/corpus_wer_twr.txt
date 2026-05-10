@@ -1,6 +1,6 @@
 # Corpus WER — TWR (Tower)
-# > instrucción ATC (referencia ASR)
-# < readback esperado del piloto
+# > ATC
+# < Pilot
 
 [twr_001]
 > Ryanair four seven three, runway three two left, line up and wait.
