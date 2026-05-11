@@ -197,6 +197,30 @@ def run_orchestrator_agent(
         except Exception as exc:
             logger.error("[ORCH] failed to advance %s to TWR: %s", advance_reg_twr, exc)
 
+    # Reverse handoff: an aircraft that just landed is released BACK to GND.
+    advance_reg_gnd_arrival = result.get("advance_registration_gnd_arrival")
+    if advance_reg_gnd_arrival:
+        try:
+            repo = ClearanceRepository(db)
+            updated = repo.update_dependency(advance_reg_gnd_arrival, "GND")
+            if not updated:
+                # Arrivals may not have a DEL-phase clearance row yet — create one.
+                repo.upsert(
+                    registration=advance_reg_gnd_arrival,
+                    session_id=session_id,
+                    squawk=0,
+                    initial_altitude=0,
+                    instrumental_departure="",
+                    runway_in_use="",
+                    altimeter=0.0,
+                    destination_icao="",
+                    clearance_text="",
+                    dependency="GND",
+                )
+            logger.info("[ORCH] arrival ground release — %s advanced to GND", advance_reg_gnd_arrival)
+        except Exception as exc:
+            logger.error("[ORCH] failed to reverse-advance %s to GND: %s", advance_reg_gnd_arrival, exc)
+
     registration = result["registration"]
     callsign = None
     if registration:

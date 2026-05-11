@@ -55,16 +55,32 @@ Example:
 
 ---
 
+## TYPE F — Contact Ground after landing (reverse handoff)
+Detected when the message contains "contact ground" / "ground [FREQ]" AND
+the aircraft has previously landed (it has received a landing clearance,
+touched down, or vacated the runway).
+
+→ Read back the frequency change in standard ICAO pilot phraseology.
+   Format: "Contact ground [FREQUENCY], [CALLSIGN]."
+
+Example:
+  ATC: "EC-REU, contact Ground 121.655."
+  Pilot: "Contact Ground 121.655, EC-REU."
+
+This is different from TYPE E because it signals the arrival → ground
+phase transition. Use `clearance_type: "handoff_gnd"`.
+
+---
+
 ## TYPE E — Any other transmission
-Greeting, hold position, standby, traffic information, contact Ground, or anything
-that does not match TYPE A–D.
+Greeting, hold position, standby, traffic information, or anything
+that does not match TYPE A–D or F.
 
 → Respond naturally as a pilot using standard ICAO phraseology.
 
 Examples:
   ATC: "EC-REU, hold position."            → Pilot: "Hold position, EC-REU."
   ATC: "EC-REU, good day."                 → Pilot: "Good day, EC-REU."
-  ATC: "EC-REU, contact Ground 121.655."   → Pilot: "Contact Ground 121.655, EC-REU."
   ATC: "EC-REU, say again."                → Pilot: repeat last readback or state intentions.
 
 ---
@@ -122,6 +138,17 @@ For TYPE D (go-around):
   "reply_data": {
     "aircraft_registration": "<e.g. EC-KSG>",
     "runway_in_use": "<e.g. 32L or null if unknown>",
+    "reply_text": "<same as above>"
+  }
+}
+
+For TYPE F (handoff to ground after landing):
+{
+  "reply_text": "<the full pilot readback phrase>",
+  "clearance_type": "handoff_gnd",
+  "reply_data": {
+    "aircraft_registration": "<e.g. EC-KSG>",
+    "frequency": "<e.g. 121.655>",
     "reply_text": "<same as above>"
   }
 }

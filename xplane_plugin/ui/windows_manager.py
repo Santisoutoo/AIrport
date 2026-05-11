@@ -128,6 +128,14 @@ class WindowManager:
         icao = data.get("icao", "")
         aircraft_count = int(data.get("aircraft_count", 5))
 
+        # Limpiar estado de arrivals del ciclo anterior antes de iniciar la sesión.
+        try:
+            import requests as _req
+            _req.delete("http://localhost:8005/api/v1/hmi/strips/arrivals", timeout=2)
+            _req.post("http://localhost:8008/api/v1/arrivals/restart", timeout=5)
+        except Exception:
+            pass
+
         # Marcar como en progreso para no procesar dos veces
         r.hset("airport:session_request", "status", "starting")
 

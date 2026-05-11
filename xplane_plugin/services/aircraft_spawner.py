@@ -1,9 +1,11 @@
 from XPPython3 import xp
 from .aircraft_obj_mapper import get_obj_path
 
+_FT_TO_M = 0.3048
+
 
 class AircraftSpawner:
-    """Loads .obj models and places them at stand positions."""
+    """Loads .obj models and places them at stand positions or in the air."""
 
     def __init__(self):
         self._instances = []   # (instance, obj)
@@ -11,62 +13,77 @@ class AircraftSpawner:
         self._probe = None
 
     def spawn(self, assignments: list) -> int:
-        """
-        Spawn static aircraft at their assigned stands.
-        """
-        # Probe gives the elevation of the current airfield
-        # It is done to know the altitude of the .obj in the scenary
-        if self._probe is None:
-            self._probe = xp.createProbe()
+        """Spawn aircraft from a bulk list of assignments.
 
+        Each assignment may include `on_ground` (default True) and
+        `altitude_msl_ft` (default 0). When `on_ground=False`, the .obj is
+        placed at the given MSL altitude without terrain probing.
+        """
         count = 0
-
         for a in assignments:
-            callsign = a.get("callsign", "")
-            airline_icao = callsign[:3] if len(callsign) >= 3 else None
-            obj_path = get_obj_path(a["aircraft_type"], airline_icao)
-            obj = xp.loadObject(obj_path)
+            if self._spawn_one(a, fallback_index=count) is not None:
+                count += 1
+        xp.log(f"AIrport: Spawned {count} aircraft")
+        return count
 
-            if obj is None:
-                xp.log(f"AIrport: Could not load .obj: {obj_path}")
-                continue
+    def spawn_one(self, assignment: dict) -> str | None:
+        """Spawn a single aircraft. Returns the registration on success.
 
-            # Convert lat/lon to X-Plane local coordinates
-            x, y, z = xp.worldToLocal(
-                lat=a["latitude"],
-                lon=a["longitude"],
-                alt=0,
-            )
+        Used by dynamic spawn requests (e.g. arrival simulator).
+        """
+        return self._spawn_one(assignment, fallback_index=len(self._registry))
 
-            # Probe terrain to get correct ground elevation
+    def _spawn_one(self, a: dict, *, fallback_index: int) -> str | None:
+        on_ground = bool(a.get("on_ground", True))
+
+        callsign = a.get("callsign", "")
+        airline_icao = callsign[:3] if len(callsign) >= 3 else None
+        obj_path = get_obj_path(a["aircraft_type"], airline_icao)
+        obj = xp.loadObject(obj_path)
+
+        if obj is None:
+            xp.log(f"AIrport: Could not load .obj: {obj_path}")
+            return None
+
+        altitude_msl_ft = float(a.get("altitude_msl_ft", 0.0))
+        alt_m = altitude_msl_ft * _FT_TO_M
+
+        # Convert lat/lon to X-Plane local coordinates
+        x, y, z = xp.worldToLocal(
+            lat=a["latitude"],
+            lon=a["longitude"],
+            alt=alt_m,
+        )
+
+        if on_ground:
+            # Probe terrain to anchor the model on the surface
+            if self._probe is None:
+                self._probe = xp.createProbe()
             info = xp.probeTerrainXYZ(self._probe, x, y, z)
             if info.result == 0:
                 y = info.locationY
 
-            # position tuple: (x, y, z, pitch, heading, roll)
-            position = (x, y, z, 0, a["true_hdg"], 0)
+        # position tuple: (x, y, z, pitch, heading, roll)
+        position = (x, y, z, 0, a["true_hdg"], 0)
 
-            instance = xp.createInstance(obj, [])
-            xp.instanceSetPosition(instance, position, [])
+        instance = xp.createInstance(obj, [])
+        xp.instanceSetPosition(instance, position, [])
 
-            self._instances.append((instance, obj))
+        self._instances.append((instance, obj))
 
-            # Track by registration for future position queries
-            reg = a.get("aircraft_registration", f"AI-{count}")
-            self._registry[reg] = {
-                "instance": instance,
-                "obj": obj,
-                "latitude": a["latitude"],
-                "longitude": a["longitude"],
-                "true_hdg": a["true_hdg"],
-                "aircraft_type": a["aircraft_type"],
-                "callsign": a.get("callsign", reg),
-            }
-
-            count += 1
-
-        xp.log(f"AIrport: Spawned {count} aircraft")
-        return count
+        reg = a.get("aircraft_registration", f"AI-{fallback_index}")
+        self._registry[reg] = {
+            "instance": instance,
+            "obj": obj,
+            "latitude": a["latitude"],
+            "longitude": a["longitude"],
+            "true_hdg": a["true_hdg"],
+            "altitude_msl_ft": altitude_msl_ft,
+            "on_ground": on_ground,
+            "aircraft_type": a["aircraft_type"],
+            "callsign": a.get("callsign", reg),
+        }
+        return reg
 
     def clear(self):
         """Destroy all spawned aircraft instances."""
