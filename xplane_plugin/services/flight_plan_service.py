@@ -20,13 +20,14 @@ class FlightPlanService:
         except requests.RequestException:
             return False
 
-    def generate_flight_plan(self) -> Tuple[bool, dict | str]:
+    def generate_flight_plan(self, departure: str = None) -> Tuple[bool, dict | str]:
         """
         Generate a flight plan and save it to the database.
         Returns (success, flight_plan_data | error_message).
         """
         try:
-            response = requests.get(self._get_url("/generate"), timeout=10)
+            params = {"departure": departure} if departure else {}
+            response = requests.get(self._get_url("/generate"), params=params, timeout=10)
             if response.status_code == 200:
                 return True, response.json()
             else:
@@ -34,14 +35,14 @@ class FlightPlanService:
         except requests.RequestException as e:
             return False, f"Connection error: {str(e)}"
 
-    def generate_multiple(self, count: int) -> Tuple[bool, list | str]:
+    def generate_multiple(self, count: int, departure: str = None) -> Tuple[bool, list | str]:
         """
         Generate multiple flight plans.
         Returns (success, list_of_flight_plans | error_message).
         """
         flight_plans = []
         for i in range(count):
-            success, result = self.generate_flight_plan()
+            success, result = self.generate_flight_plan(departure=departure)
             if not success:
                 return False, f"Failed at flight plan {i + 1}: {result}"
             flight_plans.append(result)

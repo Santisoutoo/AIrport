@@ -112,6 +112,7 @@ function loadAirport() {
             // Reload map, weather & TAF when airport changes
             if (icao !== currentICAO && icao !== '----') {
                 currentICAO = icao;
+                activeILSRunway = null;
                 initSMRMap();
                 loadWeather();
                 loadTaf();
@@ -160,6 +161,12 @@ var SMR_SIZE = 100;
 // Pan & Zoom state
 var smrViewBox = { x: 0, y: 0, w: 100, h: 100 };
 var smrDrag = null; // { startX, startY, startVBx, startVBy }
+
+// ILS extended centerline overlay
+var ILS_RANGE_NM = 10;
+var ILS_TICK_NM = 1;
+var ILS_TICK_HALF_NM = 0.15;
+var activeILSRunway = null;
 
 function initSMRMap() {
     var container = document.getElementById('smr-map');
@@ -376,12 +383,75 @@ function renderSMRFromData() {
     });
 
     // Aircraft overlay group (on top)
+    svg += '<g id="smr-ils-group"></g>';
     svg += '<g id="smr-aircraft-group"></g>';
 
     svg += '</svg>';
     container.innerHTML = svg;
 
     initSMRInteraction();
+    drawILSCenterline();
+}
+
+function setILSForArrivalRunway(rawDesignator) {
+    if (rawDesignator == null) { activeILSRunway = null; drawILSCenterline(); return; }
+    var token = String(rawDesignator).trim().toUpperCase().split(/[\s/]+/)[0];
+    activeILSRunway = token || null;
+    drawILSCenterline();
+}
+
+function _projectGeoFromBearing(lat, lon, bearingDeg, distNm) {
+    var br = bearingDeg * Math.PI / 180;
+    var dLat = (distNm / 60) * Math.cos(br);
+    var latRad = lat * Math.PI / 180;
+    var dLon = (distNm / 60) * Math.sin(br) / Math.cos(latRad);
+    return { lat: lat + dLat, lon: lon + dLon };
+}
+
+function drawILSCenterline() {
+    var group = document.getElementById('smr-ils-group');
+    if (!group) return;
+    group.innerHTML = '';
+    if (!activeILSRunway || !smrGraph || !smrBounds) return;
+
+    var threshold = null, otherEnd = null;
+    for (var i = 0; i < smrGraph.runways.length; i++) {
+        var r = smrGraph.runways[i];
+        if (r.end1.designator === activeILSRunway) { threshold = r.end1; otherEnd = r.end2; break; }
+        if (r.end2.designator === activeILSRunway) { threshold = r.end2; otherEnd = r.end1; break; }
+    }
+    if (!threshold) return;
+
+    // Bearing from otherEnd -> threshold = landing direction
+    var lat1 = otherEnd.lat * Math.PI / 180;
+    var lat2 = threshold.lat * Math.PI / 180;
+    var dLonRad = (threshold.lon - otherEnd.lon) * Math.PI / 180;
+    var y = Math.sin(dLonRad) * Math.cos(lat2);
+    var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLonRad);
+    var bearingDeg = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    var perpDeg = (bearingDeg + 90) % 360;
+
+    var thrSvg = geoToSVG(threshold.lat, threshold.lon);
+    var endGeo = _projectGeoFromBearing(threshold.lat, threshold.lon, bearingDeg, ILS_RANGE_NM);
+    var endSvg = geoToSVG(endGeo.lat, endGeo.lon);
+
+    var svg = '<line x1="' + thrSvg.x + '" y1="' + thrSvg.y +
+              '" x2="' + endSvg.x + '" y2="' + endSvg.y +
+              '" stroke="#00aaff" stroke-width="0.4" stroke-dasharray="1.5,1"' +
+              ' vector-effect="non-scaling-stroke" opacity="0.85"/>';
+
+    for (var n = ILS_TICK_NM; n <= ILS_RANGE_NM; n += ILS_TICK_NM) {
+        var c = _projectGeoFromBearing(threshold.lat, threshold.lon, bearingDeg, n);
+        var a = _projectGeoFromBearing(c.lat, c.lon, perpDeg, ILS_TICK_HALF_NM);
+        var b = _projectGeoFromBearing(c.lat, c.lon, perpDeg, -ILS_TICK_HALF_NM);
+        var pa = geoToSVG(a.lat, a.lon);
+        var pb = geoToSVG(b.lat, b.lon);
+        svg += '<line x1="' + pa.x + '" y1="' + pa.y +
+               '" x2="' + pb.x + '" y2="' + pb.y +
+               '" stroke="#00aaff" stroke-width="0.5"' +
+               ' vector-effect="non-scaling-stroke" opacity="0.85"/>';
+    }
+    group.innerHTML = svg;
 }
 
 // --- Rescale elements to keep constant visual size at any zoom level ---

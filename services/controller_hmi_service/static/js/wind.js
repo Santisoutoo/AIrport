@@ -8,7 +8,9 @@ var windState = {
     minSpeed: 0,
     runwayGroups: [],
     XW_LIMIT: 20,
-    TW_LIMIT: 5
+    TW_LIMIT: 5,
+    HW_LIMIT: 40,
+    hasData: false
 };
 
 // ---- Initialization ----
@@ -110,7 +112,7 @@ function createLimitRow(label, idPrefix, isHw) {
 function renderWindDial(container, rwyHdg) {
     if (!container) return;
 
-    var size = 100;
+    var size = 120;
     var cx = size / 2;
     var cy = size / 2;
     var r = 40;
@@ -210,6 +212,7 @@ function renderWindDial(container, rwyHdg) {
 function updateWindInstruments(metar) {
     if (!metar) return;
 
+    windState.hasData = true;
     windState.direction = metar.wind_direction || 0;
     windState.speed = metar.wind_speed || 0;
     windState.gust = metar.wind_gust || 0;
@@ -235,7 +238,7 @@ function updateCardWind(card, rwyHdg) {
     var svgEl = card.querySelector('svg');
     if (!svgEl) return;
 
-    var cx = 50, cy = 50, r = 40;
+    var cx = 60, cy = 60, r = 40;
 
     var dir = windState.direction;
     var speed = windState.speed;
@@ -292,7 +295,7 @@ function updateCardWind(card, rwyHdg) {
 
     // Speed display
     var speedSvg = svgEl.querySelector('.wind-speed-svg');
-    if (speedSvg) speedSvg.textContent = speed || '--';
+    if (speedSvg) speedSvg.textContent = windState.hasData ? speed : '--';
 
     // Wind components for this runway heading
     var angleDiff = (dir - rwyHdg) * Math.PI / 180;
@@ -312,21 +315,20 @@ function updateCardWind(card, rwyHdg) {
     if (twVal) twVal.textContent = tailwind + ' kt';
 
     // Update HW bar
-    var hwBar = document.getElementById('hw-' + rwyHdg + '-bar');
-    if (hwBar) {
-        var hwFill = hwBar.querySelector('.limit-bar-fill');
-        if (hwFill) {
-            var hwPct = Math.min(100, (hwDisplay / 40) * 100);
-            hwFill.style.width = hwPct + '%';
-        }
-    }
+    updateLimitBar('hw-' + rwyHdg, hwDisplay, windState.HW_LIMIT);
     var hwVal = document.getElementById('hw-' + rwyHdg + '-value');
     if (hwVal) hwVal.textContent = hwDisplay + ' kt';
 
     var alertEl = document.getElementById('rwy-alert-' + rwyHdg);
     if (alertEl) {
-        alertEl.classList.add('hidden');
-        alertEl.textContent = '';
+        if (crosswind > windState.XW_LIMIT || tailwind > windState.TW_LIMIT) {
+            var msg = crosswind > windState.XW_LIMIT ? 'XW LIMIT EXCEEDED' : 'TW LIMIT EXCEEDED';
+            alertEl.textContent = msg;
+            alertEl.classList.remove('hidden');
+        } else {
+            alertEl.classList.add('hidden');
+            alertEl.textContent = '';
+        }
     }
 }
 

@@ -5,7 +5,7 @@
 
 const ASR_PROXY = '/api/v1/hmi/asr';
 const ORCHESTRATOR_PROXY = '/api/v1/hmi/orchestrator';
-const CHAT_MAX_MSG = 50;
+const CHAT_MAX_MSG = 200;
 
 const ROBOT_SVG = `<svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
   <rect x="3" y="6" width="12" height="9" rx="2"/>
@@ -29,6 +29,8 @@ const Ptt = (() => {
     let _stream = null;
     let _chunks = [];
     let _messages = [];
+    let _lastDep = null;
+    let _activeFilter = 'all';
     let _configOpen = false;
     let _capturingKey = false;
     let _captureHandler = null;
@@ -54,6 +56,15 @@ const Ptt = (() => {
         window.addEventListener('keydown', _onKeyDown);
         window.addEventListener('keyup', _onKeyUp);
         window.addEventListener('blur', _abortRecording);
+
+        document.querySelectorAll('.chat-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                _activeFilter = btn.dataset.filter;
+                document.querySelectorAll('.chat-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                _renderMessages();
+            });
+        });
     }
 
     // ------------------------------------------------------------------
@@ -166,10 +177,11 @@ const Ptt = (() => {
             const text = (data.text || '').trim();
             if (text) {
                 _pushMessage({ type: 'controller', text });
+                const ctrlIdx = _messages.length - 1;
                 _setStatusText('Esperando respuesta ATC...');
 
                 // Dispatch to local orchestrator → agent reply
-                _showTyping('agent');
+                _showTyping('agent', _lastDep);
                 try {
                     const orchRes = await fetch(`${ORCHESTRATOR_PROXY}/dispatch`, {
                         method: 'POST',
@@ -181,6 +193,7 @@ const Ptt = (() => {
                         const reply = (orch.reply || '').trim();
                         const callsign = orch.callsign || orch.aircraft_registration || orch.agent || 'ATC';
                         const dep = orch.agent || null;
+                        if (dep && ctrlIdx >= 0) _messages[ctrlIdx].dep = dep;
                         if (reply) _pushMessage({ type: 'agent', callsign, dep, text: reply });
                     } else {
                         let detail = `Orchestrator error ${orchRes.status}`;
@@ -338,6 +351,7 @@ const Ptt = (() => {
         const now = new Date();
         msg.time = _utcTime(now);
         _messages.push(msg);
+        if (msg.type === 'agent' && msg.dep) _lastDep = msg.dep;
         if (_messages.length > CHAT_MAX_MSG) _messages.shift();
         _renderMessages();
     }
@@ -345,7 +359,10 @@ const Ptt = (() => {
     function _renderMessages() {
         const log = document.getElementById('chat-log');
         if (!log) return;
-        log.innerHTML = _messages.map(m => _buildBubble(m)).join('');
+        const visible = _activeFilter === 'all'
+            ? _messages
+            : _messages.filter(m => m.dep === _activeFilter);
+        log.innerHTML = visible.map(m => _buildBubble(m)).join('');
         log.scrollTop = log.scrollHeight;
     }
 
@@ -370,13 +387,14 @@ const Ptt = (() => {
     // Typing indicator
     // ------------------------------------------------------------------
 
-    function _showTyping(side) {
+    function _showTyping(side, dep) {
         const log = document.getElementById('chat-log');
         if (!log || document.getElementById('chat-typing')) return;
         const div = document.createElement('div');
         div.id = 'chat-typing';
         const isAgent = side === 'agent';
-        div.className = 'chat-msg ' + (isAgent ? 'chat-agent' : 'chat-ctrl');
+        const depCls = (isAgent && dep) ? ` chat-dep-${dep.toLowerCase()}` : '';
+        div.className = 'chat-msg ' + (isAgent ? 'chat-agent' : 'chat-ctrl') + depCls;
         const bubbleClass = isAgent ? 'chat-bubble-agent' : 'chat-bubble-ctrl';
         div.innerHTML = `<div class="chat-bubble ${bubbleClass} chat-typing-bubble">` +
             `<span class="typing-dot"></span>` +

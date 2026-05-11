@@ -35,12 +35,13 @@ class APIFlightPlanGenerator:
             timeout=15.0,
         )
 
-    async def generate(self, destination: Optional[str] = None) -> FlightPlanResponse:
+    async def generate(self, destination: Optional[str] = None, departure: Optional[str] = None) -> FlightPlanResponse:
         """
         Generate a flight plan with route from FlightPlanDatabase.com API.
 
         Args:
             destination: ICAO code (LEBL, LEMD, LEVC or LEAL). Random if None.
+            departure: Departure ICAO (current airport). Falls back to DEPARTURE_ICAO.
         """
         if destination:
             destination = destination.upper()
@@ -51,6 +52,8 @@ class APIFlightPlanGenerator:
         else:
             destination = random.choice(ALLOWED_DESTINATIONS)
 
+        from_icao = departure.upper() if departure else DEPARTURE_ICAO
+
         aircraft_type = random.choice(self.aircraft_types)
         aircraft = AIRCRAFT_DATA[aircraft_type]
         cruise_speed = aircraft["speed"]
@@ -59,7 +62,7 @@ class APIFlightPlanGenerator:
 
         # Call API to generate route
         plan_response = await self._generate_route(
-            from_icao=DEPARTURE_ICAO,
+            from_icao=from_icao,
             to_icao=destination,
             cruise_alt=default_cruise_alt,
             cruise_speed=cruise_speed,
@@ -122,7 +125,7 @@ class APIFlightPlanGenerator:
             wake_turbulence_category=aircraft["wtc"],
             equipment=aircraft["equipment"],
             transponder=aircraft["transponder"],
-            departure_ICAO=DEPARTURE_ICAO,
+            departure_ICAO=from_icao,
             departure_time=dep_time_int,
             cruising_speed=cruise_speed,
             cruising_altitude=cruising_altitude,

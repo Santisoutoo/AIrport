@@ -146,7 +146,9 @@ class WindowManager:
                 return
 
             fp_service.clear_all()
-            success, result = fp_service.generate_multiple(aircraft_count)
+            simulation_icao = AirportService.get_icao() or "LEST"
+            xp.log(f"AIrport: forcing flight plan departure to simulation airport {simulation_icao}")
+            success, result = fp_service.generate_multiple(aircraft_count, simulation_icao)
             if not success:
                 xp.log(f"AIrport: Failed to generate flight plans: {result}")
                 r.hset("airport:session_request", "status", "error")

@@ -46,6 +46,10 @@ async def generate_flight_plan_api(
         None,
         description="Destination ICAO code: LEBL, LEMD, LEVC or LEAL. Random if omitted.",
     ),
+    departure: Optional[str] = Query(
+        None,
+        description="Departure ICAO (current airport). Falls back to LEST if unsupported.",
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -55,7 +59,7 @@ async def generate_flight_plan_api(
     Falls back to the local generator if the API is unavailable.
     """
     try:
-        flight_plan = await api_generator.generate(destination=destination)
+        flight_plan = await api_generator.generate(destination=destination, departure=departure)
         repo = FlightPlanRepository(db)
         repo.create(flight_plan)
         return flight_plan
@@ -64,7 +68,7 @@ async def generate_flight_plan_api(
             "FlightPlanDatabase API failed (%s), falling back to local generator", e
         )
         try:
-            flight_plan = generator.generate()
+            flight_plan = generator.generate(departure=departure)
             repo = FlightPlanRepository(db)
             repo.create(flight_plan)
             return flight_plan
@@ -79,7 +83,10 @@ local_generation_router = APIRouter(prefix="/generate", tags=["Generation - Loca
 
 
 @local_generation_router.get("", response_model=FlightPlanResponse)
-async def generate_flight_plan(db: Session = Depends(get_db)):
+async def generate_flight_plan(
+    departure: Optional[str] = Query(None, description="Departure ICAO (current airport)."),
+    db: Session = Depends(get_db),
+):
     """
     Generate a flight plan using the local random generator (offline).
 
@@ -87,7 +94,7 @@ async def generate_flight_plan(db: Session = Depends(get_db)):
     from built-in data tables. No external API call is made.
     """
     try:
-        flight_plan = generator.generate()
+        flight_plan = generator.generate(departure=departure)
         repo = FlightPlanRepository(db)
         repo.create(flight_plan)
         return flight_plan

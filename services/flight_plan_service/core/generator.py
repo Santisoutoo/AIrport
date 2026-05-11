@@ -16,12 +16,12 @@ class FlightPlanGenerator:
         self.aircraft_types = list(AIRCRAFT_DATA.keys())
         self.airports = list(AIRPORT_DATA.keys())
 
-    def generate(self) -> FlightPlanResponse:
+    def generate(self, departure: str = None) -> FlightPlanResponse:
         """Generate a complete flight plan with all fields auto-generated"""
 
         # Generate random values
         aircraft_type = self._generate_aircraft_type()
-        departure, destination = self._generate_route_pair()
+        departure, destination = self._generate_route_pair(departure)
         flight_rules = self._generate_flight_rules(aircraft_type)
         pic_name = self._generate_pilot_name()
         passengers = self._generate_passengers(aircraft_type)
@@ -120,13 +120,15 @@ class FlightPlanGenerator:
         flight_number = random.randint(100, 9999)
         return f"{airline_icao}{flight_number}"
 
-    def _generate_route_pair(self) -> tuple[str, str]:
-        """Generate random departure and destination pair"""
-        departure = random.choice(self.airports)
-        # Ensure destination is different from departure
-        available_destinations = [a for a in self.airports if a != departure]
+    def _generate_route_pair(self, departure: str = None) -> tuple[str, str]:
+        """Force departure to the given ICAO; fall back to LEST if unsupported."""
+        if departure and departure in self.airports:
+            dep = departure
+        else:
+            dep = "LEST" if "LEST" in self.airports else self.airports[0]
+        available_destinations = [a for a in self.airports if a != dep]
         destination = random.choice(available_destinations)
-        return departure, destination
+        return dep, destination
 
     def _generate_flight_rules(self, aircraft_type: str) -> str:
         return "I"
