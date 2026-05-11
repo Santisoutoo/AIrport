@@ -17,6 +17,7 @@ from google import genai
 from google.genai import types
 
 from agent.debrief_prompt import DEBRIEF_SYSTEM_PROMPT
+from frequency_audit import render_audit_for_prompt, render_audit_markdown
 
 logger = logging.getLogger(__name__)
 
@@ -79,15 +80,18 @@ def generate_debrief(
     timeline: str,
     stats: dict,
     airport_icao: str = "",
+    freq_audit: Optional[dict] = None,
 ) -> dict:
     """Send the timeline to Gemini and return the parsed JSON debrief.
 
     Raises on SDK/network errors and on output that cannot be parsed.
     """
+    audit_block = render_audit_for_prompt(freq_audit or {})
     user_prompt = (
         f"AIRPORT: {airport_icao or 'UNKNOWN'}\n"
         f"SESSION STATS: {json.dumps(stats)}\n\n"
-        "SESSION DATA (timeline, strictly chronological):\n"
+        + (f"{audit_block}\n\n" if audit_block else "")
+        + "SESSION DATA (timeline, strictly chronological):\n"
         "---BEGIN---\n"
         f"{timeline}\n"
         "---END---\n"
@@ -114,7 +118,7 @@ def generate_debrief(
         raise
 
 
-def render_markdown(debrief: dict) -> str:
+def render_markdown(debrief: dict, freq_audit: Optional[dict] = None) -> str:
     """Cheap, deterministic Markdown rendering for the HMI modal.
 
     The HMI could render the JSON itself; we ship a pre-formatted block
@@ -122,6 +126,11 @@ def render_markdown(debrief: dict) -> str:
     """
     lines: list[str] = []
     lines.append(f"# Session debrief — overall score: **{debrief.get('overall_score', '?')}/100**\n")
+
+    audit_section = render_audit_markdown(freq_audit or {})
+    if audit_section:
+        lines.append(audit_section)
+        lines.append("")
 
     lines.append("## Categories\n")
     for cat in debrief.get("categories", []):
