@@ -22,6 +22,7 @@ if _GND_DIR not in sys.path:
 
 from models import (
     AirportInfo,
+    ComFrequency,
     Runway,
     Stand,
     TaxiEdge,
@@ -29,6 +30,28 @@ from models import (
     TrafficPattern,
 )
 from xplane_airports.AptDat import RowCode
+
+# 1050-1056 (8.33 kHz) → service tag. 1056 is "CENTER" in the X-Plane lib but
+# in the apt.dat 1200 spec the same row code is also used for DEP; we surface
+# it as DEP because that's what the controller actually says on the radio.
+_COM_CHANNEL_MAP = {
+    int(RowCode.CHANNEL_AWOS):     "ATIS",    # 1050
+    int(RowCode.CHANNEL_CTAF):     "UNICOM",  # 1051
+    int(RowCode.CHANNEL_DELIVERY): "DEL",     # 1052
+    int(RowCode.CHANNEL_GROUND):   "GND",     # 1053
+    int(RowCode.CHANNEL_TOWER):    "TWR",     # 1054
+    int(RowCode.CHANNEL_APPROACH): "APP",     # 1055
+    int(RowCode.CHANNEL_CENTER):   "DEP",     # 1056
+}
+_COM_LEGACY_MAP = {
+    int(RowCode.FREQUENCY_AWOS):     "ATIS",    # 50
+    int(RowCode.FREQUENCY_CTAF):     "UNICOM",  # 51
+    int(RowCode.FREQUENCY_DELIVERY): "DEL",     # 52
+    int(RowCode.FREQUENCY_GROUND):   "GND",     # 53
+    int(RowCode.FREQUENCY_TOWER):    "TWR",     # 54
+    int(RowCode.FREQUENCY_APPROACH): "APP",     # 55
+    int(RowCode.FREQUENCY_CENTER):   "DEP",     # 56
+}
 
 
 class AptDatParser:
@@ -195,6 +218,49 @@ class AptDatParser:
 
         return traffic_patterns
 
+    def parse_com_frequencies(self) -> List[ComFrequency]:
+        """CODES: 1050-1056 (8.33 kHz, kHz integer) with 50-56 (legacy) fallback.
+
+        Per the apt.dat 1200 spec: if any 1050-1056 row exists, the legacy
+        50-56 rows must be ignored. Only when no modern rows are present do
+        we fall back to the legacy ones.
+        """
+        modern: List[ComFrequency] = []
+        legacy: List[ComFrequency] = []
+
+        for line in self.raw_data:
+            parts = line.strip().split()
+            if len(parts) < 2:
+                continue
+            try:
+                code = int(parts[0])
+            except ValueError:
+                continue
+
+            if code in _COM_CHANNEL_MAP:
+                try:
+                    freq_khz = int(parts[1])
+                    modern.append(ComFrequency(
+                        service=_COM_CHANNEL_MAP[code],
+                        frequency_mhz=freq_khz / 1000.0,
+                        name=" ".join(parts[2:]) if len(parts) > 2 else _COM_CHANNEL_MAP[code],
+                    ))
+                except (ValueError, IndexError) as e:
+                    print(f"Error parsing COM frequency line: {line.strip()} - {e}")
+                continue
+
+            if code in _COM_LEGACY_MAP:
+                try:
+                    legacy.append(ComFrequency(
+                        service=_COM_LEGACY_MAP[code],
+                        frequency_mhz=int(parts[1]) / 100.0,
+                        name=" ".join(parts[2:]) if len(parts) > 2 else _COM_LEGACY_MAP[code],
+                    ))
+                except (ValueError, IndexError) as e:
+                    print(f"Error parsing legacy COM frequency line: {line.strip()} - {e}")
+
+        return modern if modern else legacy
+
     def parse_airport_info(self) -> List[AirportInfo]:
         """"CODE: 1 and 1302"""
 
@@ -235,6 +301,7 @@ def parse_airport(file_path: str) -> dict:
         "runways": [r.__dict__ for r in parser.parse_runways()],
         "traffic_patterns": [p.__dict__ for p in parser.parse_traffic_pattern()],
         "airport_info": [i.__dict__ for i in parser.parse_airport_info()],
+        "com_frequencies": [c.__dict__ for c in parser.parse_com_frequencies()],
     }
 
 

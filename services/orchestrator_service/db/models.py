@@ -27,7 +27,10 @@ class AircraftClearance(Base):
     clearance_text = Column(Text, nullable=True)
 
     # Lifecycle
-    dependency = Column(String(10), default="DEL", nullable=False)  # DEL | GND | TWR
+    # APP = inbound on the ILS, before being switched to Tower
+    # DEL → GND → TWR is the departure path.
+    # APP → TWR → GND is the arrival path (reverse handoff after landing).
+    dependency = Column(String(10), default="DEL", nullable=False)  # APP | DEL | GND | TWR
     taxi_route = Column(JSONB, nullable=True)  # populated by GND agent later
 
     cleared_at = Column(DateTime(timezone=True), default=_now, nullable=True)

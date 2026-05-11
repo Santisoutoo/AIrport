@@ -123,7 +123,7 @@ class TrafficPattern():
 
     This information in some AD is not reliable and do not reflect
     real operations
-    
+
     Represents the avaliable traffic patterns for AD rwys
     Attributes:
         runway_id (str): Identifier of the runways
@@ -131,3 +131,15 @@ class TrafficPattern():
     """
     runway_id: str
     side: str
+
+@dataclass
+class ComFrequency:
+    """
+    CODES: 1050-1056 (8.33 kHz, kHz integer) and 50-56 (legacy 25 kHz, MHz x 100).
+    Whichever pass populates this, the value is normalised to MHz as a float.
+
+    service: one of "ATIS", "UNICOM", "DEL", "GND", "TWR", "APP", "DEP".
+    """
+    service: str
+    frequency_mhz: float
+    name: str

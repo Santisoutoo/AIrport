@@ -62,6 +62,7 @@ class AirportDataStore:
         keys = [
             "nodes", "edges", "stands",
             "runways", "traffic_patterns", "airport_info",
+            "com_frequencies",
         ]
 
         data = {"icao": icao, "timestamp": timestamp}
@@ -74,6 +75,11 @@ class AirportDataStore:
     def get_icao(self) -> Optional[str]:
         """Return the ICAO code of the currently stored airport."""
         return self._r.get(f"{_PREFIX}:icao")
+
+    def get_com_frequencies(self) -> list:
+        """Return parsed COM frequencies for the current airport, or []."""
+        raw = self._r.get(f"{_PREFIX}:com_frequencies")
+        return json.loads(raw) if raw else []
 
     def clear(self) -> None:
         """Remove all current airport data from Redis."""

@@ -189,6 +189,34 @@ services:
       timeout: 10s
       retries: 3
 
+  arrival_simulator_service:
+    build:
+      context: .
+      dockerfile: services/arrival_simulator_service/Dockerfile
+    container_name: airport_arrival_simulator
+    restart: unless-stopped
+    ports:
+      - "8008:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - FLIGHT_PLAN_SERVICE_URL=http://flight_plan_service:8000/api/v1/flight-plan
+      - HMI_SERVICE_URL=http://controller_hmi_service:8000
+      - ARRIVAL_INTERVAL_S=${ARRIVAL_INTERVAL_S:-120}
+    depends_on:
+      redis:
+        condition: service_healthy
+      flight_plan_service:
+        condition: service_healthy
+    networks:
+      - airport_network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/arrivals/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   orchestrator_service:
     build:
       context: .

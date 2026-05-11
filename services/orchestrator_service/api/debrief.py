@@ -13,6 +13,7 @@ from agent.debrief_agent import generate_debrief, render_markdown
 from db.connection import get_db
 from db.models import AircraftClearance
 from debrief_builder import build_timeline, summarise_stats, truncate_timeline
+from frequency_audit import audit_frequencies
 from session_log import get_agent_replies, get_events, get_transcripts
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,19 @@ class DebriefResponse(BaseModel):
     markdown: str
     debrief: dict | None = None
     stats: dict
+
+
+def _load_com_frequencies() -> list[dict]:
+    """Best-effort fetch of the active airport's COM frequencies from Redis.
+
+    Returns [] on any failure so the audit cleanly falls back to defaults.
+    """
+    try:
+        from shared.services.airport_data_store import AirportDataStore
+        return AirportDataStore().get_com_frequencies() or []
+    except Exception as exc:
+        logger.warning("[debrief] could not load COM frequencies: %s", exc)
+        return []
 
 
 def _load_clearances(db: Session, session_id: str) -> list[dict]:
@@ -73,6 +87,7 @@ async def generate(req: DebriefRequest, db: Session = Depends(get_db)):
     clearances = _load_clearances(db, sid)
 
     stats = summarise_stats(transcripts, agent_replies, events, clearances)
+    freq_audit = audit_frequencies(transcripts, _load_com_frequencies())
 
     if len(transcripts) < _MIN_TRANSCRIPTS:
         return DebriefResponse(
@@ -89,14 +104,19 @@ async def generate(req: DebriefRequest, db: Session = Depends(get_db)):
     loop = asyncio.get_event_loop()
     try:
         result = await loop.run_in_executor(
-            _executor, generate_debrief, timeline, stats, req.airport_icao or "",
+            _executor,
+            generate_debrief,
+            timeline,
+            stats,
+            req.airport_icao or "",
+            freq_audit,
         )
     except Exception as exc:
         logger.exception("[debrief] LLM call failed")
         raise HTTPException(status_code=502, detail=f"Debrief LLM error: {exc}") from exc
 
     try:
-        markdown = render_markdown(result)
+        markdown = render_markdown(result, freq_audit)
     except Exception as exc:
         logger.exception("[debrief] markdown render failed")
         markdown = f"# Session debrief\n\n```json\n{result}\n```"

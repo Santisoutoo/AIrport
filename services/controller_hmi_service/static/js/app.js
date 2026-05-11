@@ -112,6 +112,7 @@ function loadAirport() {
             // Reload map, weather & TAF when airport changes
             if (icao !== currentICAO && icao !== '----') {
                 currentICAO = icao;
+                activeILSRunway = null;
                 initSMRMap();
                 loadWeather();
                 loadTaf();
@@ -160,6 +161,14 @@ var SMR_SIZE = 100;
 // Pan & Zoom state
 var smrViewBox = { x: 0, y: 0, w: 100, h: 100 };
 var smrDrag = null; // { startX, startY, startVBx, startVBy }
+
+// ILS extended centerline overlay
+var ILS_RANGE_NM = 10;
+var ILS_TICK_NM = 1;
+var ILS_TICK_HALF_NM = 0.15;
+var activeILSRunway = null;
+// Dynamic max viewBox bounds — expanded when ILS centerline goes outside [0,100]
+var smrViewMaxBounds = { minX: 0, minY: 0, maxX: 100, maxY: 100 };
 
 function initSMRMap() {
     var container = document.getElementById('smr-map');
@@ -376,12 +385,123 @@ function renderSMRFromData() {
     });
 
     // Aircraft overlay group (on top)
+    svg += '<g id="smr-ils-group"></g>';
     svg += '<g id="smr-aircraft-group"></g>';
 
     svg += '</svg>';
     container.innerHTML = svg;
 
     initSMRInteraction();
+    drawILSCenterline();
+}
+
+function setILSForArrivalRunway(rawDesignator) {
+    if (rawDesignator == null) {
+        activeILSRunway = null;
+    } else {
+        var token = String(rawDesignator).trim().toUpperCase().split(/[\s/]+/)[0];
+        activeILSRunway = token || null;
+    }
+    drawILSCenterline();
+    autoFitSMRView();
+}
+
+function autoFitSMRView() {
+    var minX = 0, minY = 0, maxX = 100, maxY = 100;
+
+    if (activeILSRunway && smrGraph && smrBounds) {
+        var threshold = null, otherEnd = null;
+        for (var i = 0; i < smrGraph.runways.length; i++) {
+            var r = smrGraph.runways[i];
+            if (r.end1.designator === activeILSRunway) { threshold = r.end1; otherEnd = r.end2; break; }
+            if (r.end2.designator === activeILSRunway) { threshold = r.end2; otherEnd = r.end1; break; }
+        }
+        if (threshold) {
+            var l1 = otherEnd.lat * Math.PI / 180;
+            var l2 = threshold.lat * Math.PI / 180;
+            var dl = (threshold.lon - otherEnd.lon) * Math.PI / 180;
+            var by = Math.sin(dl) * Math.cos(l2);
+            var bx = Math.cos(l1) * Math.sin(l2) - Math.sin(l1) * Math.cos(l2) * Math.cos(dl);
+            var brDeg = (Math.atan2(by, bx) * 180 / Math.PI + 360) % 360;
+            var endGeo = _projectGeoFromBearing(threshold.lat, threshold.lon, brDeg, ILS_RANGE_NM);
+            var endSvg = geoToSVG(endGeo.lat, endGeo.lon);
+            var pad = 5;
+            minX = Math.min(minX, endSvg.x - pad);
+            minY = Math.min(minY, endSvg.y - pad);
+            maxX = Math.max(maxX, endSvg.x + pad);
+            maxY = Math.max(maxY, endSvg.y + pad);
+        }
+    }
+
+    smrViewMaxBounds = { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
+
+    var w = maxX - minX;
+    var h = maxY - minY;
+    var size = Math.max(w, h);
+    var cx = (minX + maxX) / 2;
+    var cy = (minY + maxY) / 2;
+    smrViewBox = { x: cx - size / 2, y: cy - size / 2, w: size, h: size };
+
+    var svgEl = document.getElementById('smr-svg');
+    if (svgEl) {
+        svgEl.setAttribute('viewBox',
+            smrViewBox.x + ' ' + smrViewBox.y + ' ' + smrViewBox.w + ' ' + smrViewBox.h);
+        if (typeof rescaleSMRElements === 'function') rescaleSMRElements();
+    }
+}
+
+function _projectGeoFromBearing(lat, lon, bearingDeg, distNm) {
+    var br = bearingDeg * Math.PI / 180;
+    var dLat = (distNm / 60) * Math.cos(br);
+    var latRad = lat * Math.PI / 180;
+    var dLon = (distNm / 60) * Math.sin(br) / Math.cos(latRad);
+    return { lat: lat + dLat, lon: lon + dLon };
+}
+
+function drawILSCenterline() {
+    var group = document.getElementById('smr-ils-group');
+    if (!group) return;
+    group.innerHTML = '';
+    if (!activeILSRunway || !smrGraph || !smrBounds) return;
+
+    var threshold = null, otherEnd = null;
+    for (var i = 0; i < smrGraph.runways.length; i++) {
+        var r = smrGraph.runways[i];
+        if (r.end1.designator === activeILSRunway) { threshold = r.end1; otherEnd = r.end2; break; }
+        if (r.end2.designator === activeILSRunway) { threshold = r.end2; otherEnd = r.end1; break; }
+    }
+    if (!threshold) return;
+
+    // Bearing from otherEnd -> threshold = landing direction
+    var lat1 = otherEnd.lat * Math.PI / 180;
+    var lat2 = threshold.lat * Math.PI / 180;
+    var dLonRad = (threshold.lon - otherEnd.lon) * Math.PI / 180;
+    var y = Math.sin(dLonRad) * Math.cos(lat2);
+    var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLonRad);
+    var bearingDeg = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    var perpDeg = (bearingDeg + 90) % 360;
+
+    var thrSvg = geoToSVG(threshold.lat, threshold.lon);
+    var endGeo = _projectGeoFromBearing(threshold.lat, threshold.lon, bearingDeg, ILS_RANGE_NM);
+    var endSvg = geoToSVG(endGeo.lat, endGeo.lon);
+
+    var svg = '<line x1="' + thrSvg.x + '" y1="' + thrSvg.y +
+              '" x2="' + endSvg.x + '" y2="' + endSvg.y +
+              '" stroke="#00aaff" stroke-width="0.4" stroke-dasharray="1.5,1"' +
+              ' vector-effect="non-scaling-stroke" opacity="0.85"/>';
+
+    for (var n = ILS_TICK_NM; n <= ILS_RANGE_NM; n += ILS_TICK_NM) {
+        var c = _projectGeoFromBearing(threshold.lat, threshold.lon, bearingDeg, n);
+        var a = _projectGeoFromBearing(c.lat, c.lon, perpDeg, ILS_TICK_HALF_NM);
+        var b = _projectGeoFromBearing(c.lat, c.lon, perpDeg, -ILS_TICK_HALF_NM);
+        var pa = geoToSVG(a.lat, a.lon);
+        var pb = geoToSVG(b.lat, b.lon);
+        svg += '<line x1="' + pa.x + '" y1="' + pa.y +
+               '" x2="' + pb.x + '" y2="' + pb.y +
+               '" stroke="#00aaff" stroke-width="0.5"' +
+               ' vector-effect="non-scaling-stroke" opacity="0.85"/>';
+    }
+    group.innerHTML = svg;
 }
 
 // --- Rescale elements to keep constant visual size at any zoom level ---
@@ -541,8 +661,11 @@ function initSMRInteraction() {
         var nw = smrViewBox.w * zoomFactor;
         var nh = smrViewBox.h * zoomFactor;
 
-        // Clamp: don't zoom out beyond initial 100x100
-        if (nw > 100) { nw = 100; nh = 100; }
+        // Clamp: don't zoom out beyond the dynamic max bounds (expanded if ILS active)
+        var maxW = smrViewMaxBounds.maxX - smrViewMaxBounds.minX;
+        var maxH = smrViewMaxBounds.maxY - smrViewMaxBounds.minY;
+        var maxSize = Math.max(maxW, maxH);
+        if (nw > maxSize) { nw = maxSize; nh = maxSize; }
         // Don't zoom in too far
         if (nw < 5) { nw = 5; nh = 5; }
 
@@ -594,19 +717,18 @@ function initSMRInteraction() {
         }
     });
 
-    // Double-click to reset view
+    // Double-click to reset view (auto-fit current bounds, ILS included if active)
     svgEl.addEventListener('dblclick', function (e) {
         e.preventDefault();
-        smrViewBox = { x: 0, y: 0, w: 100, h: 100 };
-        applySMRViewBox();
+        autoFitSMRView();
     });
 }
 
 function clampViewBox() {
-    if (smrViewBox.x < 0) smrViewBox.x = 0;
-    if (smrViewBox.y < 0) smrViewBox.y = 0;
-    if (smrViewBox.x + smrViewBox.w > 100) smrViewBox.x = 100 - smrViewBox.w;
-    if (smrViewBox.y + smrViewBox.h > 100) smrViewBox.y = 100 - smrViewBox.h;
+    if (smrViewBox.x < smrViewMaxBounds.minX) smrViewBox.x = smrViewMaxBounds.minX;
+    if (smrViewBox.y < smrViewMaxBounds.minY) smrViewBox.y = smrViewMaxBounds.minY;
+    if (smrViewBox.x + smrViewBox.w > smrViewMaxBounds.maxX) smrViewBox.x = smrViewMaxBounds.maxX - smrViewBox.w;
+    if (smrViewBox.y + smrViewBox.h > smrViewMaxBounds.maxY) smrViewBox.y = smrViewMaxBounds.maxY - smrViewBox.h;
 }
 
 function applySMRViewBox() {

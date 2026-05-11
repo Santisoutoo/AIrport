@@ -41,8 +41,12 @@ WEATHER_URL = os.getenv(
 
 current_airport = {"icao": "LEST"}
 
-# In-memory strip states: { "aircraft_reg": { "phase": "PRE_TAXI|PUSHBACK|TAXI|LINEUP|CLEARED", "column": "PRE_TAXI|TAXI|RUNWAY" } }
+# In-memory strip states: { "aircraft_reg": { "phase": "...", "column": "..." } }
 strip_states: dict = {}
+
+# Virtual arrival strips: planes dispatched by arrival_simulator that don't
+# have a DB flight plan.  Keyed by registration, value is a minimal plan dict.
+_virtual_arrival_strips: dict = {}
 
 
 @router.get("/airport")
@@ -77,19 +81,80 @@ async def health_check():
 
 @router.get("/strips")
 async def get_flight_strips():
-    """Proxy: fetch all flight plans for strip rendering"""
+    """Proxy: fetch all flight plans, merged with virtual arrival strips."""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            resp = await client.get(
-                f"{FLIGHT_PLAN_URL}/api/v1/flight-plan/plans"
-            )
+            resp = await client.get(f"{FLIGHT_PLAN_URL}/api/v1/flight-plan/plans")
             resp.raise_for_status()
-            return resp.json()
+            db_plans = resp.json() or []
         except httpx.HTTPError as e:
             logger.error("Failed to fetch flight plans: %s", e)
-            raise HTTPException(
-                status_code=502, detail="Flight plan service unavailable"
-            )
+            db_plans = []
+
+    db_regs = {p["aircraft_registration"] for p in db_plans}
+    virtual = [v for reg, v in _virtual_arrival_strips.items() if reg not in db_regs]
+    return db_plans + virtual
+
+
+@router.post("/strips/arrival")
+async def register_arrival_strip(data: dict):
+    """Register a virtual arrival strip (no DB flight plan required).
+
+    Expected fields: aircraft_registration, callsign, aircraft_type,
+    departure_ICAO, destination_ICAO.
+    """
+    reg = data.get("aircraft_registration")
+    if not reg:
+        raise HTTPException(status_code=422, detail="aircraft_registration required")
+    _virtual_arrival_strips[reg] = {
+        "aircraft_registration": reg,
+        "callsign": data.get("callsign", reg),
+        "aircraft_type": data.get("aircraft_type", "UNKN"),
+        "flight_rules": "I",
+        "flight_type": "S",
+        "wake_turbulence_category": "M",
+        "equipment": "S",
+        "transponder": "S",
+        "departure_ICAO": data.get("departure_ICAO", "ZZZZ"),
+        "departure_time": 0,
+        "cruising_speed": 460,
+        "cruising_altitude": 35000,
+        "route": "DCT",
+        "destination_ICAO": data.get("destination_ICAO", "LEST"),
+        "total_EET": "0100",
+        "alternate_ICAO": "",
+        "second_alternate_ICAO": "",
+        "other_info": "",
+        "endurance": "0200",
+        "people_on_board": "180",
+        "remarks": "ARRIVAL",
+        "PIC_name": "",
+    }
+    # Set strip state to ARRIVALS column immediately.
+    strip_states[reg] = {"phase": "approach", "column": "ARRIVALS"}
+    return {"registered": reg}
+
+
+@router.delete("/strips/arrival/{aircraft_reg}")
+async def remove_arrival_strip(aircraft_reg: str):
+    """Remove a virtual arrival strip when the aircraft parks."""
+    _virtual_arrival_strips.pop(aircraft_reg, None)
+    strip_states.pop(aircraft_reg, None)
+    return {"removed": aircraft_reg}
+
+
+@router.delete("/strips/arrivals")
+async def clear_all_arrival_strips():
+    """Clear ALL virtual arrival strips and their HMI states.
+
+    Called by the X-Plane plugin at the start of every new session so that
+    strips from the previous session don't persist in memory.
+    """
+    _virtual_arrival_strips.clear()
+    dead = [reg for reg, s in strip_states.items() if s.get("column") == "ARRIVALS"]
+    for reg in dead:
+        strip_states.pop(reg, None)
+    return {"cleared": len(dead)}
 
 
 @router.get("/weather")
@@ -232,19 +297,84 @@ async def get_strip_states():
     return strip_states
 
 
+# LEST RWY 17 threshold (matches arrival_simulator_service runway_config).
+_RUNWAY_17_LAT = 42.91180046
+_RUNWAY_17_LON = -8.42033176
+
+
+def _haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    import math
+    R = 6371000.0
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dl / 2) ** 2
+    d_m = 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return d_m / 1852.0
+
+
+@router.get("/strips/arrivals/{aircraft_reg}")
+async def get_arrival_detail(aircraft_reg: str):
+    """Live detail for an inbound aircraft: distance to threshold, altitude, IAS."""
+    try:
+        h = _redis.hgetall(f"aircraft:state:{aircraft_reg}")
+    except Exception:
+        raise HTTPException(status_code=502, detail="redis unavailable")
+    if not h:
+        raise HTTPException(status_code=404, detail="aircraft not in state store")
+
+    try:
+        lat = float(h.get("latitude", 0.0) or 0.0)
+        lon = float(h.get("longitude", 0.0) or 0.0)
+        alt_msl = float(h.get("altitude_msl", 0.0) or 0.0)
+        alt_agl = float(h.get("altitude_agl", 0.0) or 0.0)
+        ias = float(h.get("indicated_airspeed", 0.0) or 0.0)
+        vs = float(h.get("vertical_speed", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=500, detail="invalid state payload")
+
+    dme_nm = _haversine_nm(lat, lon, _RUNWAY_17_LAT, _RUNWAY_17_LON)
+    eta_s = (dme_nm * 1852.0) / max(0.5, ias * 0.514444) if ias > 0 else None
+
+    return {
+        "registration": aircraft_reg,
+        "callsign": h.get("callsign", aircraft_reg),
+        "phase": h.get("phase", ""),
+        "latitude": lat,
+        "longitude": lon,
+        "altitude_msl_ft": alt_msl,
+        "altitude_agl_ft": alt_agl,
+        "indicated_airspeed_kts": ias,
+        "vertical_speed_fpm": vs,
+        "distance_to_threshold_nm": round(dme_nm, 2),
+        "eta_seconds": round(eta_s, 1) if eta_s is not None else None,
+        "runway": "17",
+    }
+
+
 @router.patch("/strips/{aircraft_reg}/state")
 async def update_strip_state(aircraft_reg: str, data: dict):
     """Update a strip's phase and column assignment"""
     phase = data.get("phase", "PRE_TAXI")
+    # Mover emits phases in lower-case (approach, landing_roll, vacating, ...);
+    # HMI uses upper-case codes (APPROACH, LANDED, VACATING). Accept both.
     column_map = {
         "PRE_TAXI": "PRE_TAXI",
         "PUSHBACK": "PRE_TAXI",
+        "pushback": "PRE_TAXI",
+        "parked": "PRE_TAXI",
         "TAXI": "TAXI",
+        "taxi_out": "TAXI",
         "LINEUP": "RUNWAY",
         "CLEARED": "RUNWAY",
         "APPROACH": "ARRIVALS",
+        "approach": "ARRIVALS",
+        "short_final": "ARRIVALS",
         "LANDED":   "ARRIVALS",
+        "landing_roll": "ARRIVALS",
         "VACATING": "ARRIVALS",
+        "vacating": "ARRIVALS",
+        "taxi_in": "ARRIVALS",
     }
     column = column_map.get(phase, "PRE_TAXI")
     strip_states[aircraft_reg] = {"phase": phase, "column": column}

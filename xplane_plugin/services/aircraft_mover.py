@@ -17,7 +17,6 @@ Supported plan shapes:
 """
 
 import json
-import math
 import time
 from dataclasses import dataclass, field
 from typing import Optional
@@ -25,54 +24,23 @@ from typing import Optional
 from XPPython3 import xp
 
 from ...shared.models.aircraft_state import AircraftState
+from ...shared.models.phases import Phase
 from ...shared.services.aircraft_state_store import AircraftStateStore
+from ...shared.services.geo import (
+    FT_TO_M,
+    KT_TO_MPS as _KT_TO_MPS,
+    advance as _advance,
+    bearing as _bearing,
+    haversine as _haversine,
+    shortest_angle as _shortest_angle,
+)
 
-_EARTH_R = 6371000.0
-_KT_TO_MPS = 0.514444
 _MOVE_CMD_PATTERN = "aircraft:*:move_cmd"
+_SPAWN_REQUEST_PATTERN = "aircraft:spawn_request:*"
 _STATE_FLUSH_INTERVAL_S = 0.5
 _WAYPOINT_REACHED_M = 2.5
-
-
-# -- Geodesy helpers ---------------------------------------------------------
-
-def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dl = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dl / 2) ** 2
-    return 2 * _EARTH_R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-
-def _bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dl = math.radians(lon2 - lon1)
-    x = math.sin(dl) * math.cos(phi2)
-    y = math.cos(phi1) * math.sin(phi2) - math.sin(phi1) * math.cos(phi2) * math.cos(dl)
-    return (math.degrees(math.atan2(x, y)) + 360.0) % 360.0
-
-
-def _advance(lat: float, lon: float, bearing_deg: float, dist_m: float) -> tuple[float, float]:
-    if dist_m <= 0.0:
-        return lat, lon
-    phi1 = math.radians(lat)
-    lam1 = math.radians(lon)
-    theta = math.radians(bearing_deg)
-    delta = dist_m / _EARTH_R
-    phi2 = math.asin(
-        math.sin(phi1) * math.cos(delta)
-        + math.cos(phi1) * math.sin(delta) * math.cos(theta)
-    )
-    lam2 = lam1 + math.atan2(
-        math.sin(theta) * math.sin(delta) * math.cos(phi1),
-        math.cos(delta) - math.sin(phi1) * math.sin(phi2),
-    )
-    return math.degrees(phi2), math.degrees(lam2)
-
-
-def _shortest_angle(cur: float, target: float) -> float:
-    diff = ((target - cur) + 540.0) % 360.0 - 180.0
-    return diff
+_FLARE_AGL_FT = 50.0
+_LANDING_ROLL_STOP_KTS = 20.0
 
 
 # -- Plan state --------------------------------------------------------------
@@ -90,8 +58,16 @@ class _PlanState:
     lon: float = 0.0
     heading: float = 0.0
 
+    # Vertical / airspeed state (used by approach + landing_roll legs)
+    altitude_msl_ft: float = 0.0
+    altitude_agl_ft: float = 0.0
+    vertical_speed_fpm: float = 0.0
+    ias_kts: float = 0.0
+    on_ground: bool = True
+
     # State machine
-    phase: str = "waiting"         # waiting → pushback → taxi → done
+    phase: str = "waiting"         # waiting → pushback → taxi → approach → landing_roll → vacating → taxi_in → done
+    final_phase: str = "holding"   # phase used by _finalise on reached_end (parked for arrivals)
     leg_index: int = 0
 
     # Pushback bookkeeping
@@ -163,6 +139,17 @@ class AircraftMover:
     # -- Scan Redis for new plans ------------------------------------------
 
     def _scan(self, sinceLast, elapsedTime, counter, refCon):
+        # 1) Honour any pending airborne spawn requests so the mover has an
+        #    instance to drive before a move_cmd arrives.
+        try:
+            spawn_keys = self._r.keys(_SPAWN_REQUEST_PATTERN)
+        except Exception as exc:
+            xp.log(f"AIrport Mover: Redis spawn-scan error: {exc}")
+            spawn_keys = []
+        for key in spawn_keys:
+            self._handle_spawn_request(key)
+
+        # 2) Pick up move plans for already-spawned aircraft.
         try:
             keys = self._r.keys(_MOVE_CMD_PATTERN)
         except Exception as exc:
@@ -175,6 +162,9 @@ class AircraftMover:
             if len(parts) < 3:
                 continue
             reg = parts[1]
+            # Skip the spawn_request namespace; same key prefix but different role.
+            if reg == "spawn_request":
+                continue
             seen_regs.add(reg)
             if reg not in self._spawner.registry:
                 continue
@@ -197,6 +187,44 @@ class AircraftMover:
 
         return 1.0
 
+    def _handle_spawn_request(self, key: str) -> None:
+        """Spawn an aircraft from `aircraft:spawn_request:{reg}` (deletes the key)."""
+        parts = key.split(":")
+        if len(parts) < 3:
+            return
+        reg = parts[2]
+        if reg in self._spawner.registry:
+            try:
+                self._r.delete(key)
+            except Exception:
+                pass
+            return
+        try:
+            raw = self._r.get(key)
+        except Exception:
+            return
+        if not raw:
+            return
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            try:
+                self._r.delete(key)
+            except Exception:
+                pass
+            return
+        try:
+            spawned = self._spawner.spawn_one(payload)
+        except Exception as exc:
+            xp.log(f"AIrport Mover: spawn_one failed for {reg}: {exc}")
+            spawned = None
+        if spawned:
+            xp.log(f"AIrport Mover: dynamic spawn {spawned} (airborne={not payload.get('on_ground', True)})")
+        try:
+            self._r.delete(key)
+        except Exception:
+            pass
+
     def _ingest_plan(self, registration: str, payload: dict) -> None:
         plan_id = payload.get("plan_id") or f"legacy-{payload.get('started_at', time.time())}"
         existing = self._plans.get(registration)
@@ -217,6 +245,8 @@ class AircraftMover:
             lat=info["latitude"],
             lon=info["longitude"],
             heading=info["true_hdg"],
+            altitude_msl_ft=float(info.get("altitude_msl_ft", 0.0) or 0.0),
+            on_ground=bool(info.get("on_ground", True)),
         )
         self._plans[registration] = state
         self._emit(registration, "plan_accepted", plan_id=plan_id)
@@ -277,10 +307,14 @@ class AircraftMover:
         mode = leg.get("mode")
         if mode == "pushback":
             self._advance_pushback(plan, leg, dt, now)
-        elif mode == "waypoints":
+        elif mode in ("waypoints", "vacate", "taxi_in"):
             self._advance_waypoints(plan, leg, dt, now)
         elif mode == "straight":
             self._advance_straight(plan, leg, dt, now)
+        elif mode == "approach":
+            self._advance_approach(plan, leg, dt, now)
+        elif mode == "landing_roll":
+            self._advance_landing_roll(plan, leg, dt, now)
         else:
             xp.log(f"AIrport Mover: unknown leg mode {mode!r}; skipping")
             self._advance_leg(plan)
@@ -302,18 +336,52 @@ class AircraftMover:
             self._emit(plan.registration, "pushback_started")
             self._emit(plan.registration, "pushback_reverse_started")
         elif mode == "waypoints":
-            plan.phase = "taxi"
+            plan.phase = Phase.TAXI_OUT.value
             plan.wp_index = self._first_unreached_wp(plan, leg)
             self._emit(plan.registration, "taxi_started")
         elif mode == "straight":
-            plan.phase = "taxi"
+            plan.phase = Phase.TAXI_OUT.value
             self._emit(plan.registration, "taxi_started")
+        elif mode == "approach":
+            plan.phase = Phase.APPROACH.value
+            plan.on_ground = False
+            plan.altitude_msl_ft = float(
+                leg.get("initial_altitude_msl_ft", plan.altitude_msl_ft)
+            )
+            plan.ias_kts = float(leg.get("ias_kts", 160.0))
+            plan.vertical_speed_fpm = float(leg.get("vs_fpm", -800.0))
+            self._emit(plan.registration, "approach_started")
+        elif mode == "landing_roll":
+            plan.phase = Phase.LANDING_ROLL.value
+            plan.on_ground = True
+            plan.altitude_msl_ft = float(
+                leg.get("runway_elev_msl_ft", plan.altitude_msl_ft)
+            )
+            plan.altitude_agl_ft = 0.0
+            plan.vertical_speed_fpm = 0.0
+            plan.ias_kts = float(
+                leg.get("touchdown_ias_kts", plan.ias_kts if plan.ias_kts > 0 else 140.0)
+            )
+            self._emit(plan.registration, "touchdown")
+        elif mode == "vacate":
+            plan.phase = Phase.VACATING.value
+            plan.on_ground = True
+            plan.wp_index = self._first_unreached_wp(plan, leg)
+            self._emit(plan.registration, "vacate_started")
+        elif mode == "taxi_in":
+            plan.phase = Phase.TAXI_IN.value
+            plan.on_ground = True
+            plan.wp_index = self._first_unreached_wp(plan, leg)
+            self._emit(plan.registration, "taxi_in_started")
         else:
             plan.phase = "done"
 
     def _advance_leg(self, plan: _PlanState) -> None:
         plan.leg_index += 1
         if plan.leg_index >= len(plan.legs):
+            # Preserve the last working phase so _finalise can use it instead of "holding".
+            if plan.phase not in ("waiting", "done"):
+                plan.final_phase = plan.phase
             plan.phase = "done"
         else:
             self._enter_leg(plan)
@@ -381,7 +449,11 @@ class AircraftMover:
         waypoints = leg.get("waypoints") or []
         if plan.wp_index >= len(waypoints):
             if leg.get("stop_at_end", True):
-                self._apply_position(plan, gs=0.0, phase="holding")
+                plan.ias_kts = 0.0
+                # An arrival taxi_in that stops has arrived at the stand.
+                if plan.phase == Phase.TAXI_IN.value:
+                    plan.phase = Phase.PARKED.value
+                self._apply_position(plan, gs=0.0, phase=plan.phase)
             self._advance_leg(plan)
             return
 
@@ -397,15 +469,17 @@ class AircraftMover:
         if remaining <= max(step, _WAYPOINT_REACHED_M):
             plan.lat, plan.lon = tgt_lat, tgt_lon
             plan.wp_index += 1
-            self._apply_position(plan, gs=speed_kts, phase="taxi_out")
+            plan.ias_kts = speed_kts
+            self._apply_position(plan, gs=speed_kts, phase=plan.phase)
             return
 
         bearing = _bearing(plan.lat, plan.lon, tgt_lat, tgt_lon)
         new_lat, new_lon = _advance(plan.lat, plan.lon, bearing, step)
         plan.lat, plan.lon = new_lat, new_lon
         plan.heading = bearing
-        self._apply_position(plan, gs=speed_kts, phase="taxi_out")
-        self._maybe_publish_state(plan, now, phase="taxi_out", gs=speed_kts)
+        plan.ias_kts = speed_kts
+        self._apply_position(plan, gs=speed_kts, phase=plan.phase)
+        self._maybe_publish_state(plan, now, phase=plan.phase, gs=speed_kts)
 
     def _first_unreached_wp(self, plan: _PlanState, leg: dict) -> int:
         """Pick the first waypoint whose distance from the current position is
@@ -430,9 +504,77 @@ class AircraftMover:
         step = speed_mps * dt
         plan.lat, plan.lon = _advance(plan.lat, plan.lon, heading, step)
         plan.heading = heading
-        self._apply_position(plan, gs=speed_kts, phase="taxi_out")
-        self._maybe_publish_state(plan, now, phase="taxi_out", gs=speed_kts)
+        self._apply_position(plan, gs=speed_kts, phase=Phase.TAXI_OUT.value)
+        self._maybe_publish_state(plan, now, phase=Phase.TAXI_OUT.value, gs=speed_kts)
         if elapsed >= duration:
+            self._advance_leg(plan)
+
+    # -- Approach leg (fly toward threshold on localizer) ------------------
+
+    def _advance_approach(self, plan: _PlanState, leg: dict, dt: float, now: float) -> None:
+        """Fly the ILS final approach at constant IAS and descent rate.
+
+        The aircraft flies along the runway heading (not toward the threshold
+        point) so the bearing never reverses once it crosses the threshold.
+        Transition to landing_roll happens when either:
+          - altitude AGL drops to flare_agl_ft, OR
+          - horizontal distance to the threshold is <= landing_transition_m.
+        """
+        from ...shared.services.geo import NM_TO_M
+
+        target_lat = float(leg["target_lat"])
+        target_lon = float(leg["target_lon"])
+        runway_elev_msl_ft = float(leg.get("runway_elev_msl_ft", 0.0))
+        flare_agl_ft = float(leg.get("flare_agl_ft", _FLARE_AGL_FT))
+        request_dme_nm = leg.get("request_landing_at_nm")
+        # landing_transition_m: max distance from threshold at which we land.
+        landing_transition_m = float(leg.get("landing_transition_m", 500.0))
+        # Use fixed runway heading so bearing never reverses past the threshold.
+        rwy_hdg = float(leg.get("runway_hdg", _bearing(plan.lat, plan.lon, target_lat, target_lon)))
+
+        speed_mps = max(0.1, plan.ias_kts * _KT_TO_MPS)
+        step = speed_mps * dt
+        plan.heading = rwy_hdg
+        plan.lat, plan.lon = _advance(plan.lat, plan.lon, rwy_hdg, step)
+
+        plan.altitude_msl_ft += plan.vertical_speed_fpm * (dt / 60.0)
+        plan.altitude_agl_ft = max(0.0, plan.altitude_msl_ft - runway_elev_msl_ft)
+
+        dist_to_threshold_m = _haversine(plan.lat, plan.lon, target_lat, target_lon)
+
+        if request_dme_nm is not None:
+            dme_nm = dist_to_threshold_m / NM_TO_M
+            if dme_nm <= float(request_dme_nm):
+                self._emit(plan.registration, "request_landing", dme_nm=round(dme_nm, 2))
+
+        self._apply_position(plan, gs=plan.ias_kts, phase=plan.phase)
+        self._maybe_publish_state(plan, now, phase=plan.phase, gs=plan.ias_kts)
+
+        if plan.altitude_agl_ft <= flare_agl_ft or dist_to_threshold_m <= landing_transition_m:
+            self._emit(plan.registration, "flare_started")
+            self._advance_leg(plan)
+
+    # -- Landing roll leg (decelerate on runway) ---------------------------
+
+    def _advance_landing_roll(self, plan: _PlanState, leg: dict, dt: float, now: float) -> None:
+        """Decelerate along the runway centerline until below stop_kts."""
+        decel_kts_s = float(leg.get("decel_kts_s", 4.0))
+        rwy_hdg = float(leg.get("runway_hdg", plan.heading))
+        stop_kts = float(leg.get("stop_kts", _LANDING_ROLL_STOP_KTS))
+
+        plan.ias_kts = max(0.0, plan.ias_kts - decel_kts_s * dt)
+        speed_mps = max(0.0, plan.ias_kts * _KT_TO_MPS)
+        step = speed_mps * dt
+        plan.heading = rwy_hdg
+        if step > 0:
+            plan.lat, plan.lon = _advance(plan.lat, plan.lon, rwy_hdg, step)
+
+        plan.altitude_agl_ft = 0.0
+        self._apply_position(plan, gs=plan.ias_kts, phase=plan.phase)
+        self._maybe_publish_state(plan, now, phase=plan.phase, gs=plan.ias_kts)
+
+        if plan.ias_kts <= stop_kts:
+            self._emit(plan.registration, "rolling_out")
             self._advance_leg(plan)
 
     # -- X-Plane and state store -------------------------------------------
@@ -442,15 +584,19 @@ class AircraftMover:
         if not info or not info.get("instance"):
             return
         try:
-            x, y, z = xp.worldToLocal(lat=plan.lat, lon=plan.lon, alt=0.0)
-            if self._probe is not None:
+            alt_m = plan.altitude_msl_ft * FT_TO_M if not plan.on_ground else 0.0
+            x, y, z = xp.worldToLocal(lat=plan.lat, lon=plan.lon, alt=alt_m)
+            if plan.on_ground and self._probe is not None:
                 probe_info = xp.probeTerrainXYZ(self._probe, x, y, z)
                 if probe_info.result == 0:
                     y = probe_info.locationY
-            xp.instanceSetPosition(info["instance"], (x, y, z, 0.0, plan.heading, 0.0), [])
+            pitch = -3.0 if phase == Phase.APPROACH.value else 0.0
+            xp.instanceSetPosition(info["instance"], (x, y, z, pitch, plan.heading, 0.0), [])
             info["latitude"] = plan.lat
             info["longitude"] = plan.lon
             info["true_hdg"] = plan.heading
+            info["altitude_msl_ft"] = plan.altitude_msl_ft
+            info["on_ground"] = plan.on_ground
         except Exception as exc:
             xp.log(f"AIrport Mover: setPosition error for {plan.registration}: {exc}")
 
@@ -470,15 +616,15 @@ class AircraftMover:
                 callsign=info.get("callsign", plan.registration),
                 latitude=plan.lat,
                 longitude=plan.lon,
-                altitude_msl=0.0,
-                altitude_agl=0.0,
+                altitude_msl=plan.altitude_msl_ft,
+                altitude_agl=plan.altitude_agl_ft,
                 heading=plan.heading,
-                pitch=0.0,
+                pitch=-3.0 if phase == Phase.APPROACH.value else 0.0,
                 roll=0.0,
                 ground_speed=gs,
-                indicated_airspeed=0.0,
-                vertical_speed=0.0,
-                on_ground=True,
+                indicated_airspeed=plan.ias_kts,
+                vertical_speed=plan.vertical_speed_fpm,
+                on_ground=plan.on_ground,
                 squawk=0,
                 phase=phase,
             )
@@ -503,11 +649,15 @@ class AircraftMover:
         plan = self._plans.pop(registration, None)
         if plan is not None:
             if event == "reached_end":
-                # Force final state publish so the HMI sees phase=holding.
-                self._apply_position(plan, gs=0.0, phase="holding")
+                # Force final state publish using the last working phase so HMI
+                # sees "parked" for arrivals (taxi_in done) or "holding" otherwise.
+                final_phase = plan.final_phase or Phase.HOLDING.value
+                plan.phase = final_phase
+                plan.ias_kts = 0.0
+                self._apply_position(plan, gs=0.0, phase=final_phase)
                 self._maybe_publish_state(
                     plan, time.time() + _STATE_FLUSH_INTERVAL_S,
-                    phase="holding", gs=0.0,
+                    phase=final_phase, gs=0.0,
                 )
             self._emit(registration, event)
         try:

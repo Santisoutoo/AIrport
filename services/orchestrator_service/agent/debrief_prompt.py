@@ -25,6 +25,10 @@ Scoring rubric. Score each category 0 to 10 (integer). Overall score is 0 to
      and wait", "contact ground/tower on <freq>", "pushback approved face
      <DIRECTION>").
    - No invented or colloquial language.
+   - When a `FREQUENCY AUDIT` block is present, treat it as ground truth.
+     Cite the timestamp and quote of any "BAD" entry as an example with
+     verdict "bad" in this category, and a "GOOD" entry as a "good" example
+     when one is available. Do not contradict the audit.
 
 2. Clearance Completeness
    - DEL: squawk, initial altitude, SID/departure, destination, ATIS code.

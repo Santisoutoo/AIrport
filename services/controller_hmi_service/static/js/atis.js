@@ -47,6 +47,9 @@ var AtisModal = (function () {
             _lastData = data;
             _populate(data, false);
             btn.textContent = 'SENT ✓';
+            if (typeof setILSForArrivalRunway === 'function') {
+                setILSForArrivalRunway(data.arrival_runway);
+            }
             setTimeout(function () { btn.disabled = false; btn.textContent = 'SEND'; }, 2000);
         })
         .catch(function (err) {
