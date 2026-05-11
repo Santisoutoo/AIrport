@@ -44,8 +44,13 @@ def _redis_client() -> redis.Redis:
     return redis.from_url(_REDIS_URL, decode_responses=True)
 
 
-def dispatch_arrival(plan: dict, runway: RunwayConfig) -> dict:
+def dispatch_arrival(plan: dict, runway: RunwayConfig,
+                     spawn_distance_nm: float = SPAWN_DISTANCE_NM) -> dict:
     """Publish the spawn request and the multi-leg move plan to Redis.
+
+    `spawn_distance_nm` allows callers to stagger multiple simultaneous
+    arrivals along the localizer. Altitude scales proportionally with
+    distance to preserve the 3° glideslope for all slots.
 
     Returns the dispatch metadata (spawn point, plan_id) for logging.
     """
@@ -55,9 +60,11 @@ def dispatch_arrival(plan: dict, runway: RunwayConfig) -> dict:
 
     spawn_lat, spawn_lon = project_on_localizer(
         runway.threshold_lat, runway.threshold_lon,
-        runway.heading_deg, SPAWN_DISTANCE_NM,
+        runway.heading_deg, spawn_distance_nm,
     )
-    spawn_alt_msl = SPAWN_ALTITUDE_AGL_FT + runway.elevation_ft
+    # Scale AGL proportionally so every slot sits on the same 3° glideslope.
+    agl = SPAWN_ALTITUDE_AGL_FT * (spawn_distance_nm / SPAWN_DISTANCE_NM)
+    spawn_alt_msl = agl + runway.elevation_ft
 
     spawn_request = {
         "aircraft_registration": reg,

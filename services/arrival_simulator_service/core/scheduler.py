@@ -81,11 +81,11 @@ class ArrivalScheduler:
         runway = get_active_runway("LEST")
         while not self._stop_event.is_set():
             needed = max(0, self._min_concurrent - len(self._active_regs))
-            for _ in range(needed):
+            for i in range(needed):
                 if self._stop_event.is_set():
                     break
                 try:
-                    await self._dispatch_one(runway)
+                    await self._dispatch_one(runway, slot_index=i)
                 except Exception as exc:  # noqa: BLE001
                     logger.exception("Arrival dispatch failed: %s", exc)
             try:
@@ -93,12 +93,15 @@ class ArrivalScheduler:
             except asyncio.TimeoutError:
                 continue
 
-    async def _dispatch_one(self, runway) -> None:
+    async def _dispatch_one(self, runway, slot_index: int = 0) -> None:
         plan = await plan_catalog.fetch_pending_arrival(runway.icao)
         if plan is None:
             logger.info("No more pending arrivals for %s; slot stays empty.", runway.icao)
             return
-        meta = dispatch_arrival(plan, runway)
+        slot_sep = float(os.getenv("ARRIVAL_SLOT_SEP_NM", "5.0"))
+        base_dist = float(os.getenv("ARRIVAL_SPAWN_DISTANCE_NM", "10.0"))
+        spawn_dist = base_dist + slot_index * slot_sep
+        meta = dispatch_arrival(plan, runway, spawn_distance_nm=spawn_dist)
         reg = meta["registration"]
         plan_catalog.mark_assigned(reg)
         event_bridge.register_arrival(meta)
