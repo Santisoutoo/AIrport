@@ -31,9 +31,12 @@ _REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 _HMI_URL = os.getenv("HMI_SERVICE_URL", "http://controller_hmi_service:8000")
 
 SPAWN_DISTANCE_NM = float(os.getenv("ARRIVAL_SPAWN_DISTANCE_NM", "10.0"))
-SPAWN_ALTITUDE_AGL_FT = float(os.getenv("ARRIVAL_SPAWN_ALT_AGL_FT", "3000.0"))
+# 5000 ft AGL at 10 NM keeps the aircraft above LEST surrounding terrain
+# (hills up to ~2000 ft MSL within 10 NM of the field). With -1333 fpm at
+# 160 kt the descent reaches 0 AGL exactly at the threshold (~4.7° slope).
+SPAWN_ALTITUDE_AGL_FT = float(os.getenv("ARRIVAL_SPAWN_ALT_AGL_FT", "5000.0"))
 APPROACH_IAS_KTS = float(os.getenv("ARRIVAL_IAS_KTS", "160.0"))
-APPROACH_VS_FPM = float(os.getenv("ARRIVAL_VS_FPM", "-800.0"))
+APPROACH_VS_FPM = float(os.getenv("ARRIVAL_VS_FPM", "-1333.0"))
 REQUEST_LANDING_AT_NM = float(os.getenv("ARRIVAL_REQUEST_AT_NM", "4.0"))
 LANDING_ROLL_DECEL_KTS_S = float(os.getenv("ARRIVAL_DECEL_KTS_S", "4.0"))
 LANDING_ROLL_STOP_KTS = float(os.getenv("ARRIVAL_STOP_KTS", "20.0"))
@@ -108,7 +111,11 @@ def dispatch_arrival(plan: dict, runway: RunwayConfig,
             {
                 "mode": "vacate",
                 "waypoints": [
-                    {"lat": runway.vacate_exit_lat, "lon": runway.vacate_exit_lon},
+                    # 1. point on the runway centerline, abeam the exit — the
+                    #    aircraft rolls straight here before turning off.
+                    {"lat": runway.vacate_abeam_lat, "lon": runway.vacate_abeam_lon},
+                    # 2. the actual taxiway exit (E3) — sharp turn off the runway.
+                    {"lat": runway.vacate_exit_lat,  "lon": runway.vacate_exit_lon},
                 ],
                 "speed_kts": VACATE_TAXI_KTS,
                 "stop_at_end": True,
