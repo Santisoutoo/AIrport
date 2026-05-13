@@ -182,7 +182,19 @@ def run_orchestrator_agent(
     if advance_reg_gnd:
         try:
             repo = ClearanceRepository(db)
-            repo.update_dependency(advance_reg_gnd, "GND")
+            updated = repo.update_dependency(advance_reg_gnd, "GND")
+            if not updated:
+                # Safety net: if the LLM picked advance_to_gnd for an arrival
+                # (which has no row yet), upsert anyway so the next message
+                # routes correctly to GND.
+                repo.upsert(
+                    registration=advance_reg_gnd,
+                    session_id=session_id,
+                    squawk=0, initial_altitude=0,
+                    instrumental_departure="", runway_in_use="",
+                    altimeter=0.0, destination_icao="",
+                    clearance_text="", dependency="GND",
+                )
             logger.info("[ORCH] ground release — %s advanced to GND", advance_reg_gnd)
         except Exception as exc:
             logger.error("[ORCH] failed to advance %s to GND: %s", advance_reg_gnd, exc)

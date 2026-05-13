@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 _REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 _HMI_URL = os.getenv("HMI_SERVICE_URL", "http://controller_hmi_service:8000")
+_ORCH_URL = os.getenv("ORCHESTRATOR_SERVICE_URL", "http://orchestrator_service:8006")
 
 SPAWN_DISTANCE_NM = float(os.getenv("ARRIVAL_SPAWN_DISTANCE_NM", "10.0"))
 # 5000 ft AGL at 10 NM keeps the aircraft above LEST surrounding terrain
@@ -142,6 +143,24 @@ def dispatch_arrival(plan: dict, runway: RunwayConfig,
             )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not register arrival strip in HMI for %s: %s", reg, exc)
+
+    # Register the arrival in the orchestrator's BD so dependency='APP'.
+    # This is what makes the orchestrator correctly route the reverse handoff
+    # (advance_to_gnd_arrival) when the controller later says "contact ground".
+    try:
+        with httpx.Client(timeout=3.0) as client:
+            client.post(
+                f"{_ORCH_URL}/api/v1/orchestrator/arrivals/register",
+                json={
+                    "aircraft_registration": reg,
+                    "callsign": callsign,
+                    "aircraft_type": aircraft_type,
+                    "destination_icao": runway.icao,
+                    "runway_in_use": runway.runway_id,
+                },
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not register arrival %s in orchestrator: %s", reg, exc)
 
     logger.info(
         "Dispatched arrival %s (%s, %s): spawn at (%.5f, %.5f) %.0f ft, plan_id=%s",
