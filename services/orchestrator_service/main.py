@@ -13,6 +13,7 @@ from api.clearances import router as clearances_router
 from api.aircraft import router as aircraft_router
 from api.dispatch import router as dispatch_router
 from api.debrief import router as debrief_router
+from api.arrivals import router as arrivals_router
 from api.events_subscriber import start_subscriber, stop_subscriber
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "info").upper()
@@ -50,6 +51,7 @@ app.include_router(clearances_router)
 app.include_router(aircraft_router)
 app.include_router(dispatch_router)
 app.include_router(debrief_router)
+app.include_router(arrivals_router)
 
 
 @app.get("/health")

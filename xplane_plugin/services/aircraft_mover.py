@@ -528,14 +528,17 @@ class AircraftMover:
         flare_agl_ft = float(leg.get("flare_agl_ft", _FLARE_AGL_FT))
         request_dme_nm = leg.get("request_landing_at_nm")
         # landing_transition_m: max distance from threshold at which we land.
+        # The distance check triggers landing_roll before the bearing can reverse.
         landing_transition_m = float(leg.get("landing_transition_m", 500.0))
-        # Use fixed runway heading so bearing never reverses past the threshold.
-        rwy_hdg = float(leg.get("runway_hdg", _bearing(plan.lat, plan.lon, target_lat, target_lon)))
+
+        # Re-bear toward the threshold every frame: a great-circle nav that
+        # follows the localizer exactly (no rhumb-line drift over 10+ NM).
+        brg = _bearing(plan.lat, plan.lon, target_lat, target_lon)
 
         speed_mps = max(0.1, plan.ias_kts * _KT_TO_MPS)
         step = speed_mps * dt
-        plan.heading = rwy_hdg
-        plan.lat, plan.lon = _advance(plan.lat, plan.lon, rwy_hdg, step)
+        plan.heading = brg
+        plan.lat, plan.lon = _advance(plan.lat, plan.lon, brg, step)
 
         plan.altitude_msl_ft += plan.vertical_speed_fpm * (dt / 60.0)
         plan.altitude_agl_ft = max(0.0, plan.altitude_msl_ft - runway_elev_msl_ft)
@@ -586,10 +589,18 @@ class AircraftMover:
         try:
             alt_m = plan.altitude_msl_ft * FT_TO_M if not plan.on_ground else 0.0
             x, y, z = xp.worldToLocal(lat=plan.lat, lon=plan.lon, alt=alt_m)
-            if plan.on_ground and self._probe is not None:
+            if self._probe is not None:
                 probe_info = xp.probeTerrainXYZ(self._probe, x, y, z)
                 if probe_info.result == 0:
-                    y = probe_info.locationY
+                    terrain_y = probe_info.locationY
+                    if plan.on_ground:
+                        # On ground: snap exactly to the local terrain surface.
+                        y = terrain_y
+                    else:
+                        # Airborne: never let the .obj sink below local terrain.
+                        # Keeps arrivals visible even when LEST's hilly approach
+                        # cuts the geometric glideslope. 30 m above ground floor.
+                        y = max(y, terrain_y + 30.0)
             pitch = -3.0 if phase == Phase.APPROACH.value else 0.0
             xp.instanceSetPosition(info["instance"], (x, y, z, pitch, plan.heading, 0.0), [])
             info["latitude"] = plan.lat

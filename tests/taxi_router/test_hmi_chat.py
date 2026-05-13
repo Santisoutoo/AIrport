@@ -11,12 +11,16 @@ class _FakeRedis:
     def __init__(self):
         self.published: list[tuple[str, str]] = []
         self.setex_calls: list[tuple[str, int, str]] = []
+        self.rpush_calls: list[tuple[str, str]] = []
 
     def publish(self, channel, message):
         self.published.append((channel, message))
 
     def setex(self, key, ttl, value):
         self.setex_calls.append((key, ttl, value))
+
+    def rpush(self, key, value):
+        self.rpush_calls.append((key, value))
 
 
 def test_format_readback_rejected_template():
