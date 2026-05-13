@@ -203,6 +203,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - FLIGHT_PLAN_SERVICE_URL=http://flight_plan_service:8000/api/v1/flight-plan
       - HMI_SERVICE_URL=http://controller_hmi_service:8000
+      - ORCHESTRATOR_SERVICE_URL=http://orchestrator_service:8006
       - ARRIVAL_INTERVAL_S=${ARRIVAL_INTERVAL_S:-120}
     depends_on:
       redis:
