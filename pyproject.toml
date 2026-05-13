@@ -48,3 +48,7 @@ Repository = "https://github.com/airport-sim/airport-atc-simulator"
 
 [tool.setuptools.packages.find]
 include = ["xplane_plugin*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
