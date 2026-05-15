@@ -169,3 +169,35 @@
 [del_042]
 > Norwegian five six one, readback correct. Contact Ground when ready on one two one decimal six. Good day.
 < Contact Ground on one two one decimal six, Norwegian five six one. Good day.
+
+[del_043]
+> Air France two one zero, cleared to Frankfurt via the NINIX one WHISKEY departure, initial climb five thousand feet, squawk four three two one, QNH one zero one two, runway one eight left.
+< Cleared to Frankfurt via NINIX one WHISKEY, initial climb five thousand, squawk four three two one, QNH one zero one two, runway one eight left, Air France two one zero.
+
+[del_044]
+> Brussels three four five, cleared to London Heathrow via the BELEN one GOLF departure, initial climb six thousand feet, squawk three four one two, QNH one zero one four.
+< Cleared to London Heathrow via BELEN one GOLF, initial climb six thousand, squawk three four one two, QNH one zero one four, Brussels three four five.
+
+[del_045]
+> Austrian seven eight two, cleared to Zurich via the RODAS one TANGO departure, initial climb five thousand feet, squawk two one three four, QNH one zero one one, runway three two right.
+< Cleared to Zurich via RODAS one TANGO, initial climb five thousand, squawk two one three four, QNH one zero one one, runway three two right, Austrian seven eight two.
+
+[del_046]
+> SAS four nine one, cleared to Palma de Mallorca via the DVOR one FOXTROT departure, initial climb five thousand feet, squawk three three two one, QNH one zero one three, runway three two right.
+< Cleared to Palma de Mallorca via DVOR one FOXTROT, initial climb five thousand, squawk three three two one, QNH one zero one three, runway three two right, SAS four nine one.
+
+[del_047]
+> Alitalia six seven three, cleared to Dublin via the BELEN one GOLF departure, initial climb five thousand feet, squawk one four two three, QNH one zero one four, runway three two left.
+< Cleared to Dublin via BELEN one GOLF, initial climb five thousand, squawk one four two three, QNH one zero one four, runway three two left, Alitalia six seven three.
+
+[del_048]
+> LOT nine zero four, cleared to Helsinki via the RODAS one TANGO departure, initial climb six thousand feet, squawk one two three four, QNH one zero one one, runway one eight left.
+< Cleared to Helsinki via RODAS one TANGO, initial climb six thousand, squawk one two three four, QNH one zero one one, runway one eight left, LOT nine zero four.
+
+[del_049]
+> Croatia five one two, cleared to Frankfurt via the NINIX one WHISKEY departure, initial climb five thousand feet, squawk four one two three, QNH one zero one three, runway three two left.
+< Cleared to Frankfurt via NINIX one WHISKEY, initial climb five thousand, squawk four one two three, QNH one zero one three, runway three two left, Croatia five one two.
+
+[del_050]
+> Pegasus eight one six, cleared to Budapest via the LARPA one FOXTROT departure, initial climb six thousand feet, squawk four three two one, QNH one zero one seven, runway three two left.
+< Cleared to Budapest via LARPA one FOXTROT, initial climb six thousand, squawk four three two one, QNH one zero one seven, runway three two left, Pegasus eight one six.
