@@ -1,0 +1,217 @@
+<mxfile host="65bd71144e">
+    <diagram id="d12-redis" name="12 — Estructura de datos Redis">
+        <mxGraphModel dx="2026" dy="1147" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2100" pageHeight="1700" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="AIrport — Estructura lógica de claves Redis" style="text;html=1;align=center;fontSize=18;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="30" width="900" height="32" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis-section" value="Redis 7 — Estado compartido en memoria, eventos y colas" style="swimlane;html=1;startSize=30;fillColor=#e3f2fd;strokeColor=#1565c0;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="90" width="2040" height="1580" as="geometry"/>
+                </mxCell>
+                <mxCell id="gA" value="A · Sesión y aeropuerto activo" style="swimlane;html=1;startSize=28;fillColor=#fce4ec;strokeColor=#ad1457;fontStyle=1;fontSize=11;" parent="redis-section" vertex="1">
+                    <mxGeometry x="20" y="50" width="600" height="830" as="geometry">
+                        <mxRectangle x="20" y="50" width="190" height="30" as="alternateBounds"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="gA-k1" value="airport:session_request    [HASH]&#xa;type, weather, aircraft_count, complexity,&#xa;icao, status ∈ {pending, active, stop}, session_id&#xa;Solicitud del plugin → orquestador" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#ad1457;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gA" vertex="1">
+                    <mxGeometry x="20" y="44" width="560" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="gA-k2" value="session:current    [HASH]&#xa;session_id, airport_icao, started_at, aircraft_count&#xa;Metadatos de la sesión activa de entrenamiento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#ad1457;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gA" vertex="1">
+                    <mxGeometry x="20" y="220" width="560" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gA-k3" value="airport:current:icao    ·    airport:current:timestamp    [STRING]&#xa;Código ICAO del aeropuerto cargado (ej. LEST) e ISO timestamp de carga" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#ad1457;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gA" vertex="1">
+                    <mxGeometry x="20" y="340" width="560" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="gA-k4" value="airport:current:&lt;sub&gt;    [STRING] · JSON serializado&#xa;sub ∈ { nodes, edges, stands, runways, traffic_patterns,&#xa;airport_info, com_frequencies }&#xa;Grafo del aeropuerto cargado desde data/airport_data/{ICAO}.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#ad1457;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gA" vertex="1">
+                    <mxGeometry x="20" y="440" width="560" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="gA-k5" value="airport:current:stand_occupancy    [HASH]&#xa;{ stand_id → &quot;0&quot; libre · &quot;1&quot; ocupado }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#ad1457;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gA" vertex="1">
+                    <mxGeometry x="20" y="580" width="560" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="gA-k6" value="airport:asr_config    [HASH]&#xa;{ api_key } · escrito en login HMI, leído por servicio ASR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#ad1457;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gA" vertex="1">
+                    <mxGeometry x="20" y="680" width="560" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="gA-src" value="shared/services/airport_data_store.py · controller_hmi_service/api/plugin_routes.py" style="text;html=1;align=left;fontSize=9;fontStyle=2;fontColor=#888;spacingLeft=10;" parent="gA" vertex="1">
+                    <mxGeometry x="20" y="770" width="560" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-A-A" value="status = &quot;active&quot;&#xa;arranca sesión" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#ad1457;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#ad1457;endArrow=classic;" parent="gA" source="gA-k1" target="gA-k2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="gF" value="F · Pool de arrivals (deduplicación)" style="swimlane;html=1;startSize=28;fillColor=#eceff1;strokeColor=#455a64;fontStyle=1;fontSize=11;" parent="redis-section" vertex="1">
+                    <mxGeometry x="20" y="910" width="600" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="gF-k1" value="arrivals:assigned    [SET]&#xa;{ &quot;EC-ARR1&quot;, &quot;EC-ARR2&quot;, ... } — matrículas ya despachadas&#xa;Evita reutilizar el mismo plan sintético en la misma sesión" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cfd8dc;strokeColor=#455a64;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gF" vertex="1">
+                    <mxGeometry x="20" y="40" width="560" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="gB" value="B · Estado de aeronaves en vivo" style="swimlane;html=1;startSize=28;fillColor=#e3f2fd;strokeColor=#1565c0;fontStyle=1;fontSize=11;" parent="redis-section" vertex="1">
+                    <mxGeometry x="720" y="50" width="600" height="490" as="geometry"/>
+                </mxCell>
+                <mxCell id="gB-k1" value="aircraft:state:&lt;registration&gt;    [HASH · TTL 1h]&#xa;registration, callsign, aircraft_type, session_id,&#xa;latitude, longitude, altitude_msl, altitude_agl,&#xa;heading, pitch, roll, ground_speed, indicated_airspeed,&#xa;vertical_speed, on_ground (0/1), squawk, phase&#xa;phase ∈ { parked, pushback, taxi_out, approach,&#xa;landing_roll, vacating, taxi_in, holding } — 2 Hz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gB" vertex="1">
+                    <mxGeometry x="20" y="44" width="560" height="175" as="geometry"/>
+                </mxCell>
+                <mxCell id="gB-k2" value="aircraft:active_set    [SET]&#xa;{ &quot;EC-MIG&quot;, &quot;EC-LOP&quot;, ... }&#xa;Matrículas activas en sesión" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gB" vertex="1">
+                    <mxGeometry x="20" y="320" width="265" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="gB-k3" value="aircraft:updates    [PUB/SUB]&#xa;Broadcast de cambios de estado&#xa;Suscriptor: HMI live radar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;dashed=1;" parent="gB" vertex="1">
+                    <mxGeometry x="315" y="320" width="265" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="gB-src" value="shared/services/aircraft_state_store.py · xplane_plugin/services/aircraft_mover.py" style="text;html=1;align=left;fontSize=9;fontStyle=2;fontColor=#888;spacingLeft=10;" parent="gB" vertex="1">
+                    <mxGeometry x="20" y="440" width="560" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-B-B1" value="cada matrícula → hash de estado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;strokeColor=#1565c0;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#1565c0;endArrow=classic;" parent="gB" source="gB-k2" target="gB-k1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-B-B2" value="update() → PUBLISH" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.85;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1565c0;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#1565c0;endArrow=classic;dashed=1;" parent="gB" source="gB-k1" target="gB-k3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="gC" value="C · Comandos y eventos de movimiento" style="swimlane;html=1;startSize=28;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;fontSize=11;" parent="redis-section" vertex="1">
+                    <mxGeometry x="720" y="570" width="600" height="540" as="geometry"/>
+                </mxCell>
+                <mxCell id="gC-k1" value="aircraft:&lt;registration&gt;:move_cmd    [STRING JSON · TTL variable]&#xa;{ version: 2, plan_id, started_at, delay_before_start_s,&#xa;  legs: [ { mode, distance_m, speed_kts, waypoints,&#xa;  target_lat, target_lon, runway_hdg, runway_elev_msl_ft,&#xa;  ias_kts, vs_fpm, touchdown_ias_kts, decel_kts_s, ... } ] }&#xa;mode ∈ { pushback, waypoints, straight, approach,&#xa;landing_roll, vacate, taxi_in }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gC" vertex="1">
+                    <mxGeometry x="20" y="44" width="560" height="165" as="geometry"/>
+                </mxCell>
+                <mxCell id="gC-k2" value="aircraft:spawn_request:&lt;registration&gt;    [STRING JSON]&#xa;{ lat, lon, alt, hdg, on_ground }&#xa;Solicita al plugin que spawnee un arrival airborne" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gC" vertex="1">
+                    <mxGeometry x="20" y="270" width="560" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gC-k3" value="aircraft:&lt;registration&gt;:move_events    [PUB/SUB]&#xa;{ event, ts, ...extra }&#xa;event ∈ { pushback_started, taxi_started, vacate_started,&#xa;approach_started, flare_started, touchdown, rolling_out,&#xa;plan_accepted, reached_end, cancelled, request_landing }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;dashed=1;" parent="gC" vertex="1">
+                    <mxGeometry x="20" y="430" width="560" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gC-src" value="shared/services/taxi_router/router.py · services/arrival_simulator_service/core/arrival_planner.py" style="text;html=1;align=left;fontSize=9;fontStyle=2;fontColor=#888;spacingLeft=10;" parent="gC" vertex="1">
+                    <mxGeometry x="20" y="515" width="560" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-C-C" value="aircraft_mover ejecuta y publica progreso" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#2e7d32;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#2e7d32;endArrow=classic;dashed=1;" parent="gC" source="gC-k1" target="gC-k3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="595" y="126"/>
+                            <mxPoint x="595" y="470"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="gD" value="D · Logs de sesión para debrief" style="swimlane;html=1;startSize=28;fillColor=#f3e5f5;strokeColor=#6a1b9a;fontStyle=1;fontSize=11;" parent="redis-section" vertex="1">
+                    <mxGeometry x="1420" y="50" width="600" height="430" as="geometry"/>
+                </mxCell>
+                <mxCell id="gD-k1" value="session:&lt;sid&gt;:transcripts    [LIST · TTL 2h · LPUSH]&#xa;[ { ts, text } ] — transcripciones del piloto (ASR)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#6a1b9a;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gD" vertex="1">
+                    <mxGeometry x="20" y="44" width="560" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="gD-k2" value="session:&lt;sid&gt;:agent_replies    [LIST · TTL 2h · LPUSH]&#xa;[ { ts, dep, registration, callsign, reply, taxi_data } ]&#xa;Respuestas generadas por los agentes DEL/GND/TWR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#6a1b9a;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gD" vertex="1">
+                    <mxGeometry x="20" y="150" width="560" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gD-k3" value="session:&lt;sid&gt;:events    [LIST · TTL 2h · LPUSH]&#xa;[ { ts, registration, event, extra } ]&#xa;Espejo persistente de move_events + hmi:chat" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#6a1b9a;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gD" vertex="1">
+                    <mxGeometry x="20" y="260" width="560" height="85" as="geometry"/>
+                </mxCell>
+                <mxCell id="gD-src" value="services/orchestrator_service/session_log.py · api/events_subscriber.py" style="text;html=1;align=left;fontSize=9;fontStyle=2;fontColor=#888;spacingLeft=10;" parent="gD" vertex="1">
+                    <mxGeometry x="20" y="360" width="560" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="gE" value="E · Comunicación HMI y cola TTS" style="swimlane;html=1;startSize=28;fillColor=#fff3e0;strokeColor=#e65100;fontStyle=1;fontSize=11;" parent="redis-section" vertex="1">
+                    <mxGeometry x="1420" y="510" width="600" height="500" as="geometry"/>
+                </mxCell>
+                <mxCell id="gE-k1" value="hmi:chat    [PUB/SUB]&#xa;{ ts, session_id, sender, callsign, registration, kind, text }&#xa;Mensajes pilot ↔ controller mostrados en WebSocket del HMI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;dashed=1;" parent="gE" vertex="1">
+                    <mxGeometry x="20" y="44" width="560" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gE-k2" value="aircraft:&lt;registration&gt;:last_error    [STRING · TTL 5min]&#xa;Último rechazo / readback erróneo (snapshot del payload de hmi:chat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gE" vertex="1">
+                    <mxGeometry x="20" y="220" width="560" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="gE-k3" value="tts:queue    [LIST · RPUSH / LPOP]&#xa;[ { text } ] — cola FIFO de frases pendientes de sintetizar&#xa;Consumida por el plugin (ventana TTS) o el servicio de síntesis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;arcSize=8;fontSize=10;align=left;spacingLeft=10;spacingRight=10;spacingTop=6;spacingBottom=6;" parent="gE" vertex="1">
+                    <mxGeometry x="20" y="360" width="560" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gE-src" value="shared/services/taxi_router/hmi_chat.py · controller_hmi_service/api/chat.py · xplane_plugin/ui/windows_manager.py" style="text;html=1;align=left;fontSize=9;fontStyle=2;fontColor=#888;spacingLeft=10;" parent="gE" vertex="1">
+                    <mxGeometry x="20" y="455" width="560" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-E-E1" value="respuesta del agente → encola TTS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#e65100;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#e65100;endArrow=classic;dashed=1;" parent="gE" source="gE-k1" target="gE-k3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="595" y="84"/>
+                            <mxPoint x="595" y="400"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel-E-E2" value="kind = error → setex" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#e65100;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#e65100;endArrow=classic;dashed=1;" parent="gE" source="gE-k1" target="gE-k2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel-A-B" value="aircraft_count → matrículas" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1565c0;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#1565c0;endArrow=classic;dashed=1;" parent="redis-section" source="gA-k2" target="gB-k2" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="670" y="320"/>
+                            <mxPoint x="670" y="420"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel-C-D" value="events_subscriber.py&#xa;→ append" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6a1b9a;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#6a1b9a;endArrow=classic;dashed=1;" parent="redis-section" source="gC-k3" target="gD-k3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1370" y="1040"/>
+                            <mxPoint x="1370" y="352"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel-E-D" value="events_subscriber.py → append" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6a1b9a;strokeWidth=1.5;fontSize=10;fontStyle=2;labelBackgroundColor=#ffffff;labelBorderColor=#6a1b9a;endArrow=classic;dashed=1;" parent="redis-section" source="gE-k1" target="gD-k3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1395" y="594"/>
+                            <mxPoint x="1395" y="352"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend" value="Leyenda" style="swimlane;html=1;startSize=28;fillColor=#fafafa;strokeColor=#999;fontStyle=1;fontSize=12;" parent="redis-section" vertex="1">
+                    <mxGeometry x="10" y="1190" width="980" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-types-h" value="Tipos de estructura Redis" style="text;html=1;align=left;fontSize=11;fontStyle=1;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="15" y="36" width="300" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-t1" value="[HASH]    campos clave-valor (HSET / HGETALL)" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="15" y="62" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-t2" value="[SET]      conjunto de cadenas (SADD / SMEMBERS)" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="15" y="87" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-t3" value="[LIST]     cola / log ordenado (LPUSH / RPUSH / LPOP)" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="15" y="112" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-t4" value="[STRING]   valor único (GET / SET / SETEX) — JSON serializado" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="15" y="137" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-t5" value="[PUB/SUB]  canal de eventos — borde discontinuo" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="15" y="162" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-conv-h" value="Convenciones" style="text;html=1;align=left;fontSize=11;fontStyle=1;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="500" y="36" width="300" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-c1" value="&lt;placeholder&gt;    parte variable del nombre de la clave" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="500" y="62" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-c2" value="TTL X    expiración configurada (h, min, s)" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="500" y="87" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-c3" value="—— flecha continua: relación estructural (datos derivados)" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="500" y="112" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-c4" value="-- -- flecha discontinua: flujo de evento (PUB/SUB, callback)" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="500" y="137" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-c5" value="Color del grupo: dominio funcional al que pertenece la clave" style="text;html=1;align=left;fontSize=10;spacingLeft=8;" parent="legend" vertex="1">
+                    <mxGeometry x="500" y="162" width="470" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg-note" value="Patrón general: Redis actúa como bus de estado en memoria entre microservicios. Los datos persistentes viven en PostgreSQL; los datos en tiempo real (posición de aeronaves, comandos, eventos, chat) viven en Redis con TTL para auto-limpieza. Los logs de sesión persisten 2 h: tiempo suficiente para hacer debrief post-vuelo sin saturar la memoria." style="text;html=1;align=left;fontSize=10;fontColor=#444;spacingLeft=8;spacingRight=8;spacingTop=4;whiteSpace=wrap;" parent="legend" vertex="1">
+                    <mxGeometry x="15" y="200" width="955" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="footer" value="Ficheros fuente que definen estas claves" style="swimlane;html=1;startSize=28;fillColor=#fafafa;strokeColor=#999;fontStyle=1;fontSize=12;" parent="redis-section" vertex="1">
+                    <mxGeometry x="1010" y="1190" width="1000" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="src-1" value="shared/services/&#xa;   aircraft_state_store.py        — grupos A, B&#xa;   airport_data_store.py          — grupo A&#xa;   taxi_router/router.py          — grupo C&#xa;   taxi_router/hmi_chat.py        — grupo E&#xa;   taxi_router/config.py          — constantes" style="text;html=1;align=left;fontSize=10;spacingLeft=8;spacingTop=4;whiteSpace=wrap;fontFamily=Courier New;" parent="footer" vertex="1">
+                    <mxGeometry x="15" y="36" width="475" height="115" as="geometry"/>
+                </mxCell>
+                <mxCell id="src-2" value="services/orchestrator_service/&#xa;   config.py                      — conexión&#xa;   session_log.py                 — grupo D&#xa;   api/dispatch.py                — grupos D, E&#xa;   api/events_subscriber.py       — puente B+C+E → D&#xa;   api/aircraft.py                — lector grupo B" style="text;html=1;align=left;fontSize=10;spacingLeft=8;spacingTop=4;whiteSpace=wrap;fontFamily=Courier New;" parent="footer" vertex="1">
+                    <mxGeometry x="495" y="36" width="490" height="115" as="geometry"/>
+                </mxCell>
+                <mxCell id="src-3" value="services/controller_hmi_service/api/&#xa;   plugin_routes.py               — grupos A, F&#xa;   chat.py                        — grupo E (WebSocket)&#xa;   routes.py                      — lector grupos A, B" style="text;html=1;align=left;fontSize=10;spacingLeft=8;spacingTop=4;whiteSpace=wrap;fontFamily=Courier New;" parent="footer" vertex="1">
+                    <mxGeometry x="15" y="160" width="475" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="src-4" value="services/arrival_simulator_service/core/&#xa;   arrival_planner.py             — grupo C (spawn + move_cmd)&#xa;   plan_catalog.py                — grupo F&#xa;   event_bridge.py                — puente C → E (TTS)&#xa;xplane_plugin/&#xa;   services/aircraft_mover.py     — ejecutor grupo C&#xa;   ui/windows_manager.py          — consumidor TTS / sesión" style="text;html=1;align=left;fontSize=10;spacingLeft=8;spacingTop=4;whiteSpace=wrap;fontFamily=Courier New;" parent="footer" vertex="1">
+                    <mxGeometry x="495" y="160" width="490" height="120" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
