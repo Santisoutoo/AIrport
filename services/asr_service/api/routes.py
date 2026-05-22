@@ -39,13 +39,22 @@ def get_config():
 async def transcribe(
     audio: UploadFile = File(...),
     session_id: str = Form(""),
+    apply_corrections: bool = Form(True),
+    use_initial_prompt: bool = Form(True),
 ):
     audio_bytes = await audio.read()
     filename = audio.filename or "audio.webm"
     content_type = (audio.content_type or "audio/webm").split(";")[0].strip()
-    logger.info("[ASR] transcribe: %d bytes, file=%s, ct=%s", len(audio_bytes), filename, content_type)
+    logger.info(
+        "[ASR] transcribe: %d bytes, file=%s, ct=%s, corrections=%s, prompt=%s",
+        len(audio_bytes), filename, content_type, apply_corrections, use_initial_prompt,
+    )
 
-    text = await transcribe_service.transcribe(audio_bytes, filename)
+    text = await transcribe_service.transcribe(
+        audio_bytes, filename,
+        apply_corrections=apply_corrections,
+        use_initial_prompt=use_initial_prompt,
+    )
 
     # If orchestrator is configured, dispatch the transcription for agent routing
     if _ORCHESTRATOR_URL and text:

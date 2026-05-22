@@ -17,9 +17,9 @@ atc-readback-corpus/
 
 | Phase | File | Exchanges |
 |-------|------|-----------|
-| DEL – Delivery | `del/corpus_wer_del.txt` | 42 |
-| GND – Ground   | `gnd/corpus_wer_gnd.txt` | 50 |
-| TWR – Tower    | `twr/corpus_wer_twr.txt` | 50 |
+| DEL – Delivery | `del/corpus_wer_del.txt` | 100 |
+| GND – Ground   | `gnd/corpus_wer_gnd.txt` | 100 |
+| TWR – Tower    | `twr/corpus_wer_twr.txt` | 100 |
 
 ## Format
 
