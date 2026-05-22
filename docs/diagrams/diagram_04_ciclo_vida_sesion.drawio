@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="d04-session" name="04 — Ciclo de Vida de Sesión ATC">
-        <mxGraphModel dx="1278" dy="928" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" background="#ffffff" math="0" shadow="0">
+        <mxGraphModel dx="995" dy="791" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" background="#ffffff" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -10,16 +10,16 @@
                 <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" parent="1" vertex="1">
                     <mxGeometry x="650" y="80" width="30" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="idle" value="&lt;b&gt;IDLE&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;Sistema en espera&lt;br/&gt;X-Plane activo, plugin cargado&lt;br/&gt;Redis polling 2s activo&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                <mxCell id="idle" value="&lt;b&gt;En espera&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px; color: rgb(68, 68, 68);&quot;&gt;Sistema en espera&lt;br&gt;X-Plane activo, plugin cargado&lt;br&gt;Redis polling 2s activo&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666;fontSize=11;arcSize=10;" parent="1" vertex="1">
                     <mxGeometry x="545" y="140" width="240" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="session-req" value="&lt;b&gt;SESSION_REQUESTED&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                <mxCell id="session-req" value="&lt;b&gt;Petición de sesión&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;arcSize=10;" parent="1" vertex="1">
                     <mxGeometry x="510" y="270" width="310" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="active" value="&lt;b&gt;ACTIVE&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px; color: rgb(68, 68, 68);&quot;&gt;Tracker 2 Hz: posición → Redis + InfluxDB&lt;br&gt;Mueve aeronaves a lo largo del aeropuerto si es requerido&lt;br&gt;Controlador da instrucciones ATC (voz)&lt;br&gt;El servicio de voz y el orquestador ejecutan las ordenes del controlador&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                <mxCell id="active" value="&lt;b&gt;ACTIVE&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px; color: rgb(68, 68, 68);&quot;&gt;Tracker 2 Hz: posición → Redis&lt;br&gt;Mueve aeronaves a lo largo del aeropuerto si es requerido&lt;br&gt;Controlador da instrucciones&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 10px; color: rgb(68, 68, 68);&quot;&gt;El servicio de voz y el orquestador ejecutan las ordenes del controlador&lt;/font&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" parent="1" vertex="1">
                     <mxGeometry x="500" y="680" width="330" height="100" as="geometry"/>
                 </mxCell>
-                <mxCell id="stopping" value="&lt;b&gt;STOPPING&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px; color: rgb(68, 68, 68);&quot;&gt;Redis: airport:session_request&lt;br&gt;= {status: &quot;stop&quot;}&lt;br&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                <mxCell id="stopping" value="&lt;font style=&quot;font-size: 10px; color: rgb(68, 68, 68);&quot;&gt;&lt;b&gt;SE CIERRA LA SESION&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;arcSize=10;" parent="1" vertex="1">
                     <mxGeometry x="510" y="840" width="310" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="end" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000;strokeColor=#000;aspect=fixed;" parent="1" vertex="1">
@@ -49,13 +49,13 @@
                 <mxCell id="t-clean-end" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#555;" parent="1" source="cleanup" target="end" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="2" value="" style="group" vertex="1" connectable="0" parent="1">
+                <mxCell id="2" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="290" y="420" width="740" height="200" as="geometry"/>
                 </mxCell>
-                <mxCell id="3" value="" style="group;align=center;" vertex="1" connectable="0" parent="2">
+                <mxCell id="3" value="" style="group;align=center;" parent="2" vertex="1" connectable="0">
                     <mxGeometry x="170" width="470" height="200" as="geometry"/>
                 </mxCell>
-                <mxCell id="initializing" value="&lt;b&gt;INITIALIZING&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=10;verticalAlign=top;" parent="3" vertex="1">
+                <mxCell id="initializing" value="&lt;b&gt;Inicialización&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=10;verticalAlign=top;" parent="3" vertex="1">
                     <mxGeometry width="410" height="200" as="geometry"/>
                 </mxCell>
                 <mxCell id="init-1" value="&lt;b&gt;1.&lt;/b&gt; Carga el grafo del aeropuerto" style="text;html=1;align=center;" parent="3" vertex="1">
@@ -76,10 +76,10 @@
                 <mxCell id="init-6" value="&lt;b&gt;6.&lt;/b&gt; Inicia flight loops" style="text;html=1;align=center;" parent="3" vertex="1">
                     <mxGeometry x="10" y="150" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="5" value="" style="group" vertex="1" connectable="0" parent="1">
+                <mxCell id="5" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="480" y="970" width="470" height="130" as="geometry"/>
                 </mxCell>
-                <mxCell id="cleanup" value="&lt;b&gt;CLEANUP&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;arcSize=10;verticalAlign=top;" parent="5" vertex="1">
+                <mxCell id="cleanup" value="&lt;b&gt;Liberar memoria&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;arcSize=10;verticalAlign=top;" parent="5" vertex="1">
                     <mxGeometry width="370" height="130" as="geometry"/>
                 </mxCell>
                 <mxCell id="clean-1" value="&lt;b&gt;1.&lt;/b&gt; Destruye instancias .obj (xp.destroyInstance)" style="text;html=1;align=left;" parent="5" vertex="1">

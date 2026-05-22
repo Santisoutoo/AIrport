@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="d01-arch-general" name="01 — Arquitectura General del Sistema">
-        <mxGraphModel dx="1658" dy="1906" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="920" background="#ffffff" math="0" shadow="0">
+        <mxGraphModel dx="1443" dy="2067" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="920" background="#ffffff" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -33,6 +33,9 @@
                 <mxCell id="fp-svc" value="&lt;b&gt;Flight Plan Service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;:8003 · Planes IFR&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;fontSize=11;" parent="layer-docker" vertex="1">
                     <mxGeometry x="490" y="210" width="185" height="80" as="geometry"/>
                 </mxCell>
+                <mxCell id="arrival-sim-svc" value="&lt;b&gt;Arrival Simulator Service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;:8008 · Llegadas IA&lt;br/&gt;Spawn + plan de movimiento&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=10;fontSize=11;" parent="layer-docker" vertex="1">
+                    <mxGeometry x="715" y="320" width="220" height="110" as="geometry"/>
+                </mxCell>
                 <mxCell id="7" value="" style="edgeStyle=none;html=1;rounded=1;strokeColor=#d6b656;strokeWidth=2;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=9;fontColor=default;labelBackgroundColor=default;startArrow=block;startFill=0;endArrow=block;endFill=1;" parent="layer-docker" source="orch-svc" target="pg-db" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
@@ -47,9 +50,6 @@
                 </mxCell>
                 <mxCell id="xplane-plugin" value="&lt;b&gt;X-Plane Plugin&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px;color:#444;&quot;&gt;XPPython3 (in-process)&lt;br/&gt;AircraftSpawner · Tracker&lt;br/&gt;AircraftMover (10 Hz)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;arcSize=10;fontSize=11;" parent="layer-docker" vertex="1">
                     <mxGeometry x="1370" y="160" width="215" height="105" as="geometry"/>
-                </mxCell>
-                <mxCell id="influx-db" value="&lt;b&gt;InfluxDB&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px; color: rgb(68, 68, 68);&quot;&gt;:8087 · Series temporales&lt;br&gt;&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="layer-docker" vertex="1">
-                    <mxGeometry x="1402.5" y="440" width="150" height="105" as="geometry"/>
                 </mxCell>
                 <mxCell id="e-hmi-asr" value="transcribe" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=9;startArrow=block;startFill=0;endArrow=block;endFill=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="layer-docker" source="hmi-svc" target="asr-svc" edge="1">
                     <mxGeometry x="0.0667" y="-17" relative="1" as="geometry">
@@ -90,9 +90,6 @@
                         <mxPoint y="1" as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-xp-influx" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d79b00;strokeWidth=1;fontSize=9;dashed=1;endArrow=open;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="layer-docker" source="xplane-plugin" target="influx-db" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
                 <mxCell id="3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d6b656;strokeWidth=2;fontSize=9;startArrow=block;startFill=0;endArrow=block;endFill=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.994;exitY=0.541;exitDx=0;exitDy=0;exitPerimeter=0;" parent="layer-docker" source="pg-db" target="hmi-svc" edge="1">
                     <mxGeometry x="0.029" y="25" relative="1" as="geometry">
                         <mxPoint x="150" y="380" as="sourcePoint"/>
@@ -105,6 +102,12 @@
                             <mxPoint x="380" y="200"/>
                         </Array>
                     </mxGeometry>
+                </mxCell>
+                <mxCell id="e-orch-arrsim" value="POST /arrivals/register" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;fontSize=9;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="layer-docker" source="orch-svc" target="arrival-sim-svc" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-arrsim-redis" value="spawn_request · move_cmd" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d6b656;strokeWidth=2;fontSize=9;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="layer-docker" source="arrival-sim-svc" target="redis-db" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="layer-cloud" value="GOOGLE CLOUD RUN" style="swimlane;startSize=26;fillColor=#f3e8ff;strokeColor=#9b59b6;fontStyle=1;fontSize=11;" parent="1" vertex="1">
                     <mxGeometry x="40" y="695" width="1640" height="165" as="geometry"/>
