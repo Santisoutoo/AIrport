@@ -1,14 +1,14 @@
 <mxfile host="65bd71144e">
     <diagram id="d12-redis" name="12 — Estructura de datos Redis">
-        <mxGraphModel dx="2026" dy="1147" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2100" pageHeight="1700" background="#ffffff" math="0" shadow="0">
+        <mxGraphModel dx="2061" dy="1639" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2100" pageHeight="1700" background="#ffffff" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
                 <mxCell id="title" value="AIrport — Estructura lógica de claves Redis" style="text;html=1;align=center;fontSize=18;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="600" y="30" width="900" height="32" as="geometry"/>
                 </mxCell>
-                <mxCell id="redis-section" value="Redis 7 — Estado compartido en memoria, eventos y colas" style="swimlane;html=1;startSize=30;fillColor=#e3f2fd;strokeColor=#1565c0;fontStyle=1;fontSize=12;" parent="1" vertex="1">
-                    <mxGeometry x="30" y="90" width="2040" height="1580" as="geometry"/>
+                <mxCell id="redis-section" value="Redis 7 — Estado compartido en memo" style="swimlane;html=1;startSize=30;fillColor=#e3f2fd;strokeColor=#1565c0;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="90" width="2040" height="1490" as="geometry"/>
                 </mxCell>
                 <mxCell id="gA" value="A · Sesión y aeropuerto activo" style="swimlane;html=1;startSize=28;fillColor=#fce4ec;strokeColor=#ad1457;fontStyle=1;fontSize=11;" parent="redis-section" vertex="1">
                     <mxGeometry x="20" y="50" width="600" height="830" as="geometry">
@@ -155,7 +155,7 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="legend" value="Leyenda" style="swimlane;html=1;startSize=28;fillColor=#fafafa;strokeColor=#999;fontStyle=1;fontSize=12;" parent="redis-section" vertex="1">
-                    <mxGeometry x="10" y="1190" width="980" height="300" as="geometry"/>
+                    <mxGeometry x="570" y="1160" width="980" height="300" as="geometry"/>
                 </mxCell>
                 <mxCell id="lg-types-h" value="Tipos de estructura Redis" style="text;html=1;align=left;fontSize=11;fontStyle=1;spacingLeft=8;" parent="legend" vertex="1">
                     <mxGeometry x="15" y="36" width="300" height="22" as="geometry"/>
@@ -195,21 +195,6 @@
                 </mxCell>
                 <mxCell id="lg-note" value="Patrón general: Redis actúa como bus de estado en memoria entre microservicios. Los datos persistentes viven en PostgreSQL; los datos en tiempo real (posición de aeronaves, comandos, eventos, chat) viven en Redis con TTL para auto-limpieza. Los logs de sesión persisten 2 h: tiempo suficiente para hacer debrief post-vuelo sin saturar la memoria." style="text;html=1;align=left;fontSize=10;fontColor=#444;spacingLeft=8;spacingRight=8;spacingTop=4;whiteSpace=wrap;" parent="legend" vertex="1">
                     <mxGeometry x="15" y="200" width="955" height="80" as="geometry"/>
-                </mxCell>
-                <mxCell id="footer" value="Ficheros fuente que definen estas claves" style="swimlane;html=1;startSize=28;fillColor=#fafafa;strokeColor=#999;fontStyle=1;fontSize=12;" parent="redis-section" vertex="1">
-                    <mxGeometry x="1010" y="1190" width="1000" height="300" as="geometry"/>
-                </mxCell>
-                <mxCell id="src-1" value="shared/services/&#xa;   aircraft_state_store.py        — grupos A, B&#xa;   airport_data_store.py          — grupo A&#xa;   taxi_router/router.py          — grupo C&#xa;   taxi_router/hmi_chat.py        — grupo E&#xa;   taxi_router/config.py          — constantes" style="text;html=1;align=left;fontSize=10;spacingLeft=8;spacingTop=4;whiteSpace=wrap;fontFamily=Courier New;" parent="footer" vertex="1">
-                    <mxGeometry x="15" y="36" width="475" height="115" as="geometry"/>
-                </mxCell>
-                <mxCell id="src-2" value="services/orchestrator_service/&#xa;   config.py                      — conexión&#xa;   session_log.py                 — grupo D&#xa;   api/dispatch.py                — grupos D, E&#xa;   api/events_subscriber.py       — puente B+C+E → D&#xa;   api/aircraft.py                — lector grupo B" style="text;html=1;align=left;fontSize=10;spacingLeft=8;spacingTop=4;whiteSpace=wrap;fontFamily=Courier New;" parent="footer" vertex="1">
-                    <mxGeometry x="495" y="36" width="490" height="115" as="geometry"/>
-                </mxCell>
-                <mxCell id="src-3" value="services/controller_hmi_service/api/&#xa;   plugin_routes.py               — grupos A, F&#xa;   chat.py                        — grupo E (WebSocket)&#xa;   routes.py                      — lector grupos A, B" style="text;html=1;align=left;fontSize=10;spacingLeft=8;spacingTop=4;whiteSpace=wrap;fontFamily=Courier New;" parent="footer" vertex="1">
-                    <mxGeometry x="15" y="160" width="475" height="120" as="geometry"/>
-                </mxCell>
-                <mxCell id="src-4" value="services/arrival_simulator_service/core/&#xa;   arrival_planner.py             — grupo C (spawn + move_cmd)&#xa;   plan_catalog.py                — grupo F&#xa;   event_bridge.py                — puente C → E (TTS)&#xa;xplane_plugin/&#xa;   services/aircraft_mover.py     — ejecutor grupo C&#xa;   ui/windows_manager.py          — consumidor TTS / sesión" style="text;html=1;align=left;fontSize=10;spacingLeft=8;spacingTop=4;whiteSpace=wrap;fontFamily=Courier New;" parent="footer" vertex="1">
-                    <mxGeometry x="495" y="160" width="490" height="120" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
