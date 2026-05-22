@@ -1,0 +1,6 @@
+stage,n,min_s,p50_s,p95_s,max_s
+ASR (post-procesado LLM),1,3.0,3.0,3.0,3.0
+Agente DEL,4,14.0,16.5,17.9,18.0
+Agente GND,8,3.0,16.0,28.3,29.0
+Agente TWR,13,3.0,11.0,25.8,30.0
+Orquestador (post-reply),24,1.0,2.0,2.9,4.0

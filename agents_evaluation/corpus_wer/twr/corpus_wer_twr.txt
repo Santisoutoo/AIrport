@@ -201,3 +201,203 @@
 [twr_050]
 > Swiss three six two, contact Ground on one two one decimal six five, good day.
 < One two one decimal six five, Swiss three six two, good day.
+
+[twr_051]
+> Ryanair eight nine two, runway three two left, line up and wait.
+< Runway three two left, line up and wait, Ryanair eight nine two.
+
+[twr_052]
+> Ryanair eight nine Charlie, wind calm, runway three two left, cleared for takeoff.
+< Runway three two left, cleared for takeoff, Ryanair eight nine Charlie.
+
+[twr_053]
+> Ryanair eight nine two, contact Madrid Departure on one two one decimal niner.
+< One two one decimal niner, Ryanair eight nine two.
+
+[twr_054]
+> Iberia eight seven five Charlie, behind the Vueling on short final, runway three two right, line up and wait behind.
+< Behind the Vueling on short final, runway three two right, lining up behind, Iberia eight seven five Charlie.
+
+[twr_055]
+> Iberia eight seven five Charlie, wind two niner zero degrees, one zero knots, runway three two right, cleared for takeoff.
+< Runway three two right, cleared for takeoff, Iberia eight seven five Charlie.
+
+[twr_056]
+> Lufthansa two one eight, runway one eight right, line up and wait.
+< Runway one eight right, line up and wait, Lufthansa two one eight.
+
+[twr_057]
+> Lufthansa two one eight, wind one six zero degrees, one two knots, runway one eight right, cleared for takeoff.
+< Runway one eight right, cleared for takeoff, Lufthansa two one eight.
+
+[twr_058]
+> Lufthansa six seven two, wind three two zero degrees, one zero knots, runway three two left, cleared to land.
+< Runway three two left, cleared to land, Lufthansa six seven two.
+
+[twr_059]
+> Speedbird three Alpha two, wind three one zero degrees, one five knots, runway three two right, cleared to land.
+< Runway three two right, cleared to land, Speedbird three Alpha two.
+
+[twr_060]
+> Speedbird three one two, contact Ground on one two one decimal six five five. Good day.
+< One two one decimal six five five, Speedbird three one two. Good day.
+
+[twr_061]
+> Swiss five six seven, runway three two left, line up and wait.
+< Runway three two left, lining up, Swiss five six seven.
+
+[twr_062]
+> Swiss five six seven, wind three zero zero degrees, one two knots, runway three two left, cleared for takeoff.
+< Runway three two left, cleared for takeoff, Swiss five six seven.
+
+[twr_063]
+> Swiss four eight one, wind two niner five degrees, six knots, runway three two right, cleared to land.
+< Runway three two right, cleared to land, Swiss four eight one.
+
+[twr_064]
+> EasyJet four three two Yankee, runway one eight left, line up and wait.
+< Runway one eight left, lining up, EasyJet four three two Yankee.
+
+[twr_065]
+> EasyJet four three two Yankee, wind one seven zero degrees, one eight knots, runway one eight left, cleared for takeoff.
+< Runway one eight left, cleared for takeoff, EasyJet four three two Yankee.
+
+[twr_066]
+> Vueling seven nine eight, go around.
+< Going around, Vueling seven nine eight.
+
+[twr_067]
+> Ryanair eight nine two, hold position, number three.
+< Hold position, Ryanair eight nine two.
+
+[twr_068]
+> Vueling seven nine eight, continue approach, number two following Airbus three twenty on final.
+< Continue approach, number two, Vueling seven nine eight.
+
+[twr_069]
+> Vueling seven nine eight, wind three zero five degrees eight knots, runway three two left, cleared to land.
+< Runway three two left, cleared to land, Vueling seven nine eight.
+
+[twr_070]
+> EasyJet four three two Yankee, go around, traffic on runway.
+< Going around, EasyJet four three two Yankee.
+
+[twr_071]
+> Iberia eight seven five Charlie, continue approach, expect late landing clearance.
+< Continue approach, Iberia eight seven five Charlie.
+
+[twr_072]
+> Ryanair eight nine two, roger, vacate runway when able.
+< Vacating when able, Ryanair eight nine two.
+
+[twr_073]
+> Ryanair eight nine two, contact Departure on one two four decimal eight, good day.
+< One two four decimal eight, Ryanair eight nine two, good day.
+
+[twr_074]
+> Swiss five six seven, behind the Lufthansa on final, runway three two left, line up and wait behind.
+< Behind the Lufthansa on final, runway three two left, lining up behind, Swiss five six seven.
+
+[twr_075]
+> Iberia eight seven five Charlie, wind two niner zero degrees, one two knots, runway three two right, cleared for takeoff.
+< Runway three two right, cleared for takeoff, Iberia eight seven five Charlie.
+
+[twr_076]
+> Lufthansa two one eight, hold short runway one eight right, landing traffic.
+< Holding short runway one eight right, Lufthansa two one eight.
+
+[twr_077]
+> Vueling seven nine eight, expedite vacating, traffic on final.
+< Expediting, Vueling seven nine eight.
+
+[twr_078]
+> Vueling seven nine eight, contact Ground on one two one decimal six five, good day.
+< One two one decimal six five, Vueling seven nine eight, good day.
+
+[twr_079]
+> Speedbird three one two, go around, wind shear reported on final.
+< Going around, Speedbird three one two.
+
+[twr_080]
+> Ryanair one three Hotel, wind one seven zero degrees, one zero knots, runway one eight left, cleared to land.
+< Runway one eight left, cleared to land, Ryanair one three Hotel.
+
+[twr_081]
+> EasyJet four three two Yankee, runway one eight right, line up and wait.
+< Runway one eight right, line up and wait, EasyJet four three two Yankee.
+
+[twr_082]
+> EasyJet four three two Yankee, wind one eight zero degrees, one two knots, runway one eight right, cleared for takeoff.
+< Runway one eight right, cleared for takeoff, EasyJet four three two Yankee.
+
+[twr_083]
+> Lufthansa six seven two, contact Ground on one two one decimal six five, good day.
+< One two one decimal six five, Lufthansa six seven two, good day.
+
+[twr_084]
+> Swiss four eight one, runway three two right, cleared to land.
+< Runway three two right, cleared to land, Swiss four eight one.
+
+[twr_085]
+> Speedbird three Alpha two, continue approach, number four, three aircraft on final.
+< Continue approach, number four, Speedbird three Alpha two.
+
+[twr_086]
+> Iberia eight seven five Charlie, hold position, departure sequence changed.
+< Hold position, Iberia eight seven five Charlie.
+
+[twr_087]
+> Ryanair eight nine two, immediate takeoff runway three two left, or hold short.
+< Taking off immediately, runway three two left, Ryanair eight nine two.
+
+[twr_088]
+> Swiss five six seven, cancel takeoff clearance, hold position.
+< Holding position, Swiss five six seven.
+
+[twr_089]
+> EasyJet four three two Yankee, vacate left.
+< Vacating left, EasyJet four three two Yankee.
+
+[twr_090]
+> Vueling seven nine eight, wind three one zero degrees, one zero knots, runway three two right, cleared to land.
+< Runway three two right, cleared to land, Vueling seven nine eight.
+
+[twr_091]
+> Ryanair eight nine two, traffic Airbus three twenty, three miles final, runway three two left, continue.
+< Continue, Ryanair eight nine two.
+
+[twr_092]
+> Lufthansa two one eight, wind variable five knots, runway one eight left, cleared for takeoff.
+< Runway one eight left, cleared for takeoff, Lufthansa two one eight.
+
+[twr_093]
+> Iberia eight seven five Charlie, contact Departure on one two one decimal three, good day.
+< One two one decimal three, Iberia eight seven five Charlie, good day.
+
+[twr_094]
+> Speedbird three one two, wind two seven zero degrees, one two gusting two zero knots, runway three two left, cleared to land.
+< Runway three two left, cleared to land, Speedbird three one two.
+
+[twr_095]
+> Swiss five six seven, hold position, runway inspection in progress.
+< Hold position, Swiss five six seven.
+
+[twr_096]
+> EasyJet four three two Yankee, go around, contact Approach on one two seven decimal three.
+< Going around, runway heading, one two seven decimal three, EasyJet four three two Yankee.
+
+[twr_097]
+> Vueling seven nine eight, runway three two left, line up and wait.
+< Runway three two left, line up and wait, Vueling seven nine eight.
+
+[twr_098]
+> Vueling seven nine eight, wind three one zero degrees, one five knots, runway three two left, cleared for takeoff.
+< Runway three two left, cleared for takeoff, Vueling seven nine eight.
+
+[twr_099]
+> Ryanair one three Hotel, wind three zero five degrees, one five gusting two zero knots, runway three two right, cleared to land.
+< Runway three two right, cleared to land, Ryanair one three Hotel.
+
+[twr_100]
+> Swiss four eight one, contact Ground on one two one decimal six five, good day.
+< One two one decimal six five, Swiss four eight one, good day.

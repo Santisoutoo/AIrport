@@ -59,7 +59,7 @@ def load_model() -> Any:
 # Sync helpers (run in thread pool so the event loop stays free)
 # ---------------------------------------------------------------------------
 
-def _transcribe_faster_whisper(audio_bytes: bytes, suffix: str) -> str:
+def _transcribe_faster_whisper(audio_bytes: bytes, suffix: str, use_initial_prompt: bool = True) -> str:
     cfg = get_settings()
     model = load_model()
 
@@ -72,7 +72,7 @@ def _transcribe_faster_whisper(audio_bytes: bytes, suffix: str) -> str:
             tmp_path,
             language=cfg.whisper_language,
             beam_size=cfg.whisper_beam_size,
-            initial_prompt=ATC_PROMPT,
+            initial_prompt=ATC_PROMPT if use_initial_prompt else None,
             condition_on_previous_text=False,
             hallucination_silence_threshold=2.0,
             no_speech_threshold=0.6,
@@ -104,28 +104,47 @@ def _transcribe_transformers(audio_bytes: bytes, suffix: str) -> str:
     return text
 
 
-def _transcribe_sync(audio_bytes: bytes, suffix: str) -> str:
+def _transcribe_sync(
+    audio_bytes: bytes,
+    suffix: str,
+    apply_corrections: bool = True,
+    use_initial_prompt: bool = True,
+) -> str:
     cfg = get_settings()
     backend = get_model_backend(cfg.hf_model)
 
     if backend == "faster-whisper":
-        raw = _transcribe_faster_whisper(audio_bytes, suffix)
+        raw = _transcribe_faster_whisper(audio_bytes, suffix, use_initial_prompt=use_initial_prompt)
     else:
         raw = _transcribe_transformers(audio_bytes, suffix)
 
-    return correct_callsigns(normalize_phonetic(raw))
+    if apply_corrections:
+        return correct_callsigns(normalize_phonetic(raw))
+    return raw
 
 
 # ---------------------------------------------------------------------------
 # Public async entry point
 # ---------------------------------------------------------------------------
 
-async def transcribe(audio_bytes: bytes, filename: str) -> str:
+async def transcribe(
+    audio_bytes: bytes,
+    filename: str,
+    apply_corrections: bool = True,
+    use_initial_prompt: bool = True,
+) -> str:
     """Async wrapper — offloads CPU-bound inference to thread pool."""
     suffix = "." + filename.rsplit(".", 1)[-1] if "." in filename else ".webm"
     try:
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(_executor, _transcribe_sync, audio_bytes, suffix)
+        return await loop.run_in_executor(
+            _executor,
+            _transcribe_sync,
+            audio_bytes,
+            suffix,
+            apply_corrections,
+            use_initial_prompt,
+        )
     except HTTPException:
         raise
     except Exception as exc:

@@ -33,8 +33,10 @@ def test_dispatch_arrival_publishes_spawn_and_move_cmd():
     spawn = json.loads(fake.store["aircraft:spawn_request:EC-TEST"])
     assert spawn["on_ground"] is False
     assert spawn["aircraft_type"] == "A320"
-    # Spawn altitude = 3000 ft AGL + 370 ft field elev = 3370 ft MSL.
-    assert 3300 < spawn["altitude_msl_ft"] < 3400
+    # Spawn altitude = SPAWN_ALTITUDE_AGL_FT (5000 ft) + LEST field elev (~370 ft) = ~5370 MSL.
+    # The exact constant lives in core.arrival_planner and is read from
+    # the env var ARRIVAL_SPAWN_ALT_AGL_FT (default 5000.0).
+    assert 5300 < spawn["altitude_msl_ft"] < 5400
     # Spawn must be NORTH of threshold (RWY 17 → inbound from north).
     assert spawn["latitude"] > LEST_RWY_17.threshold_lat
 
@@ -51,4 +53,6 @@ def test_dispatch_arrival_publishes_spawn_and_move_cmd():
 
     vacate_leg = move["legs"][2]
     assert vacate_leg["mode"] == "vacate"
-    assert vacate_leg["waypoints"][0]["lat"] == LEST_RWY_17.vacate_exit_lat
+    # Vacate leg has two waypoints: abeam point first, then the exit point.
+    assert vacate_leg["waypoints"][0]["lat"] == LEST_RWY_17.vacate_abeam_lat
+    assert vacate_leg["waypoints"][1]["lat"] == LEST_RWY_17.vacate_exit_lat
