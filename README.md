@@ -7,6 +7,7 @@
 ![Gemini](https://img.shields.io/badge/AI-Gemini%20%2B%20Google%20ADK-green.svg)
 ![Whisper](https://img.shields.io/badge/ASR-Whisper%20ATC-yellow.svg)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)
+![uv](https://img.shields.io/badge/pkg-uv-black.svg)
 
 *AI-powered Air Traffic Control training platform. Speak to AI pilots, receive realistic clearances, and watch aircraft move in X-Plane 12.*
 
@@ -16,39 +17,61 @@
 
 ## Overview
 
-AIrport connects a controller's voice to a fleet of AI-powered aircraft. The controller talks into a microphone; the system transcribes the audio, routes the message to the correct ATC phase agent (Delivery, Ground, or Tower), generates a realistic ICAO-compliant response, and feeds movement commands back to X-Plane 12.
+> **Speak into the mic.** The system transcribes your voice with Whisper-ATC, routes the message to the correct ATC agent (DEL/GND/TWR), generates an ICAO-compliant readback, and moves the aircraft in X-Plane 12 — voice to taxi clearance in under two seconds.
 
-Each ATC phase is handled by a dedicated AI agent running on Google Cloud Run, backed by Gemini. A central Orchestrator tracks each aircraft's lifecycle through DEL → GND → TWR and routes incoming transmissions accordingly.
+A central Orchestrator tracks each aircraft's lifecycle through `DEL → GND → TWR` and dispatches incoming transmissions to the matching phase agent.
 
 ---
 
 ## Architecture
 
-![Architecture](docs/architecture.svg)
+![Architecture](docs/diagrams/images/architecture.svg)
 
-**Services:**
+### Application services
 
-| Service | Responsibility |
-|---|---|
-| Controller HMI | Web UI (flight strips, ground radar), API proxy |
-| ASR | Whisper transcription + callsign correction |
-| Orchestrator | Agent routing, aircraft state machine |
-| Flight Plan | IFR flight plan generation (flightplandatabase.com) |
-| Weather | METAR, TAF, ATIS generation |
+All FastAPI services. Ports are host-side, exposed by Docker Compose. Other directories under `services/` are placeholders and can be ignored.
+
+| Service | Port | Responsibility |
+|---|---|---|
+| Controller HMI | 8005 | Web UI (flight strips, ground radar, chat) and API gateway |
+| Flight Plan | 8003 | IFR flight plan generation (flightplandatabase.com) |
+| Weather | 8004 | METAR, TAF, and ATIS generation |
+| ASR | 8006 | Whisper transcription + callsign correction |
+| Orchestrator | 8007 | Agent routing, aircraft state machine, dispatch |
+| Arrival Simulator | 8008 | Spawns AI arrivals on ILS, drives vacate sequences |
+
+### Infrastructure
+
+| Component | Image | Port (host:container) |
+|---|---|---|
+| PostgreSQL | `postgres:15-alpine` | 5432:5432 |
+| Redis | `redis:7-alpine` | 6379:6379 |
+| InfluxDB | `influxdb:2.7-alpine` | 8087:8086 |
 
 ---
 
 ## ATC Agents
 
-All three agents run on **Google Cloud Run** with Gemini and are stateless between sessions. The Orchestrator provides each agent with the relevant aircraft context (flight plan, clearances, weather) on every call.
+All three agents run on **Google Cloud Run** with Gemini and are stateless. The Orchestrator provides each agent with the relevant aircraft context (flight plan, clearances, weather) on every call. Source under [agents/](agents/).
 
 | Agent | Frequency | Responsibilities |
 |---|---|---|
-| **DEL** (Clearance Delivery) | DEL | Issues IFR clearances|
-| **GND** (Ground Control) | GND | Assigns pushback approval and taxi routes |
-| **TWR** (Tower) | TWR | Issues takeoff / landing clearances, manages runway sequencing |
+| **DEL** (Clearance Delivery) | DEL | Issues IFR clearances |
+| **GND** (Ground Control) | GND | Pushback approval, taxi routes |
+| **TWR** (Tower) | TWR | Takeoff / landing clearances, runway sequencing |
 
-Aircraft progress through the phases: `DEL → GND → TWR`. The Orchestrator stores each aircraft's phase in PostgreSQL and routes future transmissions accordingly.
+---
+
+## Example transmission
+
+```
+Controller: "Iberia 5471, taxi to holding point runway 25 via Charlie."
+  → ASR (Whisper ATC)     transcribes audio + corrects callsign → IBE5471
+  → Orchestrator          routes to GND agent (current phase: GND)
+  → GND agent (Gemini)    validates route in taxi graph, drafts readback
+  → X-Plane plugin        drives aircraft along taxiway C, holds short of 25
+Pilot (TTS): "Taxi to holding point runway 25 via Charlie, Iberia 5471."
+```
 
 ---
 
@@ -56,83 +79,69 @@ Aircraft progress through the phases: `DEL → GND → TWR`. The Orchestrator st
 
 | Layer | Technology |
 |---|---|
-| Voice ASR | [Whisper fine-tuned for ATC](https://huggingface.co/jacktol/whisper-medium.en-fine-tuned-for-ATC-faster-whisper) via faster-whisper |
-| Voice TTS | X-Plane 12 built-in TTS |
-| AI Agents | Google ADK + Gemini (`gemini-3-flash-preview`) on Cloud Run |
-| Web Framework | FastAPI + Uvicorn (all services) |
-| Async HTTP | httpx |
-| Simulator | X-Plane 12 (Python plugin API) |
-| Primary DB | PostgreSQL 15 |
-| Cache | Redis 7 |
-| Metrics | InfluxDB 2.7 |
+| Runtime | Python 3.11, [uv](https://github.com/astral-sh/uv) |
+| Web framework | FastAPI + Uvicorn |
+| Voice ASR | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) + [Whisper fine-tuned for ATC](https://huggingface.co/jacktol/whisper-medium.en-fine-tuned-for-ATC-faster-whisper) |
+| AI agents | google-adk + Gemini (`gemini-3-flash-preview`) on Cloud Run |
+| Voice TTS | X-Plane 12 built-in |
+| Graph routing | networkx (taxi route graphs) |
+| Simulator | X-Plane 12 + [XPPython3](https://xppython3.readthedocs.io/), xplane-airports |
+| Data | PostgreSQL 15, Redis 7, InfluxDB 2.7 |
 | Containerization | Docker Compose |
-| Package Manager | uv |
 
 ---
 
-## Getting Started
+## Prerequisites
 
-### Prerequisites
+**Local:** Python 3.11, [uv](https://github.com/astral-sh/uv), Docker + Compose v2, X-Plane 12 with [XPPython3](https://xppython3.readthedocs.io/).
+**Cloud:** GCP project with Vertex AI enabled, service account JSON with `Vertex AI User`, three Cloud Run agents deployed (DEL / GND / TWR — see [agents/](agents/)).
+**External APIs:** flightplandatabase.com API key.
 
-- Docker + Docker Compose
-- X-Plane 12
-- Google Cloud project with Vertex AI enabled
-- Service account key (JSON) with Vertex AI permissions
-- Deployed DEL/GND/TWR agents on Cloud Run (see `agents/`)
+---
 
-### 1. Configure environment
+## Installation
 
 ```bash
-cp .env.example .env
-```
-
-Edit `.env` and fill in:
-
-```env
-# Google Cloud
-VERTEX_PROJECT=your-gcp-project
-VERTEX_LOCATION=global
-GEMINI_MODEL=gemini-3-flash-preview
-GOOGLE_APPLICATION_CREDENTIALS_JSON='{...}'   # service account JSON inline
-
-# Cloud Run agent URLs
-DEL_AGENT_URL=https://del-agent-xxxx-uc.a.run.app
-GND_AGENT_URL=https://gnd-agent-xxxx-uc.a.run.app
-TWR_AGENT_URL=https://twr-agent-xxxx-uc.a.run.app
-
-# Flight plan API
-FLIGHT_PLAN_GENERATOR_KEY=your-key
-
-# Postgres credentials
-POSTGRES_PASSWORD=change_me
-```
-
-### 2. Start all services
-
-```bash
+git clone <repo-url> AIrport
+cd AIrport
+uv sync
+cp .env.example .env   # fill credentials — see docs/configuration.md
 docker compose up --build
 ```
 
-### 3. Open the Controller HMI
-
-Navigate to [http://localhost:8005](http://localhost:8005)
+The first run downloads the Whisper ATC model (~1.5 GB) into the `asr_hf_cache` Docker volume. Open the Controller HMI at [http://localhost:8005](http://localhost:8005).
 
 ---
 
-## Configuration Reference
+## X-Plane Plugin Setup
 
-| Variable | Default | Description |
-|---|---|---|
-| `VERTEX_PROJECT` | — | GCP project ID |
-| `VERTEX_LOCATION` | `global` | Vertex AI region |
-| `GEMINI_MODEL` | `gemini-3-flash-preview` | Gemini model used by agents |
-| `DEL_AGENT_URL` | — | Cloud Run URL for DEL agent |
-| `GND_AGENT_URL` | — | Cloud Run URL for GND agent |
-| `TWR_AGENT_URL` | — | Cloud Run URL for TWR agent |
-| `ASR_HF_MODEL` | `jacktol/whisper-medium.en-fine-tuned-for-ATC-faster-whisper` | Whisper model |
-| `ASR_WHISPER_DEVICE` | `cpu` | `cpu` or `cuda` |
-| `ASR_WHISPER_COMPUTE_TYPE` | `int8` | Whisper quantisation |
-| `FLIGHT_PLAN_GENERATOR_KEY` | — | flightplandatabase.com API key |
+The in-sim plugin is **not** installed automatically.
+
+1. Install [XPPython3](https://xppython3.readthedocs.io/) into X-Plane 12.
+2. Copy the plugin sources into `<X-Plane 12>/Resources/plugins/PythonPlugins/`:
+   - [plugins/PI_spawn_obj.py](plugins/PI_spawn_obj.py)
+   - the entire [plugins/GND/](plugins/GND/) folder
+3. Install pip dependencies into the simulator's bundled Python by running [docs/install/install_dependencies.bat](docs/install/install_dependencies.bat). It wraps [install_xppython3.ps1](docs/install/install_xppython3.ps1), which can also install/update XPPython3 itself.
+4. Launch X-Plane 12 and confirm the plugin appears under **Plugins**.
+5. Make sure the backend Orchestrator (port `8007`) is running before starting a flight.
+
+---
+
+## Configuration
+
+Full env-var reference → [docs/configuration.md](docs/configuration.md).
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Port already in use (5432/6379/8087/8003–8008) | Stop the conflicting local service or remap in `docker-compose.yml` |
+| `403 / PERMISSION_DENIED` from Vertex | Grant `Vertex AI User`, re-mount the JSON at `GCP_SA_KEY_PATH` |
+| Plugin not showing in X-Plane | Reinstall XPPython3 and confirm files live in `<X-Plane 12>/Resources/plugins/PythonPlugins/` |
+
+Full table → [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ---
 
@@ -146,15 +155,16 @@ Navigate to [http://localhost:8005](http://localhost:8005)
 | Controller HMI (flight strips, ground radar) | ✅ |
 | Flight Plan Service | ✅ |
 | Weather / ATIS Service | ✅ |
+| Arrival Simulator | ✅ |
 | TTS (X-Plane built-in) | ✅ |
-| X-Plane Plugin | 🚧 In progress |
-| Analytics / InfluxDB dashboards | 🚧 In progress |
+| X-Plane Plugin (spawn + GND routing) | ✅ |
 
 ---
 
-## About
+<div align="center">
 
-This project is part of an academic research initiative. For more information, visit the professor's page:
+[License](LICENSE) · [Contributing](CONTRIBUTING.md) · [taxitolearn.com/airport.html](https://taxitolearn.com/airport.html)
 
-**[taxitolearn.com/airport.html](https://taxitolearn.com/airport.html)**
+*Part of an academic research initiative.*
 
+</div>
