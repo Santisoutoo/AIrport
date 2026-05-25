@@ -1,7 +1,7 @@
 """Unit tests for agent/tools/aircraft.py::get_known_aircraft.
 
 The function is a thin accessor over ``tool_context.state["known_aircraft"]``
-— populated upstream by ``runner._fetch_known_aircraft``. The tests below
+-- populated upstream by ``runner._fetch_known_aircraft``. The tests below
 guard the contract the LLM relies on.
 """
 
@@ -35,7 +35,7 @@ def test_returns_empty_list_when_state_missing():
 def test_returns_value_unchanged_when_state_has_list():
     """get_known_aircraft must return exactly what the runner placed in state.
 
-    The runner is responsible for never injecting None — the tool layer
+    The runner is responsible for never injecting None -- the tool layer
     relies on it being either a list or absent.
     """
     aircraft = [{"registration": "EC-XX", "callsign": "FOO"}]

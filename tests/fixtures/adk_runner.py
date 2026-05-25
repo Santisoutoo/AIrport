@@ -69,7 +69,7 @@ class FakeADKRunner:
         )
 
         # Apply scripted state mutations to the live session before yielding
-        # the final event — this is the same observable effect a real tool
+        # the final event -- this is the same observable effect a real tool
         # invocation would have on state.
         if self._next_state_updates is not None and self.session_service is not None:
             session = await self.session_service.get_session(

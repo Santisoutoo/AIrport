@@ -417,7 +417,7 @@ def test_forward_gnd_does_not_trigger_dispatch_without_taxi_data(
 def test_forward_del_never_triggers_taxi_dispatch(
     configured_urls, captured_log, captured_taxi_dispatch
 ):
-    """taxi dispatch is GND-only — DEL must never trigger it."""
+    """taxi dispatch is GND-only -- DEL must never trigger it."""
     respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(404))
     respx.post("http://del.test/agents/delivery/run").mock(
         return_value=httpx.Response(

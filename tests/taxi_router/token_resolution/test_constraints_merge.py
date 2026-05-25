@@ -12,12 +12,12 @@ def test_pilot_readback_matches_controller():
 
 
 def test_pilot_missed_token_gets_inserted():
-    # Controller: B,D,E — pilot only read "B,D" → E appended
+    # Controller: B,D,E -- pilot only read "B,D" -> E appended
     assert merge_constraints(["B", "D", "E"], ["B", "D"]) == ["B", "D", "E"]
 
 
 def test_pilot_missed_middle_token():
-    # Controller: B,D,E — pilot read "B,E" → D inserted after B
+    # Controller: B,D,E -- pilot read "B,E" -> D inserted after B
     assert merge_constraints(["B", "D", "E"], ["B", "E"]) == ["B", "D", "E"]
 
 

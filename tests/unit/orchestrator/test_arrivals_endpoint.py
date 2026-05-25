@@ -1,4 +1,4 @@
-"""Unit tests for api/arrivals.py — POST /api/v1/orchestrator/arrivals/register.
+"""Unit tests for api/arrivals.py -- POST /api/v1/orchestrator/arrivals/register.
 
 The endpoint is called by the arrival_simulator at dispatch time so the
 orchestrator's ``_fetch_known_aircraft`` sees the arriving aircraft with
@@ -120,6 +120,6 @@ def test_register_arrival_validation_rejects_non_string_registration(client):
         "/api/v1/orchestrator/arrivals/register",
         json={"aircraft_registration": 12345},
     )
-    # FastAPI coerces ints to strings by default for str fields → 201, or 422 in strict mode.
+    # FastAPI coerces ints to strings by default for str fields -> 201, or 422 in strict mode.
     # Either is acceptable as long as the schema is enforced.
     assert resp.status_code in (201, 422)

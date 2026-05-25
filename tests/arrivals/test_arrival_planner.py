@@ -37,7 +37,7 @@ def test_dispatch_arrival_publishes_spawn_and_move_cmd():
     # The exact constant lives in core.arrival_planner and is read from
     # the env var ARRIVAL_SPAWN_ALT_AGL_FT (default 5000.0).
     assert 5300 < spawn["altitude_msl_ft"] < 5400
-    # Spawn must be NORTH of threshold (RWY 17 → inbound from north).
+    # Spawn must be NORTH of threshold (RWY 17 -> inbound from north).
     assert spawn["latitude"] > LEST_RWY_17.threshold_lat
 
     move = json.loads(fake.store["aircraft:EC-TEST:move_cmd"])
