@@ -1,8 +1,8 @@
 """Unit tests for the three frequency-change "advance" tools:
 
-  - advance_to_gnd          (DEL  → GND, departure)
-  - advance_to_twr          (GND  → TWR, departure)
-  - advance_to_gnd_arrival  (TWR  → GND, arrival reverse handoff)
+  - advance_to_gnd          (DEL  -> GND, departure)
+  - advance_to_twr          (GND  -> TWR, departure)
+  - advance_to_gnd_arrival  (TWR  -> GND, arrival reverse handoff)
 
 All three follow the same shape: read ``known_aircraft`` from
 ``tool_context.state``, lookup the callsign by registration, emit a readback
@@ -61,7 +61,7 @@ def test_advance_sets_state_keys(tool, advance_key, expected_dep):
 
 @pytest.mark.parametrize("tool, advance_key, expected_dep", ADVANCE_TOOLS)
 def test_advance_uses_registration_when_callsign_missing(tool, advance_key, expected_dep):
-    """Aircraft entry exists but has no callsign — fall back to registration."""
+    """Aircraft entry exists but has no callsign -- fall back to registration."""
     ctx = _ctx([{"registration": "EC-XYZ"}])
 
     readback = tool("EC-XYZ", "118.1", ctx)
@@ -72,7 +72,7 @@ def test_advance_uses_registration_when_callsign_missing(tool, advance_key, expe
 
 @pytest.mark.parametrize("tool, advance_key, expected_dep", ADVANCE_TOOLS)
 def test_advance_uses_registration_when_callsign_null(tool, advance_key, expected_dep):
-    """Aircraft entry has callsign=None — treated the same as missing."""
+    """Aircraft entry has callsign=None -- treated the same as missing."""
     ctx = _ctx([{"registration": "EC-XYZ", "callsign": None}])
 
     readback = tool("EC-XYZ", "118.1", ctx)
@@ -84,7 +84,7 @@ def test_advance_uses_registration_when_callsign_null(tool, advance_key, expecte
 def test_advance_unknown_registration_uses_registration_as_callsign(
     tool, advance_key, expected_dep
 ):
-    """Registration not present in known_aircraft — readback uses registration."""
+    """Registration not present in known_aircraft -- readback uses registration."""
     ctx = _ctx([{"registration": "EC-AAA", "callsign": "IBE111"}])
 
     readback = tool("EC-MIG", "121.9", ctx)

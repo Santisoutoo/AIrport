@@ -18,7 +18,7 @@ def _pick_route_pair(airport):
 
     Iterates over stands and runway designators until find_route_from_position
     succeeds. Needed because some airports (e.g. LEIB) have stands or runway
-    threshold nodes split across disconnected components — we must avoid such
+    threshold nodes split across disconnected components -- we must avoid such
     pairs to test the happy-path routing.
     """
     for s in airport.raw_data["stands"]:

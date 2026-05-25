@@ -1,4 +1,4 @@
-"""Unit tests for api/dispatch.py — POST /dispatch.
+"""Unit tests for api/dispatch.py -- POST /dispatch.
 
 The endpoint:
   1. Appends the incoming pilot message to the session transcript log.
@@ -167,7 +167,7 @@ def test_dispatch_returns_500_when_orchestrator_raises(
 def test_dispatch_transcript_appended_even_when_orchestrator_raises(
     client, stub_runner, stub_tts, stub_session_log
 ):
-    """Transcript capture happens BEFORE the orchestrator call — must persist on failure."""
+    """Transcript capture happens BEFORE the orchestrator call -- must persist on failure."""
     stub_runner.raise_exception(RuntimeError("agent boom"))
 
     client.post("/dispatch", json={"session_id": "sess-1", "message": "msg"})

@@ -5,7 +5,7 @@ frequency mentions (numeric AND spelled-out in EN and ES), infers which
 service the controller was talking to from a keyword window, and compares
 the said frequency against the airport's expected MHz.
 
-It is the highest-coverage-per-LOC target in the codebase — no I/O, no
+It is the highest-coverage-per-LOC target in the codebase -- no I/O, no
 external deps, deterministic output.
 """
 
@@ -46,7 +46,7 @@ def test_audit_detects_comma_as_decimal_separator():
 
 
 def test_audit_excludes_out_of_band_freqs():
-    """The regex limits to 11x/12x MHz — 135.5 should not match."""
+    """The regex limits to 11x/12x MHz -- 135.5 should not match."""
     audit = audit_frequencies([_t("Random number 135.5")])
     # The pattern is `1[12]\d[.,]\d{1,3}` so a leading "13" is rejected.
     assert audit["mentions"] == 0
@@ -59,7 +59,7 @@ def test_audit_includes_12x_band():
 
 
 # ---------------------------------------------------------------------------
-# Spelled digits — EN
+# Spelled digits -- EN
 # ---------------------------------------------------------------------------
 
 
@@ -77,7 +77,7 @@ def test_audit_niner_maps_to_nine():
 
 
 # ---------------------------------------------------------------------------
-# Spelled digits — ES
+# Spelled digits -- ES
 # ---------------------------------------------------------------------------
 
 
@@ -100,7 +100,7 @@ def test_audit_punto_also_works_as_decimal():
 
 
 def test_audit_marks_good_when_freq_matches_default_expected():
-    """118.330 == default TWR — verdict good."""
+    """118.330 == default TWR -- verdict good."""
     audit = audit_frequencies([_t("Tower 118.330")])
     assert audit["findings"][0]["verdict"] == "good"
     assert audit["correct"] == 1
@@ -108,26 +108,26 @@ def test_audit_marks_good_when_freq_matches_default_expected():
 
 
 def test_audit_marks_bad_when_freq_mismatches_expected():
-    """118.500 ≠ default TWR 118.330 — verdict bad."""
+    """118.500 != default TWR 118.330 -- verdict bad."""
     audit = audit_frequencies([_t("Tower 118.500")])
     assert audit["findings"][0]["verdict"] == "bad"
     assert audit["incorrect"] == 1
 
 
 def test_audit_tolerance_5khz_marks_good():
-    """118.335 vs 118.330 → within 5 kHz tolerance → good."""
+    """118.335 vs 118.330 -> within 5 kHz tolerance -> good."""
     audit = audit_frequencies([_t("Tower 118.335")])
     assert audit["findings"][0]["verdict"] == "good"
 
 
 def test_audit_outside_5khz_tolerance_marks_bad():
-    """118.350 vs 118.330 → 20 kHz off → bad."""
+    """118.350 vs 118.330 -> 20 kHz off -> bad."""
     audit = audit_frequencies([_t("Tower 118.350")])
     assert audit["findings"][0]["verdict"] == "bad"
 
 
 def test_audit_marks_unknown_when_no_service_keyword():
-    """Frequency mentioned with no service hint → unknown verdict."""
+    """Frequency mentioned with no service hint -> unknown verdict."""
     audit = audit_frequencies([_t("contact 118.3 please")])
     assert audit["findings"][0]["verdict"] == "unknown"
     assert audit["unknown"] == 1
@@ -147,7 +147,7 @@ def test_audit_uses_airport_freqs_over_defaults():
 
 
 def test_audit_airport_freqs_with_invalid_value_falls_through_to_default():
-    """A malformed entry must not break the audit — fall back to defaults."""
+    """A malformed entry must not break the audit -- fall back to defaults."""
     com = [{"service": "TWR", "frequency_mhz": "not-a-float"}]
     audit = audit_frequencies([_t("Tower 118.330")], com_frequencies=com)
     assert audit["findings"][0]["expected_freq"] == _DEFAULT_FREQS_MHZ["TWR"]

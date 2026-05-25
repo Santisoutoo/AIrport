@@ -33,7 +33,7 @@ def test_distance_clamped_to_min():
 
 
 def test_distance_clamped_to_max():
-    # Far target — haversine would give hundreds of metres
+    # Far target -- haversine would give hundreds of metres
     leg = plan_pushback_leg(
         stand_lat=41.2948, stand_lon=2.0796, stand_heading_deg=200.0,
         first_wp_lat=41.3000, first_wp_lon=2.0900,

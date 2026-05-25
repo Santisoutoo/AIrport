@@ -67,7 +67,7 @@ def test_edge_count_doubles_twoway(airport):
 # ---- Haversine weights -----------------------------------------------------
 
 def test_calculate_distance_one_degree_latitude(airport):
-    # 1 degree of latitude ≈ R * π/180 ≈ 111194.93 m. Identity check —
+    # 1 degree of latitude ~= R * pi/180 ~= 111194.93 m. Identity check --
     # independent of which airport's graph is loaded.
     d = airport.graph._calculate_distance(0.0, 0.0, 1.0, 0.0)
     expected = 6371000 * math.pi / 180
@@ -126,7 +126,7 @@ def test_main_connected_component_is_largest(airport):
 # ---- find_nearest_node -----------------------------------------------------
 
 def test_find_nearest_node_on_known_coord(airport):
-    # Pick any node in the main CC and snap to its own coordinates → should
+    # Pick any node in the main CC and snap to its own coordinates -> should
     # return that same node with distance 0.
     node_id = next(iter(airport.graph._main_cc))
     node = airport.graph.graph.nodes[node_id]

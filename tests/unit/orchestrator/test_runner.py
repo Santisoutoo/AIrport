@@ -2,10 +2,10 @@
 
 Two surfaces are tested:
 
-1. ``_fetch_known_aircraft`` — merges PostgreSQL, flight_plan_service, and
+1. ``_fetch_known_aircraft`` -- merges PostgreSQL, flight_plan_service, and
    Redis into a single list of dicts, with graceful degradation when any
    source fails.
-2. ``run_orchestrator_agent`` — the public entry point that wraps the LLM
+2. ``run_orchestrator_agent`` -- the public entry point that wraps the LLM
    call, persists clearance data, and applies dependency transitions.
 
 The ADK Runner is replaced with ``FakeADKRunner`` (tests/fixtures/adk_runner.py)
@@ -140,7 +140,7 @@ def test_fetch_known_aircraft_redis_adds_unknown_aircraft_as_del(
 def test_fetch_known_aircraft_redis_fills_missing_callsign_for_db_entry(
     db_session, clearance_factory, fake_redis, monkeypatch
 ):
-    """DB entry has no callsign and flight_plan is offline → Redis state hash fills it in."""
+    """DB entry has no callsign and flight_plan is offline -> Redis state hash fills it in."""
     clearance_factory(registration="EC-MIG", dependency="DEL")
     fake_redis.sadd("aircraft:active_set", "EC-MIG")
     fake_redis.hset("aircraft:state:EC-MIG", "callsign", "IBE3421")
@@ -184,7 +184,7 @@ def test_fetch_known_aircraft_flight_plan_503_falls_through(
 
 
 # ---------------------------------------------------------------------------
-# run_orchestrator_agent — persistence + dependency advances
+# run_orchestrator_agent -- persistence + dependency advances
 # ---------------------------------------------------------------------------
 
 
@@ -233,7 +233,7 @@ def test_run_orchestrator_agent_uses_fallback_squawk_when_clearance_missing_fiel
     """When clearance_data only carries partial fields, the unspecified ones
     must fall back to the runner-side defaults (squawk=2000, alt=6000, etc).
 
-    Note: an *empty* dict is falsy and skips persistence entirely — only a
+    Note: an *empty* dict is falsy and skips persistence entirely -- only a
     non-empty clearance_data triggers the upsert.
     """
     _patch_redis(monkeypatch, fake_redis)
@@ -245,7 +245,7 @@ def test_run_orchestrator_agent_uses_fallback_squawk_when_clearance_missing_fiel
             "reply": "ok",
             "dependency": "DEL",
             "registration": "EC-MIG",
-            # Only `clearance_text` is set — everything else takes runner defaults.
+            # Only `clearance_text` is set -- everything else takes runner defaults.
             "clearance_data": {"clearance_text": "Cleared to LEPA"},
         },
         final_text="ok",
@@ -290,7 +290,7 @@ def test_run_orchestrator_agent_advances_to_gnd_when_flag_set(
 @pytest.mark.xfail(
     reason=(
         "runner.py:144-150 only includes `advance_registration_gnd` in the dict "
-        "returned by the inner _run() coroutine — `advance_registration_twr` and "
+        "returned by the inner _run() coroutine -- `advance_registration_twr` and "
         "`advance_registration_gnd_arrival` are missing, so the post-run dependency "
         "advance to TWR/GND-arrival never fires. Documented in memoria 5.3.3 as a "
         "real bug surfaced by the test battery."

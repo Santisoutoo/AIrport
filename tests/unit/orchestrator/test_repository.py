@@ -188,7 +188,7 @@ def test_update_dependency_returns_true_when_row_exists(clearance_repo):
 
 
 def test_update_dependency_returns_false_when_no_row(clearance_repo):
-    """Critical: runner.py relies on this to detect 'no row → fallback upsert'."""
+    """Critical: runner.py relies on this to detect 'no row -> fallback upsert'."""
     assert clearance_repo.update_dependency("GHOST-AC", "GND") is False
 
 
@@ -215,7 +215,7 @@ def test_update_dependency_updates_updated_at(clearance_repo):
 
 
 def test_update_dependency_chained_through_full_departure_path(clearance_repo):
-    """DEL → GND → TWR — the canonical departure ownership chain."""
+    """DEL -> GND -> TWR -- the canonical departure ownership chain."""
     clearance_repo.upsert(
         registration="EC-MIG",
         session_id="s1",
@@ -237,7 +237,7 @@ def test_update_dependency_chained_through_full_departure_path(clearance_repo):
 
 
 def test_update_dependency_chained_through_arrival_path(clearance_repo):
-    """APP → TWR → GND — the reverse handoff after landing."""
+    """APP -> TWR -> GND -- the reverse handoff after landing."""
     clearance_repo.upsert(
         registration="VLG1234",
         session_id="s9",

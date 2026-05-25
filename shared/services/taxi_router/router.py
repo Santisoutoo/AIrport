@@ -10,7 +10,7 @@ Two public entry points:
 
 - `dispatch_taxi_plan(clearance_data, pilot_readback_text, *, registration,
   callsign)`: merges controller + pilot waypoints, builds the two-leg
-  plan (pushback → waypoints), writes it to Redis for the plugin to
+  plan (pushback -> waypoints), writes it to Redis for the plugin to
   consume, and emits a `hmi:chat` rejection when the readback cannot be
   routed.
 """
@@ -94,7 +94,7 @@ def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 def _pushback_distance_from_apt(graph, lat: float, lon: float) -> Optional[float]:
     """Find the nearest init/both taxi-route node (per apt.dat row 1201) and
     return the haversine distance to it. That's where X-Plane's ATC engine
-    assumes an aircraft enters/exits the taxi network from a stand — the
+    assumes an aircraft enters/exits the taxi network from a stand -- the
     right endpoint for pushback. Returns None when no such node is near."""
     best_dist: Optional[float] = None
     for node_id, data in graph.graph.nodes(data=True):
@@ -120,9 +120,9 @@ def compute_taxi_route(
 
     Mirrors the contract expected by
     `services/orchestrator_service/agent/tools/taxi_route.py`:
-      success → {"success": True, "waypoints": [...], "taxiway_sequence": [...],
+      success -> {"success": True, "waypoints": [...], "taxiway_sequence": [...],
                  "total_distance_m": float, "start": {...}, "end": {...}}
-      failure → {"success": False, "error": "..."}
+      failure -> {"success": False, "error": "..."}
     """
     try:
         r = _get_redis_client()
@@ -204,9 +204,9 @@ def dispatch_taxi_plan(
     controller_via = list(taxi_route.get("taxiway_sequence") or [])
 
     # A clearance can carry pushback, taxi, or both. Three legitimate cases:
-    #   - pushback only             → one pushback leg
-    #   - pushback + taxi via X     → pushback + waypoints
-    #   - taxi only (follow-up)     → waypoints leg, no pushback
+    #   - pushback only             -> one pushback leg
+    #   - pushback + taxi via X     -> pushback + waypoints
+    #   - taxi only (follow-up)     -> waypoints leg, no pushback
     pushback_approved = bool(taxi_data.get("pushback_approved")) if isinstance(taxi_data, dict) else False
     has_taxi_clearance = bool(controller_via) or bool(readback_via)
     pushback_dir = parse_pushback_direction(instruction_text)

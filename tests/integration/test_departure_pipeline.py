@@ -1,4 +1,4 @@
-"""Integration test: full DEPARTURE pipeline DEL → GND → TWR.
+"""Integration test: full DEPARTURE pipeline DEL -> GND -> TWR.
 
 Walks one aircraft from initial DEL clearance to TWR handoff using only
 mocked external dependencies (SQLite + FakeRedis + respx HTTP + scripted
@@ -6,11 +6,11 @@ FakeADKRunner). Asserts the cumulative effect on the database and Redis
 side-effects at each handoff boundary.
 
 Pipeline simulated (5 controller utterances):
-  1. "IBE3421 request startup"          → DEL clearance, dependency='DEL'
-  2. "EC-MIG contact ground 121.9"      → advance to GND
-  3. "IBE3421 ready taxi"               → GND agent + taxi plan dispatch
-  4. "EC-MIG contact tower 118.3"       → advance to TWR  (xfail, see below)
-  5. "IBE3421 ready for takeoff"        → TWR agent reply
+  1. "IBE3421 request startup"          -> DEL clearance, dependency='DEL'
+  2. "EC-MIG contact ground 121.9"      -> advance to GND
+  3. "IBE3421 ready taxi"               -> GND agent + taxi plan dispatch
+  4. "EC-MIG contact tower 118.3"       -> advance to TWR  (xfail, see below)
+  5. "IBE3421 ready for takeoff"        -> TWR agent reply
 
 NOTE: step 4 depends on the `advance_registration_twr` propagation that
 runner.py currently misses (see test_runner.py xfail tests). This
@@ -230,7 +230,7 @@ def test_departure_full_pipeline_del_to_gnd_to_twr(wire_pipeline, client, db_ses
     assert row.dependency == "GND"
 
     # -------------------------------------------------------------------
-    # Step 3: GND taxi clearance — verify sub-agent call + taxi dispatch
+    # Step 3: GND taxi clearance -- verify sub-agent call + taxi dispatch
     # -------------------------------------------------------------------
     def _step3_state(state):
         # In the real orchestrator the LLM calls get_taxi_route then forward.
@@ -264,7 +264,7 @@ def test_departure_full_pipeline_del_to_gnd_to_twr(wire_pipeline, client, db_ses
     }
 
     # -------------------------------------------------------------------
-    # Step 4: advance to TWR  — currently fails due to runner.py bug.
+    # Step 4: advance to TWR  -- currently fails due to runner.py bug.
     # We still drive the call so the test exercises the path; the
     # *db assertion* below is marked with the same xfail reason as the
     # unit test (see test_runner.py).
@@ -285,7 +285,7 @@ def test_departure_full_pipeline_del_to_gnd_to_twr(wire_pipeline, client, db_ses
     assert resp4.json()["agent"] == "TWR"
 
     # -------------------------------------------------------------------
-    # Step 5: TWR clearance — sub-agent reachable, reply published
+    # Step 5: TWR clearance -- sub-agent reachable, reply published
     # -------------------------------------------------------------------
     def _step5_state(state):
         forward_mod.forward_to_agent(
@@ -319,7 +319,7 @@ def test_departure_full_pipeline_del_to_gnd_to_twr(wire_pipeline, client, db_ses
 
 
 def test_pipeline_does_not_leak_state_between_aircraft(wire_pipeline, client, db_session):
-    """Each aircraft has its own row keyed by registration — nothing is shared globally."""
+    """Each aircraft has its own row keyed by registration -- nothing is shared globally."""
     fake_runner = wire_pipeline.fake_runner
     wire_pipeline.fake_redis.sadd("aircraft:active_set", "EC-OTHER")
     wire_pipeline.fake_redis.hset("aircraft:state:EC-OTHER", "callsign", "RYR123")

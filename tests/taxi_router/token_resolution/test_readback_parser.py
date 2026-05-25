@@ -20,7 +20,7 @@ def test_fallback_from_instruction_text():
         "Iberia 3421, pushback approved face north, taxi via Bravo Delta Echo, "
         "holding short runway 06R, wilco."
     )
-    # No structured route provided → parser scans the full phrase
+    # No structured route provided -> parser scans the full phrase
     got = extract_taxiway_tokens(None, fallback_text=text)
     # The parser should capture the via taxiways (plus any extra capitalised
     # tokens it can resolve). We only require the three via points to appear
@@ -31,7 +31,7 @@ def test_fallback_from_instruction_text():
 
 
 def test_numeric_suffix_from_words():
-    # "Golf one zero" → "G10"
+    # "Golf one zero" -> "G10"
     assert extract_taxiway_tokens("Golf one zero, Hotel") == ["G10", "H"]
 
 
@@ -40,7 +40,7 @@ def test_numeric_suffix_from_digits():
 
 
 def test_known_tokens_filter():
-    # Pilot says "Z" which isn't a real taxiway — filtered out
+    # Pilot says "Z" which isn't a real taxiway -- filtered out
     got = extract_taxiway_tokens("Bravo, Zulu", known_tokens=["B", "D"])
     assert got == ["B"]
 

@@ -1,12 +1,12 @@
-"""Integration test: full ARRIVAL pipeline APP → TWR → GND reverse handoff.
+"""Integration test: full ARRIVAL pipeline APP -> TWR -> GND reverse handoff.
 
 Models one inbound aircraft from arrival registration to taxi-in:
-  1. POST /api/v1/orchestrator/arrivals/register → row with dependency='APP'
-  2. event_bridge handles request_landing → TTS phrase queued
-  3. "VLG1234 cleared to land runway 17" → TWR sub-agent reply
-  4. event_bridge handles rolling_out → vacating TTS phrase
-  5. "VLG1234 contact ground 121.9" → reverse handoff (currently xfail bug)
-  6. event_bridge handles reached_end → arrival unregistered
+  1. POST /api/v1/orchestrator/arrivals/register -> row with dependency='APP'
+  2. event_bridge handles request_landing -> TTS phrase queued
+  3. "VLG1234 cleared to land runway 17" -> TWR sub-agent reply
+  4. event_bridge handles rolling_out -> vacating TTS phrase
+  5. "VLG1234 contact ground 121.9" -> reverse handoff (currently xfail bug)
+  6. event_bridge handles reached_end -> arrival unregistered
 
 All Redis, HTTP, ADK Runner traffic is mocked. The two known runner.py
 bugs (advance_to_twr and advance_to_gnd_arrival not propagated) are
@@ -69,7 +69,7 @@ def wire_pipeline(monkeypatch, fake_redis, db_session):
     monkeypatch.setattr(forward_mod, "_FLIGHT_PLAN_URL", "")
     monkeypatch.setattr(runner_mod, "_FLIGHT_PLAN_URL", "")
 
-    # event_bridge._push_tts uses asyncio — capture instead of dispatching
+    # event_bridge._push_tts uses asyncio -- capture instead of dispatching
     tts_captured = []
     monkeypatch.setattr(event_bridge, "_push_tts", lambda text: tts_captured.append(text))
 
@@ -131,13 +131,13 @@ def test_arrival_full_pipeline_app_to_twr_to_gnd(wire_pipeline, client, db_sessi
     )
 
     # -------------------------------------------------------------------
-    # Step 2: mover emits request_landing → TTS pushed
+    # Step 2: mover emits request_landing -> TTS pushed
     # -------------------------------------------------------------------
     event_bridge._handle_event("VLG1234", {"event": "request_landing", "dme_nm": 4.0})
     assert tts_captured[-1] == "Tower, VLG1234, 4 miles final runway 17, request landing."
 
     # -------------------------------------------------------------------
-    # Step 3: controller issues landing clearance → TWR sub-agent
+    # Step 3: controller issues landing clearance -> TWR sub-agent
     # -------------------------------------------------------------------
     twr_call = respx.post("http://twr.test/agents/tower/run").mock(
         return_value=httpx.Response(
@@ -159,14 +159,14 @@ def test_arrival_full_pipeline_app_to_twr_to_gnd(wire_pipeline, client, db_sessi
         json={"session_id": "sess-1", "message": "VLG1234 cleared to land runway 17"},
     )
     assert resp.status_code == 200
-    # Forward does NOT advance the dependency in DB — it stays at APP
+    # Forward does NOT advance the dependency in DB -- it stays at APP
     db_session.expire_all()
     row = db_session.query(AircraftClearance).filter_by(aircraft_registration="VLG1234").one()
     assert row.dependency == "APP"
     assert twr_call.called
 
     # -------------------------------------------------------------------
-    # Step 4: mover emits rolling_out → vacating TTS
+    # Step 4: mover emits rolling_out -> vacating TTS
     # -------------------------------------------------------------------
     event_bridge._handle_event("VLG1234", {"event": "rolling_out"})
     assert tts_captured[-1] == "VLG1234 vacating runway 17."

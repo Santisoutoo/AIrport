@@ -11,7 +11,7 @@ operations the AIrport code uses:
   * pipeline().execute()
   * expire(key, ttl) (records expirations for assertions)
 
-It is intentionally tiny — no TTL eviction, no concurrency, no error injection
+It is intentionally tiny -- no TTL eviction, no concurrency, no error injection
 unless a test calls ``fake.fail_next("rpush")`` to make the next call raise.
 """
 
@@ -26,7 +26,7 @@ import pytest
 
 
 class _Pipeline:
-    """Mimic redis.client.Pipeline — records calls, executes on `execute()`."""
+    """Mimic redis.client.Pipeline -- records calls, executes on `execute()`."""
 
     def __init__(self, parent: "FakeRedis"):
         self._parent = parent

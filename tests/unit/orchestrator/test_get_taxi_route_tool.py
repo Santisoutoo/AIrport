@@ -34,7 +34,7 @@ def _stub_router(monkeypatch, *, destination, via, graph_tokens=None, raise_grap
         return destination
 
     def _fake_extract_taxiway_tokens(*, taxi_route_text, fallback_text, known_tokens):
-        # Echo the via list — known_tokens is asserted via call recording
+        # Echo the via list -- known_tokens is asserted via call recording
         _fake_extract_taxiway_tokens.last_call = {
             "taxi_route_text": taxi_route_text,
             "fallback_text": fallback_text,
@@ -116,7 +116,7 @@ def test_strips_destination_token_from_via_list(monkeypatch):
 
 
 def test_falls_back_to_last_via_as_destination_when_no_explicit_dest(monkeypatch):
-    """No destination from regex → last token in via is treated as destination."""
+    """No destination from regex -> last token in via is treated as destination."""
     _stub_router(monkeypatch, destination=None, via=["T", "E1"])
     compute = _stub_compute(monkeypatch, response={"success": True})
 

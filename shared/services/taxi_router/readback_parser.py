@@ -83,7 +83,7 @@ def extract_taxiway_tokens(
         return []
 
     normalised = _normalise(source)
-    # Split on commas, 'and', whitespace — we'll re-collapse phonetic runs.
+    # Split on commas, 'and', whitespace -- we'll re-collapse phonetic runs.
     raw = re.split(r"\s+|,|\band\b", normalised)
     raw = [t for t in raw if t]
 
