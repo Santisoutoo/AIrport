@@ -1,4 +1,4 @@
-# ✈️ AIrport — ATC Training Simulator
+# AIrport -- ATC Training Simulator
 
 <div align="center">
 
@@ -17,9 +17,9 @@
 
 ## Overview
 
-> **Speak into the mic.** The system transcribes your voice with Whisper-ATC, routes the message to the correct ATC agent (DEL/GND/TWR), generates an ICAO-compliant readback, and moves the aircraft in X-Plane 12 — voice to taxi clearance in under two seconds.
+> **Speak into the mic.** The system transcribes your voice with Whisper-ATC, routes the message to the correct ATC agent (DEL/GND/TWR), generates an ICAO-compliant readback, and moves the aircraft in X-Plane 12 -- voice to taxi clearance in under two seconds.
 
-A central Orchestrator tracks each aircraft's lifecycle through `DEL → GND → TWR` and dispatches incoming transmissions to the matching phase agent.
+A central Orchestrator tracks each aircraft's lifecycle through `DEL -> GND -> TWR` and dispatches incoming transmissions to the matching phase agent.
 
 ---
 
@@ -66,10 +66,10 @@ All three agents run on **Google Cloud Run** with Gemini and are stateless. The 
 
 ```
 Controller: "Iberia 5471, taxi to holding point runway 25 via Charlie."
-  → ASR (Whisper ATC)     transcribes audio + corrects callsign → IBE5471
-  → Orchestrator          routes to GND agent (current phase: GND)
-  → GND agent (Gemini)    validates route in taxi graph, drafts readback
-  → X-Plane plugin        drives aircraft along taxiway C, holds short of 25
+  -> ASR (Whisper ATC)     transcribes audio + corrects callsign -> IBE5471
+  -> Orchestrator          routes to GND agent (current phase: GND)
+  -> GND agent (Gemini)    validates route in taxi graph, drafts readback
+  -> X-Plane plugin        drives aircraft along taxiway C, holds short of 25
 Pilot (TTS): "Taxi to holding point runway 25 via Charlie, Iberia 5471."
 ```
 
@@ -94,7 +94,7 @@ Pilot (TTS): "Taxi to holding point runway 25 via Charlie, Iberia 5471."
 ## Prerequisites
 
 **Local:** Python 3.11, [uv](https://github.com/astral-sh/uv), Docker + Compose v2, X-Plane 12 with [XPPython3](https://xppython3.readthedocs.io/).
-**Cloud:** GCP project with Vertex AI enabled, service account JSON with `Vertex AI User`, three Cloud Run agents deployed (DEL / GND / TWR — see [agents/](agents/)).
+**Cloud:** GCP project with Vertex AI enabled, service account JSON with `Vertex AI User`, three Cloud Run agents deployed (DEL / GND / TWR -- see [agents/](agents/)).
 **External APIs:** flightplandatabase.com API key.
 
 ---
@@ -105,7 +105,7 @@ Pilot (TTS): "Taxi to holding point runway 25 via Charlie, Iberia 5471."
 git clone <repo-url> AIrport
 cd AIrport
 uv sync
-cp .env.example .env   # fill credentials — see docs/configuration.md
+cp .env.example .env   # fill credentials -- see docs/configuration.md
 docker compose up --build
 ```
 
@@ -129,7 +129,7 @@ The in-sim plugin is **not** installed automatically.
 
 ## Configuration
 
-Full env-var reference → [docs/configuration.md](docs/configuration.md).
+Full env-var reference -> [docs/configuration.md](docs/configuration.md).
 
 ---
 
@@ -137,11 +137,11 @@ Full env-var reference → [docs/configuration.md](docs/configuration.md).
 
 | Symptom | Fix |
 |---|---|
-| Port already in use (5432/6379/8087/8003–8008) | Stop the conflicting local service or remap in `docker-compose.yml` |
+| Port already in use (5432/6379/8087/8003-8008) | Stop the conflicting local service or remap in `docker-compose.yml` |
 | `403 / PERMISSION_DENIED` from Vertex | Grant `Vertex AI User`, re-mount the JSON at `GCP_SA_KEY_PATH` |
 | Plugin not showing in X-Plane | Reinstall XPPython3 and confirm files live in `<X-Plane 12>/Resources/plugins/PythonPlugins/` |
 
-Full table → [docs/troubleshooting.md](docs/troubleshooting.md).
+Full table -> [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ---
 
@@ -149,15 +149,15 @@ Full table → [docs/troubleshooting.md](docs/troubleshooting.md).
 
 | Component | Status |
 |---|---|
-| ASR (Whisper) | ✅ |
-| DEL / GND / TWR agents | ✅ |
-| Orchestrator | ✅ |
-| Controller HMI (flight strips, ground radar) | ✅ |
-| Flight Plan Service | ✅ |
-| Weather / ATIS Service | ✅ |
-| Arrival Simulator | ✅ |
-| TTS (X-Plane built-in) | ✅ |
-| X-Plane Plugin (spawn + GND routing) | ✅ |
+| ASR (Whisper) | [OK] |
+| DEL / GND / TWR agents | [OK] |
+| Orchestrator | [OK] |
+| Controller HMI (flight strips, ground radar) | [OK] |
+| Flight Plan Service | [OK] |
+| Weather / ATIS Service | [OK] |
+| Arrival Simulator | [OK] |
+| TTS (X-Plane built-in) | [OK] |
+| X-Plane Plugin (spawn + GND routing) | [OK] |
 
 ---
 
