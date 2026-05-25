@@ -4,22 +4,22 @@ Reference corpus for Word Error Rate (WER) evaluation of Automatic Speech Recogn
 
 ## Overview
 
-This dataset contains realistic ATC pilot–controller dialogues covering three operational phases of a departure sequence. Each file includes controller transmissions (`>`) and pilot readbacks (`<`), written in standard ICAO radiotelephony phraseology.
+This dataset contains realistic ATC pilot-controller dialogues covering three operational phases of a departure sequence. Each file includes controller transmissions (`>`) and pilot readbacks (`<`), written in standard ICAO radiotelephony phraseology.
 
 ## Structure
 
 ```
 atc-readback-corpus/
-├── del/corpus_wer_del.txt   # Delivery (clearance delivery)
-├── gnd/corpus_wer_gnd.txt   # Ground (taxi and pushback)
-└── twr/corpus_wer_twr.txt   # Tower (takeoff clearances)
++-- del/corpus_wer_del.txt   # Delivery (clearance delivery)
++-- gnd/corpus_wer_gnd.txt   # Ground (taxi and pushback)
++-- twr/corpus_wer_twr.txt   # Tower (takeoff clearances)
 ```
 
 | Phase | File | Exchanges |
 |-------|------|-----------|
-| DEL – Delivery | `del/corpus_wer_del.txt` | 100 |
-| GND – Ground   | `gnd/corpus_wer_gnd.txt` | 100 |
-| TWR – Tower    | `twr/corpus_wer_twr.txt` | 100 |
+| DEL - Delivery | `del/corpus_wer_del.txt` | 100 |
+| GND - Ground   | `gnd/corpus_wer_gnd.txt` | 100 |
+| TWR - Tower    | `twr/corpus_wer_twr.txt` | 100 |
 
 ## Format
 
