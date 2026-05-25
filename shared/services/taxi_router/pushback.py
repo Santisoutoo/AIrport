@@ -80,8 +80,8 @@ def plan_pushback_leg(
       issued alongside a taxi clearance.
     - When no waypoint is provided (pushback-only clearance), the target
       is synthesised by back-stepping from the stand in the direction
-      opposite to the final heading — the classic "back out and face
-      DIRECTION" maneuver — for PUSHBACK_MIN_DIST_M metres.
+      opposite to the final heading -- the classic "back out and face
+      DIRECTION" maneuver -- for PUSHBACK_MIN_DIST_M metres.
     """
     if direction_deg is None:
         final_hdg = (stand_heading_deg + 180.0) % 360.0

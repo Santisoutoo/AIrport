@@ -17,7 +17,7 @@ def test_haversine_zero():
 
 
 def test_haversine_one_degree_north():
-    # ~1° of latitude ≈ 111 km
+    # ~1° of latitude ~= 111 km
     d = haversine(0.0, 0.0, 1.0, 0.0)
     assert 110_000 < d < 112_000
 
@@ -48,7 +48,7 @@ def test_shortest_angle():
 
 def test_project_on_localizer_rwy17():
     """Spawn point for RWY 17 should be ~10 NM to the NORTH of the threshold."""
-    # LEST RWY 17 threshold + heading 169° → spawn lies on bearing 169+180 = 349° (north).
+    # LEST RWY 17 threshold + heading 169° -> spawn lies on bearing 169+180 = 349° (north).
     threshold_lat, threshold_lon = 42.91180046, -8.42033176
     spawn_lat, spawn_lon = project_on_localizer(threshold_lat, threshold_lon, 169.0, 10.0)
     dist = haversine(spawn_lat, spawn_lon, threshold_lat, threshold_lon)

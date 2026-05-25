@@ -147,7 +147,7 @@ async def test_handle_invalid_json_in_chat_treats_as_text_payload(
     await EventsSubscriber()._handle(msg)
 
     ev = _capture_events[0]
-    # The exception handler builds {"text": str(raw)} — exact behavior we pin here
+    # The exception handler builds {"text": str(raw)} -- exact behavior we pin here
     assert ev["extra"]["text"] == "plain text"
 
 

@@ -104,7 +104,7 @@ def test_direct_node_id_bypass(airport):
 
 
 def test_priority_node_id_direct_takes_precedence(airport):
-    # The documented order (runway → taxiway → stand → name, graph.py:283-342)
+    # The documented order (runway -> taxiway -> stand -> name, graph.py:283-342)
     # is preceded by an undocumented step 0 that captures bare node_ids first.
     # We verify this only when an expected runway designator happens to also
     # be a node_id, which is the situation that creates the collision.
@@ -134,7 +134,7 @@ def test_resolve_hint_disambiguates_named_nodes(airport):
         if str(n.get("name", "")).lower() == name.lower()
     ]
     assert len(candidates) >= 2, (
-        f"[{airport.icao}] expected ≥2 nodes named {name!r}"
+        f"[{airport.icao}] expected >=2 nodes named {name!r}"
     )
 
     # Take the two extreme candidates by latitude

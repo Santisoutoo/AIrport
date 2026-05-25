@@ -72,7 +72,7 @@ _xp_mod = _install_stub("XPPython3")
 _xp_attr = _install_stub("XPPython3.xp")
 _xp_mod.xp = _xp_attr  # so `from XPPython3 import xp` resolves
 
-# Common functions used across the plugin — return innocuous defaults
+# Common functions used across the plugin -- return innocuous defaults
 for _name in (
     "createProbe",
     "destroyProbe",

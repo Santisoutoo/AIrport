@@ -1,7 +1,7 @@
 """Unit tests for services/orchestrator_service/session_log.py.
 
 The module owns three per-session Redis lists (transcripts, agent_replies,
-events) with a 2-hour TTL. Every push is fire-and-forget — if Redis goes
+events) with a 2-hour TTL. Every push is fire-and-forget -- if Redis goes
 down, the function logs and returns without raising.
 
 Tests use FakeRedis (tests/fixtures/fake_redis.py) and rebind

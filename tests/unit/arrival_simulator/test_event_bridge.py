@@ -4,7 +4,7 @@ This bridge listens on Redis pub/sub for AircraftMover events and translates
 them into pilot radio calls (pushed to ``tts:queue``) so the controller
 hears the right phrase at the right time.
 
-We test ``_handle_event`` in isolation — the async pub/sub loop is just a
+We test ``_handle_event`` in isolation -- the async pub/sub loop is just a
 reconnect wrapper.
 """
 
@@ -85,7 +85,7 @@ def test_handle_request_landing_accepts_string_dme(captured_tts):
 
 
 def test_handle_invalid_dme_value_raises_or_skips_gracefully(captured_tts):
-    """Garbled DME must not crash the whole pub/sub loop — at worst, no TTS is pushed.
+    """Garbled DME must not crash the whole pub/sub loop -- at worst, no TTS is pushed.
 
     The current implementation (float('not-a-num')) raises, so we just verify
     that the surrounding loop's exception handler (in run_bridge) would catch it.
