@@ -27,38 +27,30 @@ Every variable defined in [`.env.example`](../.env.example), grouped by subsyste
 | `REDIS_PORT` | `6379` | Redis port |
 | `REDIS_DB` | `0` | Redis logical DB index |
 
-## InfluxDB
-
-| Variable | Default | Description |
-|---|---|---|
-| `INFLUXDB_URL` | `http://localhost:8087` | InfluxDB API URL |
-| `INFLUXDB_ORG` | `airport` | InfluxDB organisation |
-| `INFLUXDB_BUCKET` | `airport` | InfluxDB bucket |
-| `INFLUXDB_TOKEN` | — | InfluxDB API token |
 
 ## Vertex AI / Gemini
 
 | Variable | Default | Description |
 |---|---|---|
-| `VERTEX_PROJECT` | — | GCP project ID |
+| `VERTEX_PROJECT` | -- | GCP project ID |
 | `VERTEX_LOCATION` | `global` | Vertex AI region |
 | `GEMINI_MODEL` | `gemini-3-flash-preview` | Gemini model used by agents |
 | `GCP_SA_KEY_PATH` | `./secrets/sa-key.json` | Path to service account JSON |
-| `GCLOUD_CREDENTIALS_DIR` | — | Optional directory for additional GCP credentials |
+| `GCLOUD_CREDENTIALS_DIR` | -- | Optional directory for additional GCP credentials |
 
 ## Cloud Run agents
 
 | Variable | Default | Description |
 |---|---|---|
-| `DEL_AGENT_URL` | — | Cloud Run URL for Clearance Delivery agent |
-| `GND_AGENT_URL` | — | Cloud Run URL for Ground Control agent |
-| `TWR_AGENT_URL` | — | Cloud Run URL for Tower agent |
+| `DEL_AGENT_URL` | -- | Cloud Run URL for Clearance Delivery agent |
+| `GND_AGENT_URL` | -- | Cloud Run URL for Ground Control agent |
+| `TWR_AGENT_URL` | -- | Cloud Run URL for Tower agent |
 
 ## Flight plan
 
 | Variable | Default | Description |
 |---|---|---|
-| `FLIGHT_PLAN_GENERATOR_KEY` | — | flightplandatabase.com API key |
+| `FLIGHT_PLAN_GENERATOR_KEY` | -- | flightplandatabase.com API key |
 
 ## ASR
 
