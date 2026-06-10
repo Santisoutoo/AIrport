@@ -218,3 +218,10 @@ __marimo__/
 *.DS_Store
 cloudbuild.yaml
 *.yaml
+
+# --- CI test fixture: commit the LEBL taxi-router graph data ---
+# Overrides *.dat / *.json above ONLY for the LEBL fixture used by the
+# tests/taxi_router suite. Generated via `python -m plugins.GND.data_parser LEBL`.
+!data/airport_data/LEBL/
+!data/airport_data/LEBL/LEBL.dat
+!data/airport_data/LEBL/LEBL_graph.json

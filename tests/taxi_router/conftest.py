@@ -2,11 +2,15 @@
 
 Provides:
   - `airport`: parametrised fixture yielding one `AirportFixture` per ICAO.
-    Tests using it run once per airport (currently LEST and LEIB).
-  - `lest_graph`, `leib_graph`: airport-specific fixtures used by tests that
-    need exact counts or behaviours only present in one airport.
-  - `lest_raw_data`, `leib_raw_data`, `lest_json_path`, `leib_json_path`:
-    auxiliary fixtures for tests that read the JSON directly as an oracle.
+    Tests using it run once per airport (currently LEBL).
+  - `lebl_graph`: airport-specific fixture used by tests that need exact
+    behaviours of a single airport.
+  - `lebl_json_path`: auxiliary fixture for the test that builds straight
+    from the JSON file path.
+
+The graph data (`data/airport_data/LEBL/LEBL_graph.json`) is committed as a
+CI test fixture; it is generated from `LEBL.dat` via
+`python -m plugins.GND.data_parser LEBL`.
 """
 import json
 from dataclasses import dataclass
@@ -18,8 +22,7 @@ from plugins.GND.graph import AirportGraph
 
 BASE = Path(__file__).resolve().parents[2] / "data" / "airport_data"
 
-LEST_JSON = BASE / "LEST" / "LEST_graph.json"
-LEIB_JSON = BASE / "LEIB" / "LEIB_graph.json"
+LEBL_JSON = BASE / "LEBL" / "LEBL_graph.json"
 
 
 @dataclass(frozen=True)
@@ -27,13 +30,13 @@ class AirportFixture:
     """Metadata + loaded graph for a single airport used in parametrised tests.
 
     Attributes:
-        icao: ICAO designator (e.g. "LEST").
+        icao: ICAO designator (e.g. "LEBL").
         graph: a built AirportGraph instance.
         raw_data: the parsed JSON dict the graph was built from.
         expected_taxiway_subset: a subset of taxiway designators that must be
             present in `_nodes_by_taxiway`.
         expected_runway_ids: set of runway-end designators that must be in
-            `_runways_by_id` (e.g. {"17","35"}).
+            `_runways_by_id` (e.g. {"02","06L"}).
         non_numeric_stand_substr: a stand_id substring that is *not* a node_id
             and therefore exercises step 3 of resolve_point. Used by the stand
             resolution test.
@@ -60,61 +63,29 @@ def _load_airport(icao: str, json_path: Path, **meta) -> AirportFixture:
     )
 
 
-_LEST_META = dict(
+_LEBL_META = dict(
     expected_taxiway_subset={
-        "D1", "D2", "D3", "D4", "E1", "E2", "E3", "E4",
-        "R", "T", "Y", "Z",
+        "B", "D", "E", "J", "K", "L", "M", "N", "Q", "S",
     },
-    expected_runway_ids={"17", "35"},
-    non_numeric_stand_substr="Mil 5",
-    sample_repeated_name="D3_stop",
-)
-_LEIB_META = dict(
-    expected_taxiway_subset={
-        "A", "B", "C", "D", "E", "F", "G", "H1", "H2", "H3", "H4", "I", "K",
-    },
-    expected_runway_ids={"06", "24"},
-    non_numeric_stand_substr="19A",
-    sample_repeated_name=None,  # LEIB nodes have no useful repeated names
+    expected_runway_ids={"02", "06L"},
+    non_numeric_stand_substr="157A",
+    sample_repeated_name="_stop",
 )
 
 
-@pytest.fixture(scope="session", params=["LEST", "LEIB"])
+@pytest.fixture(scope="session", params=["LEBL"])
 def airport(request):
     """Parametrised airport fixture: runs each consuming test once per ICAO."""
-    icao = request.param
-    if icao == "LEST":
-        return _load_airport("LEST", LEST_JSON, **_LEST_META)
-    return _load_airport("LEIB", LEIB_JSON, **_LEIB_META)
+    return _load_airport("LEBL", LEBL_JSON, **_LEBL_META)
 
 
 # ---- Airport-specific fixtures (single-airport tests) ----------------------
 
 @pytest.fixture(scope="session")
-def lest_graph():
-    return AirportGraph(str(LEST_JSON))
+def lebl_graph():
+    return AirportGraph(str(LEBL_JSON))
 
 
 @pytest.fixture(scope="session")
-def leib_graph():
-    return AirportGraph(str(LEIB_JSON))
-
-
-@pytest.fixture(scope="session")
-def lest_raw_data():
-    return json.loads(LEST_JSON.read_text(encoding="utf-8"))
-
-
-@pytest.fixture(scope="session")
-def leib_raw_data():
-    return json.loads(LEIB_JSON.read_text(encoding="utf-8"))
-
-
-@pytest.fixture(scope="session")
-def lest_json_path():
-    return str(LEST_JSON)
-
-
-@pytest.fixture(scope="session")
-def leib_json_path():
-    return str(LEIB_JSON)
+def lebl_json_path():
+    return str(LEBL_JSON)

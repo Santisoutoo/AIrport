@@ -1,9 +1,8 @@
 """End-to-end taxi-routing tests (memoria 5.3.3).
 
-Validates find_route_via and find_route_from_position over the real LEST and
-LEIB graphs. The two airports differ substantially in size (96 vs 188 nodes)
-and complexity, which exercises the routing engine on graphs of clearly
-different scale.
+Validates find_route_via and find_route_from_position over the real LEBL
+graph (815 nodes, 234 stands, 6 runway ends), which exercises the routing
+engine on a large, complex airport layout.
 """
 import math
 
@@ -196,14 +195,14 @@ def test_heuristic_is_admissible(airport):
     assert checked >= 1, f"[{airport.icao}] no admissibility check ran"
 
 
-# ---- LEST-specific route documenting the via backtracking behaviour --------
+# ---- Route documenting the via backtracking behaviour ----------------------
 
-def test_route_with_via_passes_through_taxiway_node(lest_graph):
-    r = lest_graph.find_route_via("11", "35", via=["E1"])
+def test_route_with_via_passes_through_taxiway_node(lebl_graph):
+    r = lebl_graph.find_route_via("Q", "06R", via=["S"])
     assert r["success"] is True
-    e1_nodes = set(lest_graph._nodes_by_taxiway["E1"])
-    assert any(n in e1_nodes for n in r["path_node_ids"]), (
-        f"path did not pass through any E1 node ({sorted(e1_nodes)})"
+    s_nodes = set(lebl_graph._nodes_by_taxiway["S"])
+    assert any(n in s_nodes for n in r["path_node_ids"]), (
+        f"path did not pass through any S node ({sorted(s_nodes)})"
     )
 
 
@@ -215,7 +214,7 @@ def test_route_with_via_passes_through_taxiway_node(lest_graph):
     "does not force the missing waypoint. Documented for memoria 5.3.3 as a "
     "deliberate design decision to be discussed."
 )
-def test_via_with_unknown_taxiway_raises_or_warns(lest_graph):
-    r = lest_graph.find_route_via("11", "35", via=["ZZ99"])
+def test_via_with_unknown_taxiway_raises_or_warns(lebl_graph):
+    r = lebl_graph.find_route_via("Q", "06R", via=["ZZ99"])
     assert r["success"] is False
     assert "ZZ99" in r.get("error", "")
