@@ -218,3 +218,5 @@ __marimo__/
 *.DS_Store
 cloudbuild.yaml
 *.yaml
+# Added by code-review-graph
+.code-review-graph/
