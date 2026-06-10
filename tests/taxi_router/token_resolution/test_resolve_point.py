@@ -121,7 +121,7 @@ def test_priority_node_id_direct_takes_precedence(airport):
     assert result[0] == rwy  # step 0 wins, returns the bare node_id
 
 
-# ---- Hint-based disambiguation (LEST-only: LEIB has no useful repeats) ----
+# ---- Hint-based disambiguation (skips when no repeated name is configured) -
 
 def test_resolve_hint_disambiguates_named_nodes(airport):
     if airport.sample_repeated_name is None:
@@ -158,18 +158,18 @@ def test_resolve_hint_disambiguates_named_nodes(airport):
     assert near_north[0] == north_id
 
 
-# ---- Named-node resolution (LEST-only: LEIB names are all "node_both") ----
+# ---- Named-node resolution (single-airport: uses a distinctive LEBL name) --
 
-def test_resolve_named_node_exact(lest_graph):
-    result = lest_graph.resolve_point("D3_stop")
+def test_resolve_named_node_exact(lebl_graph):
+    result = lebl_graph.resolve_point("_split")
     assert result is not None
     node_id, _, _ = result
-    name = lest_graph.graph.nodes[node_id].get("name", "").lower()
-    assert name == "d3_stop"
+    name = lebl_graph.graph.nodes[node_id].get("name", "").lower()
+    assert name == "_split"
 
 
-def test_resolve_named_node_case_insensitive(lest_graph):
-    a = lest_graph.resolve_point("D3_stop")
-    b = lest_graph.resolve_point("d3_stop")
+def test_resolve_named_node_case_insensitive(lebl_graph):
+    a = lebl_graph.resolve_point("_split")
+    b = lebl_graph.resolve_point("_SPLIT")
     assert a is not None and b is not None
     assert a[0] == b[0]
