@@ -1,0 +1,48 @@
+name: Publish Wiki
+
+# Manual only. Publishes the openwiki/ docs to the repo's GitHub Wiki
+# (the separate <repo>.wiki.git). The wiki must already be ENABLED and
+# INITIALIZED (create the first page once in the web UI) or the push fails
+# with "Repository not found".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # lets GITHUB_TOKEN push to the wiki repo
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build wiki pages from openwiki/
+        run: python scripts/build_wiki.py --src openwiki --out wiki --repo "${GITHUB_REPOSITORY}" --ref "${{ github.event.repository.default_branch }}"
+
+      - name: Push to GitHub Wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          tmp="$(mktemp -d)"
+          if ! git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" "$tmp"; then
+            echo "::error::Could not clone the wiki repo. Enable Wikis in Settings and create the first page once, then re-run."
+            exit 1
+          fi
+          # Replace generated pages (keep any hand-made pages that we don't own).
+          rm -f "$tmp"/*.md "$tmp"/_Sidebar.md
+          cp wiki/*.md "$tmp"/
+          cd "$tmp"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No wiki changes to publish."
+            exit 0
+          fi
+          git commit -m "docs: sync wiki from openwiki/"
+          git push
