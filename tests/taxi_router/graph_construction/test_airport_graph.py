@@ -1,9 +1,9 @@
 """Tests for AirportGraph construction (memoria 5.3.1).
 
-Most tests are parametrised over the two airports configured in conftest.py
-(LEST and LEIB) so that the structural invariants are verified on graphs of
-very different sizes. Airport-specific tests (the xfail documenting the
-`find_nearest_node` defect) stay attached to the single `lest_graph` fixture.
+Most tests are parametrised over the airport(s) configured in conftest.py
+(currently LEBL) so that the structural invariants are verified on a real,
+large graph. Airport-specific tests (the xfail documenting the
+`find_nearest_node` defect) stay attached to the single `lebl_graph` fixture.
 """
 import math
 
@@ -15,7 +15,7 @@ from plugins.GND.graph import AirportGraph
 
 # ---- Construction entry points ---------------------------------------------
 
-@pytest.mark.parametrize("json_path_fixture", ["lest_json_path", "leib_json_path"])
+@pytest.mark.parametrize("json_path_fixture", ["lebl_json_path"])
 def test_build_from_json_file_path(request, json_path_fixture):
     path = request.getfixturevalue(json_path_fixture)
     g = AirportGraph(path)
@@ -147,7 +147,7 @@ def test_find_nearest_node_restrict_to_main_cc(airport):
     assert found in main_cc
 
 
-# ---- Airport-specific: documented defect (LEST only is enough) -------------
+# ---- Airport-specific: documented defect (single airport is enough) --------
 
 @pytest.mark.xfail(
     reason="graph.py:174 has a precedence bug: "
@@ -155,7 +155,7 @@ def test_find_nearest_node_restrict_to_main_cc(airport):
     "returns a nested tuple (None, (None, None)) when no match. "
     "Bug documented for memoria 5.3.3."
 )
-def test_find_nearest_node_returns_clean_none_when_out_of_range(lest_graph):
-    found, dist = lest_graph.find_nearest_node(0.0, 0.0, max_distance=1000.0)
+def test_find_nearest_node_returns_clean_none_when_out_of_range(lebl_graph):
+    found, dist = lebl_graph.find_nearest_node(0.0, 0.0, max_distance=1000.0)
     assert found is None
     assert dist is None
