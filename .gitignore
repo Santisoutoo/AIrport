@@ -1,6 +1,9 @@
 # Repomix output
 repomix-output.xml
 
+# Generated GitHub Wiki build (source of truth is openwiki/; rebuilt by scripts/build_wiki.py)
+/wiki/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -215,6 +218,7 @@ __marimo__/
 .env
 *.dat
 *.json
+!openwiki/.last-update.json
 *.iso
 
 # custom
