@@ -76,6 +76,8 @@ The pilot readback corpus used to fine-tune the readback model is publicly avail
 }
 ```
 
+The same agent-validation dataset is also available in audio form. The audio version is not publicly hosted -- to request access, contact [Santiago Souto Ortega](mailto:soutoortegasantiago@gmail.com).
+
 ---
 
 ## Overview
@@ -193,18 +195,6 @@ The in-sim plugin is **not** installed automatically.
 ## Configuration
 
 Full env-var reference -> [docs/configuration.md](docs/configuration.md).
-
----
-
-## Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| Port already in use (5432/6379/8087/8003-8008) | Stop the conflicting local service or remap in `docker-compose.yml` |
-| `403 / PERMISSION_DENIED` from Vertex | Grant `Vertex AI User`, re-mount the JSON at `GCP_SA_KEY_PATH` |
-| Plugin not showing in X-Plane | Reinstall XPPython3 and confirm files live in `<X-Plane 12>/Resources/plugins/PythonPlugins/` |
-
-Full table -> [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ---
 

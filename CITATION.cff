@@ -18,4 +18,18 @@ keywords:
   - aviation
   - simulation
   - virtual assistants
+preferred-citation:
+  type: article
+  title: "Pseudopilot Automation via LLM-Based Multi-Agent Systems for ATC Training in X-Plane 12"
+  authors:
+    - family-names: "Souto Ortega"
+      given-names: "Santiago"
+      orcid: "https://orcid.org/0009-0004-5648-040X"
+    - family-names: "González López"
+      given-names: "Isaac"
+      orcid: "https://orcid.org/0000-0003-0983-1719"
+  journal: "Aerospace"
+  publisher:
+    name: "MDPI"
+  year: 2026
   
