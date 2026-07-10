@@ -6,3 +6,4 @@ python-dotenv
 faster-whisper
 transformers
 accelerate
+rapidfuzz

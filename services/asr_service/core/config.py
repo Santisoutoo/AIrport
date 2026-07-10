@@ -20,6 +20,21 @@ AVAILABLE_MODELS: list[dict] = [
         "label": "Whisper Large-v3 — ATC fine-tuned (transformers)",
         "backend": "transformers",
     },
+    {
+        "id": "jlvdoorn/whisper-tiny-atco2-asr",
+        "label": "Whisper Tiny — ATC fine-tuned (jlvdoorn)",
+        "backend": "transformers",
+    },
+    {
+        "id": "jlvdoorn/whisper-medium-atco2-asr",
+        "label": "Whisper Medium — ATC fine-tuned (jlvdoorn)",
+        "backend": "transformers",
+    },
+    {
+        "id": "jlvdoorn/whisper-large-v3-atco2-asr",
+        "label": "Whisper Large-v3 — ATC fine-tuned (jlvdoorn)",
+        "backend": "transformers",
+    },
 ]
 
 _MODEL_BACKENDS: dict[str, str] = {
