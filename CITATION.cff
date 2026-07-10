@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Pseudopilot Automation via LLM-Based Multi-Agent Systems for ATC Training in X-Plane 12"
+authors:
+  - family-names: "Souto Ortega"
+    given-names: "Santiago"
+    orcid: "https://orcid.org/0009-0004-5648-040X"
+  - family-names: "González López"
+    given-names: "Isaac"
+    orcid: "https://orcid.org/0000-0003-0983-1719"
+repository-code: "https://github.com/Santisoutoo/AIrport"
+url: "https://taxitolearn.com/airport.html"
+keywords:
+  - air traffic control
+  - artificial intelligence
+  - ATC training
+  - aviation
+  - simulation
+  - virtual assistants
+  
