@@ -1,4 +1,4 @@
-# AIrport -- ATC Training Simulator
+# Pseudopilot Automation via LLM-Based Multi-Agent Systems for ATC Training in X-Plane 12
 
 <div align="center">
 
@@ -8,10 +8,73 @@
 ![Whisper](https://img.shields.io/badge/ASR-Whisper%20ATC-yellow.svg)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)
 ![uv](https://img.shields.io/badge/pkg-uv-black.svg)
+[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-pilot--readback--corpus-yellow.svg)](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus)
+[![License](https://img.shields.io/badge/license-Free%20Non--Commercial-lightgrey.svg)](LICENSE)
+
+**[Santiago Souto Ortega](https://orcid.org/0009-0004-5648-040X)** · **[Isaac González López](https://orcid.org/0000-0003-0983-1719)**
 
 *AI-powered Air Traffic Control training platform. Speak to AI pilots, receive realistic clearances, and watch aircraft move in X-Plane 12.*
 
 </div>
+
+---
+
+## 🎬 Demo
+
+<div align="center">
+
+[![AIrport demo](https://img.youtube.com/vi/VGUzkfsCwfg/maxresdefault.jpg)](https://www.youtube.com/watch?v=VGUzkfsCwfg)
+
+*Click the thumbnail to watch the full system demo on YouTube.*
+
+</div>
+
+---
+
+## Abstract
+
+The training of air traffic controllers requires practice in simulators that reproduce situations as closely as possible to those encountered in a real control tower. In these exercises, the trainee issues radio instructions to the aircraft present at the airport and must receive coherent and realistic responses, just as would occur in real operations.
+
+Currently, for this type of training to be possible, it is necessary to rely on a team of people known as pseudopilots, whose task is to simulate the crews of each aircraft. These operators respond to the controller's communications and manage the movement of aircraft within the simulated environment. However, this training model is costly, depends on the availability of qualified personnel, and limits the number of sessions that can be carried out.
+
+This work presents AIrport, a system that replaces pseudopilots with agents capable of behaving like real pilots within a simulated airport. In the system, the aircraft are represented by agents that interpret the received instructions, respond over the radio using natural language, and manage aircraft movements following real operational procedures.
+
+The controller interacts with the system through voice and can observe the result of their instructions in a three-dimensional representation of the airport. In this way, a single person can carry out realistic exercises with multiple aircraft simultaneously, without the need to mobilize a support team. This reduces training costs and enables practice with greater frequency, flexibility, and scalability.
+
+**Keywords:** *air traffic control · artificial intelligence · ATC training · aviation · simulation · virtual assistants*
+
+---
+
+## Citation
+
+If you use this work in your research, please cite the paper:
+
+<!-- TODO: update volume/number/pages/DOI upon acceptance -->
+```bibtex
+@article{souto2026airport,
+  title     = {Pseudopilot Automation via {LLM}-Based Multi-Agent Systems for {ATC} Training in {X-Plane} 12},
+  author    = {Souto Ortega, Santiago and Gonz{\'a}lez L{\'o}pez, Isaac},
+  journal   = {Aerospace},
+  publisher = {MDPI},
+  year      = {2026},
+  volume    = {TODO},
+  number    = {TODO},
+  pages     = {TODO},
+  doi       = {TODO}
+}
+```
+
+The pilot readback corpus used to fine-tune the readback model is publicly available on [Hugging Face](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus):
+
+```bibtex
+@misc{SoutoReadbackCorpus2024,
+  author       = {Souto Ortega, Santiago},
+  title        = {Pilot Readback Corpus},
+  year         = {2024},
+  publisher    = {Hugging Face},
+  howpublished = {\url{https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus}}
+}
+```
 
 ---
 
@@ -102,7 +165,7 @@ Pilot (TTS): "Taxi to holding point runway 25 via Charlie, Iberia 5471."
 ## Installation
 
 ```bash
-git clone <repo-url> AIrport
+git clone https://github.com/Santisoutoo/AIrport.git
 cd AIrport
 uv sync
 cp .env.example .env   # fill credentials -- see docs/configuration.md
@@ -145,26 +208,10 @@ Full table -> [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ---
 
-## Project Status
-
-| Component | Status |
-|---|---|
-| ASR (Whisper) | [OK] |
-| DEL / GND / TWR agents | [OK] |
-| Orchestrator | [OK] |
-| Controller HMI (flight strips, ground radar) | [OK] |
-| Flight Plan Service | [OK] |
-| Weather / ATIS Service | [OK] |
-| Arrival Simulator | [OK] |
-| TTS (X-Plane built-in) | [OK] |
-| X-Plane Plugin (spawn + GND routing) | [OK] |
-
----
-
 <div align="center">
 
-[License](LICENSE) · [Contributing](CONTRIBUTING.md) · [taxitolearn.com/airport.html](https://taxitolearn.com/airport.html)
+[License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Dataset (Hugging Face)](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus) · [taxitolearn.com/airport.html](https://taxitolearn.com/airport.html)
 
-*Part of an academic research initiative.*
+*This repository accompanies the paper "Pseudopilot Automation via LLM-Based Multi-Agent Systems for ATC Training in X-Plane 12".*
 
 </div>
