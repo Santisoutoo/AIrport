@@ -1,8 +1,10 @@
-# AIrport — agent-facing documentation (openwiki)
+# AIrport Wiki
 
-> This is **not** human prose documentation (that lives under [`docs/`](../docs)). This is a
-> structured reference for an LLM/coding-agent working in this repo: short sections, tables,
-> and cross-links. Start here, then follow the links below to the page you need.
+> This wiki serves two audiences. **Users**: start with the [Guides](#guides) —
+> installation, configuration, troubleshooting, and a quickstart. **Developers and coding
+> agents**: the [reference pages](#pages) are structured for finding repo context fast —
+> short sections, tables, and cross-links. Prose docs under [`docs/`](../docs/) now point
+> here; the wiki guides are the maintained versions.
 
 ## What is AIrport
 
@@ -14,6 +16,23 @@ which controller phase (Delivery / Ground / Tower) the message belongs to, a **G
 **X-Plane plugin** actually moves/spawns the aircraft in the simulator and speaks the readback
 back with X-Plane's built-in TTS. Backend: Python 3.11, `uv`-managed, FastAPI microservices,
 Docker Compose. See [`README.md`](../README.md) for the human-facing project overview.
+
+## Guides
+
+Human-facing, hand-maintained pages (source: [`guides/`](guides/) — not auto-generated; see
+[Wiki Maintenance](guides/wiki-maintenance.md)).
+
+| Guide | Covers |
+|---|---|
+| [Installation](guides/installation.md) | Zero → running stack: prerequisites, `.env`, `docker compose up`, verifying every service |
+| [Cloud Agents Deployment](guides/cloud-agents-deployment.md) | Deploying the DEL/GND/TWR pilot agents to Google Cloud Run |
+| [X-Plane Plugin Setup](guides/xplane-plugin-setup.md) | Installing XPPython3 + the AIrport plugin into X-Plane 12 |
+| [Configuration](guides/configuration.md) | Complete environment-variable reference, host vs container ports |
+| [Quickstart](guides/quickstart.md) | Run your first ATC session end to end |
+| [Troubleshooting](guides/troubleshooting.md) | Symptom → cause → fix, organized by area |
+| [FAQ](guides/faq.md) | GPU vs CPU ASR, degraded modes, airports, models & datasets, license |
+| [System Overview](guides/system-overview.md) | Every module, what it does, and how they relate |
+| [Wiki Maintenance](guides/wiki-maintenance.md) | How this wiki is generated and published — never edit it by hand |
 
 ## Architecture at a glance
 

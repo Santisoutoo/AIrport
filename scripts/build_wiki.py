@@ -35,7 +35,20 @@ EXPLICIT_PAGE_NAMES = {
     "shared.md": "Shared",
     "xplane.md": "X-Plane",
     "data-and-testing.md": "Data-and-Testing",
+    "guides/faq.md": "FAQ",
+    "guides/xplane-plugin-setup.md": "X-Plane-Plugin-Setup",
 }
+
+# Sidebar layout: (section title, ordered page names). Service-* pages are
+# appended to "Modules"; any page not covered lands at the end of "Internals".
+SIDEBAR_SECTIONS = [
+    ("Getting Started", ["Home", "Quickstart", "Installation",
+                         "Cloud-Agents-Deployment", "X-Plane-Plugin-Setup",
+                         "Configuration"]),
+    ("Help", ["Troubleshooting", "FAQ"]),
+    ("Modules", ["System-Overview", "Agents", "Shared", "X-Plane"]),
+    ("Internals", ["Architecture", "Data-and-Testing", "Wiki-Maintenance"]),
+]
 
 
 def page_name_for(rel: str) -> str:
@@ -106,16 +119,22 @@ def transform(text: str, file_rel: str, src: str, pages: dict[str, str],
 
 
 def build_sidebar(pages: dict[str, str]) -> str:
-    root_order = ["Home", "Architecture", "Agents", "Shared", "X-Plane", "Data-and-Testing"]
     names = set(pages.values())
     services = sorted(n for n in names if n.startswith("Service-"))
-    lines = ["### AIrport Wiki", ""]
-    for n in root_order:
-        if n in names:
-            lines.append(f"- [[{n}]]")
-    if services:
-        lines += ["", "**Services**"]
-        lines += [f"- [[{n}]]" for n in services]
+    listed = {n for _, section_names in SIDEBAR_SECTIONS for n in section_names}
+    leftovers = sorted(names - listed - set(services))
+
+    lines = ["### AIrport Wiki"]
+    for title, section_names in SIDEBAR_SECTIONS:
+        entries = [n for n in section_names if n in names]
+        if title == "Modules":
+            entries += services
+        if title == "Internals":
+            entries += leftovers
+        if not entries:
+            continue
+        lines += ["", f"**{title}**"]
+        lines += [f"- [[{n}]]" for n in entries]
     lines.append("")
     return "\n".join(lines)
 

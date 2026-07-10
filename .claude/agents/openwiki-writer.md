@@ -54,6 +54,10 @@ say so plainly rather than guessing. Reference source paths using repo-relative 
 
 ## Output structure — `openwiki/`
 
+**Hands off `openwiki/guides/`** — the user-facing guides (installation, configuration,
+troubleshooting, FAQ, quickstart, system overview, wiki maintenance) are human-authored.
+Never create, edit, or delete anything under `openwiki/guides/`.
+
 Create/refresh these pages (adapt to what actually exists; don't fabricate pages for empty dirs):
 
 - `index.md` — entry point. One-paragraph what-is-AIrport, a compact architecture summary
