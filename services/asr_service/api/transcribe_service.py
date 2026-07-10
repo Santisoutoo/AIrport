@@ -2,15 +2,13 @@ import asyncio
 import logging
 import os
 import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from fastapi import HTTPException
 
 from core.config import get_settings, get_model_backend
-from core.phonetics import normalize_phonetic
-from core.corrections import correct_callsigns
-from prompts.whisper_context import ATC_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +55,15 @@ def load_model() -> Any:
 
 # ---------------------------------------------------------------------------
 # Sync helpers (run in thread pool so the event loop stays free)
+#
+# Each returns (raw_text, duration_s) where duration_s is ONLY the model
+# inference time — measured with time.perf_counter() around the model call,
+# excluding tempfile I/O and postprocessing (done by the caller).
 # ---------------------------------------------------------------------------
 
-def _transcribe_faster_whisper(audio_bytes: bytes, suffix: str, use_initial_prompt: bool = True) -> str:
+def _transcribe_faster_whisper(
+    audio_bytes: bytes, suffix: str, initial_prompt: str | None,
+) -> tuple[str, float]:
     cfg = get_settings()
     model = load_model()
 
@@ -68,23 +72,27 @@ def _transcribe_faster_whisper(audio_bytes: bytes, suffix: str, use_initial_prom
         tmp_path = f.name
 
     try:
+        t0 = time.perf_counter()
         segments, _ = model.transcribe(
             tmp_path,
             language=cfg.whisper_language,
             beam_size=cfg.whisper_beam_size,
-            initial_prompt=ATC_PROMPT if use_initial_prompt else None,
+            initial_prompt=initial_prompt,
             condition_on_previous_text=False,
             hallucination_silence_threshold=2.0,
             no_speech_threshold=0.6,
         )
-        text = " ".join(s.text for s in segments).strip()
+        text = " ".join(s.text for s in segments).strip()  # consumes the generator -> inference happens here
+        duration_s = time.perf_counter() - t0
     finally:
         os.unlink(tmp_path)
 
-    return text
+    return text, duration_s
 
 
-def _transcribe_transformers(audio_bytes: bytes, suffix: str) -> str:
+def _transcribe_transformers(
+    audio_bytes: bytes, suffix: str, initial_prompt: str | None,
+) -> tuple[str, float]:
     cfg = get_settings()
     pipe = load_model()
 
@@ -92,48 +100,69 @@ def _transcribe_transformers(audio_bytes: bytes, suffix: str) -> str:
         f.write(audio_bytes)
         tmp_path = f.name
 
+    base_kwargs: dict = {"language": cfg.whisper_language}
+    prompt_ids = None
+    if initial_prompt:
+        try:
+            prompt_ids = pipe.tokenizer.get_prompt_ids(initial_prompt, return_tensors="pt")
+        except Exception as exc:
+            logger.warning(
+                "[ASR] could not build prompt_ids for this transformers version (%s) — "
+                "transcribing without initial prompt.", exc,
+            )
+
     try:
-        result = pipe(
-            tmp_path,
-            generate_kwargs={"language": cfg.whisper_language},
-        )
+        try:
+            kwargs = dict(base_kwargs)
+            if prompt_ids is not None:
+                kwargs["prompt_ids"] = prompt_ids
+            t0 = time.perf_counter()
+            result = pipe(tmp_path, generate_kwargs=kwargs)
+            duration_s = time.perf_counter() - t0
+        except Exception as exc:
+            if prompt_ids is None:
+                raise
+            logger.warning(
+                "[ASR] transcription with initial_prompt failed (%s) — retrying without it.", exc,
+            )
+            t0 = time.perf_counter()
+            result = pipe(tmp_path, generate_kwargs=base_kwargs)
+            duration_s = time.perf_counter() - t0
         text = result.get("text", "").strip()
     finally:
         os.unlink(tmp_path)
 
-    return text
+    return text, duration_s
 
 
 def _transcribe_sync(
     audio_bytes: bytes,
     suffix: str,
-    apply_corrections: bool = True,
-    use_initial_prompt: bool = True,
-) -> str:
+    initial_prompt: str | None,
+) -> tuple[str, float]:
     cfg = get_settings()
     backend = get_model_backend(cfg.hf_model)
 
     if backend == "faster-whisper":
-        raw = _transcribe_faster_whisper(audio_bytes, suffix, use_initial_prompt=use_initial_prompt)
-    else:
-        raw = _transcribe_transformers(audio_bytes, suffix)
-
-    if apply_corrections:
-        return correct_callsigns(normalize_phonetic(raw))
-    return raw
+        return _transcribe_faster_whisper(audio_bytes, suffix, initial_prompt)
+    return _transcribe_transformers(audio_bytes, suffix, initial_prompt)
 
 
 # ---------------------------------------------------------------------------
 # Public async entry point
 # ---------------------------------------------------------------------------
 
-async def transcribe(
+async def transcribe_raw(
     audio_bytes: bytes,
     filename: str,
-    apply_corrections: bool = True,
-    use_initial_prompt: bool = True,
-) -> str:
-    """Async wrapper — offloads CPU-bound inference to thread pool."""
+    initial_prompt: str | None = None,
+) -> tuple[str, float]:
+    """Async wrapper — offloads CPU-bound inference to thread pool.
+
+    Returns (raw_text, duration_s). Postprocessing (number/callsign/SID
+    correction) is applied by the caller (see api/routes.py + core/postprocess.py),
+    NOT here, so duration_s reflects model inference only.
+    """
     suffix = "." + filename.rsplit(".", 1)[-1] if "." in filename else ".webm"
     try:
         loop = asyncio.get_event_loop()
@@ -142,8 +171,7 @@ async def transcribe(
             _transcribe_sync,
             audio_bytes,
             suffix,
-            apply_corrections,
-            use_initial_prompt,
+            initial_prompt,
         )
     except HTTPException:
         raise
