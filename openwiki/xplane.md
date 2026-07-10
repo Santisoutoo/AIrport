@@ -4,6 +4,18 @@ Two parts: the **in-sim plugin** ([`xplane_plugin/`](../xplane_plugin/)) that ru
 12 via XPPython3, and the **deployable plugin files** ([`plugins/`](../plugins/)) that you copy
 into the simulator. See [architecture](architecture.md) for where this sits in the pipeline.
 
+## What it does
+
+Everything that happens **inside the simulator**: spawning the aircraft objects, taxiing
+them along the routes the controller cleared, and speaking each pilot readback with
+X-Plane's built-in TTS. Install it once ([X-Plane Plugin Setup](guides/xplane-plugin-setup.md))
+and start the backend before flying.
+
+| Relations | Modules |
+|---|---|
+| **Consumes** | multi-leg move plans from Redis (published by [shared taxi_router](shared.md) `dispatch_taxi_plan`) |
+| **Calls** | [Orchestrator](services/orchestrator_service.md) (host port `8007`) · [Controller HMI](services/controller_hmi_service.md) · [Flight Plan](services/flight_plan_service.md) |
+
 ## `plugins/` — what you install into X-Plane
 
 Per [`README.md`](../README.md), copy these into

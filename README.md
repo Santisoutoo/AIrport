@@ -176,31 +176,35 @@ docker compose up --build
 
 The first run downloads the Whisper ATC model (~1.5 GB) into the `asr_hf_cache` Docker volume. Open the Controller HMI at [http://localhost:8005](http://localhost:8005).
 
+Full walkthrough — verification steps and known `.env` gaps — in the wiki: [Installation](https://github.com/Santisoutoo/AIrport/wiki/Installation). Something failing? [Troubleshooting](https://github.com/Santisoutoo/AIrport/wiki/Troubleshooting).
+
 ---
 
 ## X-Plane Plugin Setup
 
-The in-sim plugin is **not** installed automatically.
-
-1. Install [XPPython3](https://xppython3.readthedocs.io/) into X-Plane 12.
-2. Copy the plugin sources into `<X-Plane 12>/Resources/plugins/PythonPlugins/`:
-   - [plugins/PI_spawn_obj.py](plugins/PI_spawn_obj.py)
-   - the entire [plugins/GND/](plugins/GND/) folder
-3. Install pip dependencies into the simulator's bundled Python by running [docs/install/install_dependencies.bat](docs/install/install_dependencies.bat). It wraps [install_xppython3.ps1](docs/install/install_xppython3.ps1), which can also install/update XPPython3 itself.
-4. Launch X-Plane 12 and confirm the plugin appears under **Plugins**.
-5. Make sure the backend Orchestrator (port `8007`) is running before starting a flight.
+The in-sim plugin is **not** installed automatically: install [XPPython3](https://xppython3.readthedocs.io/), copy [plugins/PI_spawn_obj.py](plugins/PI_spawn_obj.py) and [plugins/GND/](plugins/GND/) into `<X-Plane 12>/Resources/plugins/PythonPlugins/`, and install the pip dependencies into the simulator's bundled Python. Full walkthrough (scripted or manual): [X-Plane Plugin Setup](https://github.com/Santisoutoo/AIrport/wiki/X-Plane-Plugin-Setup). Start the backend (Orchestrator on port `8007`) before flying.
 
 ---
 
-## Configuration
+## Documentation
 
-Full env-var reference -> [docs/configuration.md](docs/configuration.md).
+Full guides live in the [project wiki](https://github.com/Santisoutoo/AIrport/wiki):
+
+| Guide | Covers |
+|---|---|
+| [Installation](https://github.com/Santisoutoo/AIrport/wiki/Installation) | Zero → running stack, verification, known `.env` gaps |
+| [Cloud Agents Deployment](https://github.com/Santisoutoo/AIrport/wiki/Cloud-Agents-Deployment) | Deploying the DEL/GND/TWR pilots to Cloud Run |
+| [X-Plane Plugin Setup](https://github.com/Santisoutoo/AIrport/wiki/X-Plane-Plugin-Setup) | XPPython3 + plugin install, scripted or manual |
+| [Quickstart](https://github.com/Santisoutoo/AIrport/wiki/Quickstart) | Your first ATC session end to end |
+| [Configuration](https://github.com/Santisoutoo/AIrport/wiki/Configuration) | Complete environment-variable reference |
+| [Troubleshooting](https://github.com/Santisoutoo/AIrport/wiki/Troubleshooting) | Symptom → cause → fix, by area |
+| [System Overview](https://github.com/Santisoutoo/AIrport/wiki/System-Overview) | Every module, what it does, how they relate |
 
 ---
 
 <div align="center">
 
-[License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Dataset (Hugging Face)](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus) · [taxitolearn.com/airport.html](https://taxitolearn.com/airport.html)
+[Wiki](https://github.com/Santisoutoo/AIrport/wiki) · [License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Dataset (Hugging Face)](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus) · [taxitolearn.com/airport.html](https://taxitolearn.com/airport.html)
 
 *This repository accompanies the paper "Pseudopilot Automation via LLM-Based Multi-Agent Systems for ATC Training in X-Plane 12".*
 

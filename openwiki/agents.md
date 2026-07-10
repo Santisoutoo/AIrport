@@ -4,6 +4,20 @@ The three stateless ATC pilot agents that draft ICAO-compliant readbacks. Source
 [`agents/`](../agents/). Called by the [orchestrator](services/orchestrator_service.md); see the
 [architecture](architecture.md) pipeline.
 
+## What it does
+
+These are **the pilots**. Every readback a controller hears is drafted by one of three
+stateless Gemini agents, one per controller position (Delivery, Ground, Tower). They receive
+the transmission plus prefetched context, apply ICAO phraseology, and return the pilot's
+reply — they hold no memory and touch no database.
+
+| Relations | Modules |
+|---|---|
+| **Called by** | [Orchestrator](services/orchestrator_service.md) (`forward` tool → `POST /agents/<role>/run` on Cloud Run) |
+| **Calls** | Gemini on Vertex AI — nothing else in the stack |
+
+**Deploy & smoke-test them:** [Cloud Agents Deployment](guides/cloud-agents-deployment.md).
+
 ## Overview
 
 | Agent | Dir | Role |

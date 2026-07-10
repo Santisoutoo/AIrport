@@ -1,5 +1,9 @@
 # Troubleshooting
 
+> **Maintained version:** the wiki's
+> [Troubleshooting](https://github.com/Santisoutoo/AIrport/wiki/Troubleshooting) page —
+> organized by area and covering more failure modes than this table.
+
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Port already in use (5432/6379/8087/8003-8008) | Conflicting local Postgres/Redis/InfluxDB instance | Stop the local service or remap the host port in `docker-compose.yml` |

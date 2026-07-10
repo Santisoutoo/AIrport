@@ -3,6 +3,20 @@
 **Port 8006:8000** · [`services/asr_service/`](../../services/asr_service/) · speech-to-text for
 controller transmissions. Health: `/api/v1/asr/health`. See [architecture](../architecture.md).
 
+## What it does
+
+Turns the controller's spoken transmission into clean text: Whisper ATC transcribes the
+audio, the callsign corrector normalizes it ("iberia five four seven one" → `IBE5471`), and
+the transcript is forwarded to the Orchestrator so the right pilot agent can answer.
+
+| Relations | Modules |
+|---|---|
+| **Called by** | [Controller HMI](controller_hmi_service.md) (`/asr/transcribe` proxy) |
+| **Calls** | [Orchestrator](orchestrator_service.md) `/dispatch` · Vertex AI (LLM corrector) · Redis |
+
+**Try it standalone:** <http://localhost:8006/docs> · health `GET /api/v1/asr/health` ·
+env vars in [Configuration](../guides/configuration.md#asr-prefix-asr_).
+
 ## Responsibility
 
 Transcribe controller mic audio with a **Whisper model fine-tuned for ATC** (faster-whisper), then

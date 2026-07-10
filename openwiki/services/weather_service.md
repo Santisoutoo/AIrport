@@ -3,6 +3,19 @@
 **Port 8004:8000** · [`services/weather_service/`](../../services/weather_service/) · METAR, TAF
 and ATIS. Health: `/api/v1/weather/health`. Backed by PostgreSQL. See [architecture](../architecture.md).
 
+## What it does
+
+Real weather for the session: fetches METAR/TAF from aviationweather.gov, computes the
+flight category (VFR/MVFR/IFR/LIFR), and generates the ATIS broadcast that both the pilot
+agents and the controller read.
+
+| Relations | Modules |
+|---|---|
+| **Called by** | [Controller HMI](controller_hmi_service.md) · [Orchestrator](orchestrator_service.md) (weather passthrough for agent context) |
+| **Calls** | PostgreSQL (ATIS history) · aviationweather.gov (external) |
+
+**Try it standalone:** <http://localhost:8004/docs> · health `GET /api/v1/weather/health`.
+
 ## Responsibility
 
 Fetch real weather (METAR/TAF) and generate the **ATIS** broadcast used by the ATC agents and HMI.

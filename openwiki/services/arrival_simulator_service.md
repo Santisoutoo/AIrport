@@ -4,6 +4,21 @@
 spawns AI arrivals on the ILS and drives them to vacate. Health: `/api/v1/arrivals/health`. See
 [architecture](../architecture.md).
 
+## What it does
+
+Keeps traffic coming: spawns AI arrivals on the ILS, flies them through approach, landing
+and vacate, and hands each one off to the controller as ground traffic — so a single trainee
+always has aircraft to sequence.
+
+| Relations | Modules |
+|---|---|
+| **Called by** | its own scheduler (start/stop via API) |
+| **Calls** | [Flight Plan](flight_plan_service.md) (plan catalog) · [Controller HMI](controller_hmi_service.md) (arrival strips) · [Orchestrator](orchestrator_service.md) (arrival handoff) · Redis (aircraft state + move events) |
+
+**Try it standalone:** <http://localhost:8008/docs> · health `GET /api/v1/arrivals/health` ·
+`POST /api/v1/arrivals/start` — tuning knobs in
+[Configuration](../guides/configuration.md#arrival-simulator-prefix-arrival_).
+
 ## Responsibility
 
 Continuously spawn AI arrival traffic (on the ILS), drive each aircraft through the arrival phases

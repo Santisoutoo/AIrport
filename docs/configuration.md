@@ -1,5 +1,9 @@
 # Configuration Reference
 
+> **Maintained version:** the wiki's
+> [Configuration](https://github.com/Santisoutoo/AIrport/wiki/Configuration) page — it also
+> covers the variables `docker-compose.yml` needs that are missing from `.env.example`.
+
 Every variable defined in [`.env.example`](../.env.example), grouped by subsystem.
 
 ## Service URLs

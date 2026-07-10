@@ -4,6 +4,18 @@ Cross-service models and services imported by multiple microservices (the orches
 simulator, and tests all depend on it). Source under [`shared/`](../shared/). See
 [architecture](architecture.md).
 
+## What it does
+
+The common library of the backend: the data models every service agrees on (aircraft,
+phases, communications), the **A\* taxi router** that turns a taxi clearance into a
+runnable route, and the Redis-backed aircraft state store. It is not a service — it has no
+port; services import it as a package.
+
+| Relations | Modules |
+|---|---|
+| **Imported by** | [Orchestrator](services/orchestrator_service.md) (taxi routing, state) · [Arrival Simulator](services/arrival_simulator_service.md) (state, geo) · the test suite |
+| **Feeds** | the [X-Plane plugin](xplane.md), indirectly — `dispatch_taxi_plan` publishes the move plan to Redis, which the in-sim mover consumes |
+
 ## Models — [`shared/models/`](../shared/models/)
 
 | Module | Purpose |

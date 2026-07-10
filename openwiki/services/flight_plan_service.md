@@ -4,6 +4,19 @@
 flight plan generation. Health: `/api/v1/flight-plan/health`. Backed by PostgreSQL. See
 [architecture](../architecture.md).
 
+## What it does
+
+Generates and stores the IFR flight plans that give every aircraft its identity (callsign,
+route, levels). With a `FLIGHT_PLAN_GENERATOR_KEY` it uses flightplandatabase.com; without
+one it falls back to a local generator.
+
+| Relations | Modules |
+|---|---|
+| **Called by** | [Orchestrator](orchestrator_service.md) · [Arrival Simulator](arrival_simulator_service.md) · [Controller HMI](controller_hmi_service.md) · X-Plane plugin |
+| **Calls** | PostgreSQL (`flight_plans`) · flightplandatabase.com (external) |
+
+**Try it standalone:** <http://localhost:8003/docs> · health `GET /api/v1/flight-plan/health`.
+
 ## Responsibility
 
 Generate IFR flight plans (routes, SIDs/STARs, levels) for aircraft, sourced from

@@ -3,6 +3,22 @@
 **Port 8007:8006** · [`services/orchestrator_service/`](../../services/orchestrator_service/) ·
 the routing brain of AIrport. Largest service. See [architecture](../architecture.md).
 
+## What it does
+
+The brain of the backend: it receives every transcribed transmission, figures out which
+aircraft it addresses and which phase that aircraft is in (`DEL → GND → TWR`), calls the
+matching pilot agent on Cloud Run with full context, and turns the agent's answer into state
+changes, movement commands and the session debrief.
+
+| Relations | Modules |
+|---|---|
+| **Called by** | [ASR](asr_service.md) (dispatch) · [Controller HMI](controller_hmi_service.md) (dispatch/debrief proxy) · [Arrival Simulator](arrival_simulator_service.md) (arrival handoff) · X-Plane plugin |
+| **Calls** | [DEL/GND/TWR agents](../agents.md) · [Flight Plan](flight_plan_service.md) · [Weather](weather_service.md) · [shared taxi_router](../shared.md) · Postgres · Redis (`tts:queue`, move events) |
+
+**Try it standalone:** <http://localhost:8007/docs> · health `GET /health` — host port is
+**8007**, the container listens on **8006**
+([why](../guides/configuration.md#host-vs-container-ports)).
+
 ## Responsibility
 
 Receives transcribed controller transmissions, identifies the aircraft & callsign, decides which

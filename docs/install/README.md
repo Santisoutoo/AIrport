@@ -1,5 +1,9 @@
 # Instalación de XPPython3 y dependencias de AIrport
 
+> **Guía mantenida (en inglés):**
+> [X-Plane Plugin Setup](https://github.com/Santisoutoo/AIrport/wiki/X-Plane-Plugin-Setup)
+> en la wiki del proyecto.
+
 Scripts para instalar automáticamente el plugin XPPython3 en X-Plane 12 y las dependencias Python del proyecto.
 
 ## Archivos

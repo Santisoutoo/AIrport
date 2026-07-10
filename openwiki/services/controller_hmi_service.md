@@ -5,6 +5,19 @@ the web UI a human controller uses, and the API gateway to the rest of the syste
 `/api/v1/hmi/health`. Open at [http://localhost:8005](http://localhost:8005). See
 [architecture](../architecture.md).
 
+## What it does
+
+The screen the human controller works on — flight strips, ground radar, ATIS and
+push-to-talk chat — and the API gateway that proxies the browser's requests to the backend
+services, so the front-end only ever talks to one host.
+
+| Relations | Modules |
+|---|---|
+| **Called by** | the browser · the X-Plane plugin (plugin routes, chat) · [Arrival Simulator](arrival_simulator_service.md) (registers arrival strips) |
+| **Calls** | [ASR](asr_service.md) (transcribe) · [Orchestrator](orchestrator_service.md) (dispatch/debrief) · [Flight Plan](flight_plan_service.md) · [Weather](weather_service.md) · Redis (live state + `hmi:chat` WebSocket fan-out) · Postgres |
+
+**Try it standalone:** UI at <http://localhost:8005> · health `GET /api/v1/hmi/health`.
+
 ## Responsibility
 
 Serve the controller-facing web app — **flight strips, ground radar, ATIS, chat/push-to-talk** —
