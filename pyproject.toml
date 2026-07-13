@@ -39,7 +39,7 @@ dependencies = [
     "transformers",
     "jiwer",
     "httpx",
-    "python-dotenv"
+    "python-dotenv",
 ]
 
 [project.urls]
