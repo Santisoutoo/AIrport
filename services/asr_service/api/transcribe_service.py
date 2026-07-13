@@ -41,11 +41,17 @@ def load_model() -> Any:
     else:  # transformers pipeline (large-v3 etc.)
         import torch
         from transformers import pipeline
-        device = 0 if cfg.whisper_device == "cuda" and torch.cuda.is_available() else -1
+        on_gpu = cfg.whisper_device == "cuda" and torch.cuda.is_available()
+        device = 0 if on_gpu else -1
+        pipe_kwargs: dict = {}
+        if on_gpu:
+            # fp16 on GPU halves memory / speeds up inference; CPU stays fp32.
+            pipe_kwargs["torch_dtype"] = torch.float16
         _model = pipeline(
             "automatic-speech-recognition",
             model=cfg.hf_model,
             device=device,
+            **pipe_kwargs,
         )
 
     _loaded_model_id = cfg.hf_model

@@ -1,0 +1,219 @@
+% =====================================================================
+% MDPI Aerospace paper
+% "Pseudopilot Automation via LLM-Based Multi-Agent Systems
+%  for ATC Training in X-Plane 12"
+%
+% Authors: Santiago Souto Ortega, Isaac González López
+% =====================================================================
+
+\documentclass[computers,article,submit,moreauthors,pdftex]{Definitions/mdpi}
+
+% --- Metadata ---
+\Title{Pseudopilot Automation via LLM-Based Multi-Agent Systems for ATC Training in X-Plane~12}
+\Author{Santiago Souto Ortega$^{1,\dagger,\ddag}$\orcidA{}, Isaac Gonz\'{a}lez L\'{o}pez$^{2,\ddag}$\orcidB{}}
+\AuthorNames{Santiago Souto Ortega, Isaac Gonz\'{a}lez L\'{o}pez}
+
+\firstpage{1}
+\makeatletter
+\setcounter{page}{\@firstpage}
+\makeatother
+
+\address{%
+    $^{1}$ \quad Affiliation 1; soutoortegasantiago@gmail.com \\
+    $^{2}$ \quad Affiliation 2; isaac.gonzalez@example.com}
+
+\corres{Correspondence: soutoortegasantiago@gmail.com}
+
+% --- Abstract ---
+\abstract{%
+The training of air traffic controllers requires practice in simulators that
+reproduce situations as closely as possible to those encountered in a real
+control tower. In these exercises, the trainee issues radio instructions to the
+aircraft present at the airport and must receive coherent and realistic
+responses, just as would occur in real operations.
+
+Currently, for this type of training to be possible, it is necessary to rely on
+a team of people known as pseudopilots, whose task is to simulate the crews of
+each aircraft. These operators respond to the controller's communications and
+manage the movement of aircraft within the simulated environment. However, this
+training model is costly, depends on the availability of qualified personnel,
+and limits the number of sessions that can be carried out.
+
+This work presents AIrport, a system that replaces pseudopilots with agents
+capable of behaving like real pilots within a simulated airport. In the system,
+the aircraft are represented by agents that interpret the received instructions,
+respond over the radio using natural language, and manage aircraft movements
+following real operational procedures.
+
+The controller interacts with the system through voice and can observe the
+result of their instructions in a three-dimensional representation of the
+airport. In this way, a single person can carry out realistic exercises with
+multiple aircraft simultaneously, without the need to mobilise a support team.
+This reduces training costs and enables practice with greater frequency,
+flexibility, and scalability.
+}
+
+\keyword{air traffic control; artificial intelligence; ATC training; aviation;
+simulation; virtual assistants}
+
+% =====================================================================
+\begin{document}
+
+% =====================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+Air traffic control (ATC) training has traditionally relied on human
+pseudopilots — trained operators who simulate aircraft crews during simulation
+exercises, responding to controller instructions and managing aircraft positions
+within the simulated environment. The availability of qualified pseudopilots is
+a bottleneck: training centres must maintain a roster of operators, coordinate
+their schedules, and bear the recurring personnel cost. A student controller can
+therefore only practise when both a simulator and a pseudopilot team are
+available, limiting session frequency and total volume.
+
+Recent advances in large language models (LLMs) and automatic speech recognition
+(ASR) have opened the possibility of automating the pseudopilot role entirely:
+an LLM-based agent can generate ICAO-compliant readbacks, and a speech-to-text
+pipeline can replace the instructor who would otherwise type the controller's
+words. Combined with a flight simulator capable of rendering aircraft motion,
+this creates a self-contained training loop where a single controller trainee
+speaks to a system that hears, understands, and responds with the correct
+phraseology and the corresponding visual feedback.
+
+This paper presents AIrport, an open-source platform that realises this vision.
+The system integrates five components: (1)~a Whisper-based ASR pipeline with ATC
+vocabulary correction; (2)~three LLM-based agents — one per controller position
+(Delivery, Ground, Tower) — that generate ICAO readbacks and clearance data;
+(3)~an orchestrator that tracks each aircraft's state machine across
+DEL~$\rightarrow$~GND~$\rightarrow$~TWR transitions; (4)~a web-based controller
+human-machine interface (HMI) with push-to-talk voice input, flight strips, and
+ground radar; and (5)~an X-Plane~12 plugin that renders aircraft motion in a 3D
+airport environment.
+
+The contributions of this work are:
+\begin{itemize}
+    \item A complete, voice-driven ATC training loop that replaces human
+          pseudopilots with LLM agents and replaces typed input with ASR.
+    \item A quantitative benchmark of the ASR pipeline across three Whisper
+          model sizes, three hardware configurations, and three context modes,
+          establishing accuracy and latency bounds for live ATC use.
+    \item A session-aware ASR correction pipeline that lifts entity-level
+          accuracy (callsigns and SIDs) by 15--20~pp through decoder prompting
+          and a deterministic-plus-LLM hybrid post-processor.
+    \item An open-source release of the full system, including the
+          pilot-readback-corpus dataset for ASR evaluation in ATC~\cite{SoutoReadbackCorpus2024}.
+\end{itemize}
+
+The remainder of the paper is organised as follows. Section~\ref{sec:related}
+reviews related work on pseudopilot automation, ASR for ATC, and LLM-based
+dialogue agents. Section~\ref{sec:materials} describes the materials and methods,
+including the system architecture, the ATC agents, the X-Plane integration, and
+the evaluation corpus. Section~\ref{sec:results} presents the experimental
+results for both the ASR pipeline and the agent readback quality.
+Section~\ref{sec:discussion} discusses the implications, limitations, and
+practical deployment considerations. Section~\ref{sec:conclusions} concludes the
+paper.
+
+% =====================================================================
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Pseudopilot Automation}
+
+[Placeholder — review of existing pseudopilot systems, speech-recognition-based
+ATC simulators, and the gap this work fills.]
+
+\subsection{ASR for Air Traffic Control}
+
+[Placeholder — review of Whisper fine-tuning for ATC, ATCO2 corpus,
+WER benchmarks in ATC domain, the challenge of domain-specific vocabulary.]
+
+\subsection{LLM-Based Agents for Structured Dialogue}
+
+[Placeholder — review of LLM agents, Google ADK, Gemini, structured output
+generation, and prior work on aviation dialogue systems.]
+
+% =====================================================================
+\section{Materials and Methods}
+\label{sec:materials}
+
+\subsection{System Architecture}
+
+[Placeholder — architecture diagram, service descriptions, data flow.]
+
+\input{section_3_1_asr}  % 3.1 Automatic Speech Recognition
+
+\subsection{ATC Agents: Delivery, Ground, and Tower}
+\label{sec:agents}
+
+[Placeholder — agent design, prompt structure, stateless design rationale,
+Gemini Flash integration.]
+
+\subsection{Orchestrator and Aircraft State Machine}
+\label{sec:orchestrator}
+
+[Placeholder — PostgreSQL state tracking, Redis real-time state,
+DEL→GND→TWR lifecycle, ATC phase transitions.]
+
+\subsection{X-Plane 12 Integration}
+\label{sec:xplane}
+
+[Placeholder — XPPython3 plugin, aircraft spawning, taxiway graph routing,
+motion along taxi routes.]
+
+\subsection{Evaluation Corpora}
+\label{sec:corpora}
+
+[Placeholder — pilot-readback-corpus (300 controller transmissions),
+agent validation corpus (142 entries), audio recording setup.]
+
+% =====================================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{ASR Benchmark}
+
+The ASR results are presented in detail in Section~\ref{sec:context}
+(Session~3.1.3) and summarised here. The key findings are:
+
+\begin{itemize}
+    \item The tiny Whisper model (38M) is unusable for ATC (620\% WER) due to
+          looping hallucination; the medium model (770M) achieves 9.8\% WER
+          (fp32), sufficient for downstream agent processing.
+    \item GPU inference (NVIDIA L4, fp16) reduces latency to 1.0~s median
+          (60$\times$ over CPU fp32), enabling live use.
+    \item Session context improves callsign accuracy from 65--67\% to 82--87\%
+          and SID accuracy from 8\% to 42--58\%, through a combination of
+          decoder prompting and a deterministic-plus-LLM post-processing
+          pipeline.
+    \item The LLM fallback rescued 7--10 of 60 difficult cases where the
+          deterministic fuzzy match could not confidently resolve an entity.
+\end{itemize}
+
+\subsection{Agent Readback Quality}
+
+[Placeholder — agent evaluation: latency percentiles, schema validity,
+field-by-field validation of squawk, altitude, runway, SID.]
+
+% =====================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+[Placeholder — interpretation of results, comparison with prior work,
+practical implications, limitations, known bugs (initial\_prompt GPU issue).]
+
+% =====================================================================
+\section{Conclusions}
+\label{sec:conclusions}
+
+[Placeholder — summary of contributions, future work (large-v3 benchmark,
+full 300-audio corpus, Wilcoxon test).]
+
+% =====================================================================
+% Bibliography
+% =====================================================================
+\bibliographystyle{mdpi}
+\bibliography{references}
+
+\end{document}

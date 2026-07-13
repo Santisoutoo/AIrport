@@ -1,0 +1,94 @@
+dep,entry_id,failed_dimensions,phraseology_score,justification
+DEL,del_005,phraseology(2),2,"La colación no pronuncia los números dígito por dígito como requiere la fraseología OACI (p. ej., el squawk y el QNH)."
+DEL,del_007,phraseology(2),2,La frecuencia no se colacionó dígito por dígito y el distintivo de llamada se leyó incorrectamente.
+DEL,del_010,completeness,3,La colación omite la pista asignada para el despegue y no pronuncia los dígitos individualmente.
+DEL,del_011,completeness,3,"La colación omite la pista asignada, que es un elemento obligatorio de la autorización."
+DEL,del_016,no_hallucination;phraseology(2),2,"El piloto usó la palabra 'Correction', que es fraseología de controlador, y cambió la instrucción de 'initial climb' a 'maintain'."
+DEL,del_020,no_hallucination;phraseology(1),1,La respuesta del agente ignora la transmisión del controlador y en su lugar inicia una nueva solicitud de autorización con fraseología incorrecta.
+DEL,del_021,completeness,3,"La colación omite la pista asignada, que es un elemento obligatorio de la autorización."
+DEL,del_027,completeness,3,"La colación omite la pista en uso, que es un elemento obligatorio de la autorización de salida."
+DEL,del_029,completeness,3,La solicitud del agente omite el puesto de estacionamiento y repite incorrectamente el indicativo al final de la transmisión.
+DEL,del_031,completeness,3,"La colación omite la pista en uso, que es un elemento obligatorio de la autorización."
+DEL,del_032,phraseology(2),2,La fraseología es incorrecta al usar 'Contacting' y al no pronunciar el indicativo ('85W0') de forma reglamentaria.
+DEL,del_034,completeness;phraseology(2),2,"La colación omite la instrucción 'initial climb' y la sustituye por 'maintain', además de usar la palabra 'negative' que es fraseología de controlador."
+DEL,del_037,completeness,3,La llamada inicial omitió la posición de la aeronave en el aeródromo (puesto de estacionamiento).
+DEL,del_041,no_hallucination;phraseology(1),1,"El agente no realizó una colación, sino que repitió la solicitud de autorización inicial, lo cual es una acción incorrecta en el contexto de la conversación."
+DEL,del_042,completeness,4,"La colación omite la dependencia a contactar ('Ground'), que es una parte obligatoria de la instrucción."
+DEL,del_045,phraseology(2),2,"La colación agrupa los números del código transpondedor, QNH, pista y distintivo de llamada en lugar de pronunciarlos dígito por dígito."
+DEL,del_049,completeness,3,"La colación omite la pista asignada, que es un elemento de lectura obligatoria."
+DEL,del_053,completeness,3,"La colación omite la pista de salida, que es un elemento obligatorio de la autorización de salida."
+DEL,del_056,phraseology(2),2,"La colación no utiliza la fraseología estándar, ya que los números no se leen dígito por dígito y el nombre de la salida se lee como 'BELEN one GOLF'."
+DEL,del_060,completeness,3,"La colación omite la pista en uso, que es un elemento obligatorio de la autorización de salida."
+DEL,del_063,completeness,3,"La colación omite la pista asignada, que es un elemento obligatorio de la autorización de salida."
+DEL,del_067,completeness,3,"El collationnement omite la pista asignada, pista tres dos izquierda."
+DEL,del_069,completeness,3,La colación omite la pista obligatoria (tres dos izquierda) y no pronuncia los dígitos individualmente.
+DEL,del_070,no_hallucination;phraseology(1),1,"El agente no realiza una colación, sino que genera una solicitud de autorización inicial que no corresponde a la transmisión del controlador."
+DEL,del_077,completeness,3,La colación omite la pista designada (tres dos izquierda).
+DEL,del_079,completeness;phraseology(1),1,"El agente no colacionó la autorización de vuelo, sino que realizó una solicitud de autorización inicial."
+DEL,del_081,completeness,4,"La colación omite la pista asignada, que es un elemento obligatorio de la autorización de salida."
+DEL,del_084,completeness;phraseology(2),2,"La colación usa 'Maintaining' incorrectamente para confirmar una autorización de ascenso, en lugar de 'Initial climb'."
+DEL,del_087,no_hallucination;phraseology(1),1,"El agente no respondió a la transmisión sino que inició su propia solicitud de autorización, que es un tipo de mensaje completamente diferente."
+DEL,del_091,no_hallucination;phraseology(1),1,"El agente no realizó una colación, sino que emitió una solicitud de autorización completamente fuera de contexto."
+DEL,del_093,completeness,3,"La colación omite la pista asignada (uno ocho izquierda), que es un elemento obligatorio de la autorización de salida."
+DEL,del_096,completeness,3,La colación omite la pista en uso (tres dos derecha).
+DEL,del_098,completeness,3,La colación omite la pista asignada para el despegue (pista uno ocho izquierda).
+GND,gnd_002,no_hallucination,3,"La colación añade incorrectamente la palabra 'runway' antes del punto de espera, y el indicativo debería ir al final."
+GND,gnd_004,values_correct;no_hallucination,3,El piloto añade incorrectamente la palabra 'runway' al punto de espera y coloca el distintivo de llamada al principio de la colación.
+GND,gnd_007,no_hallucination;phraseology(2),2,"El agente añadió incorrectamente la palabra 'runway' en la colación, que no formaba parte de la instrucción del controlador."
+GND,gnd_008,values_correct;no_hallucination,3,El piloto añade incorrectamente la palabra 'runway' al punto de espera y coloca el distintivo de llamada al principio de la colación.
+GND,gnd_010,values_correct;no_hallucination;phraseology(2),2,"El piloto repitió incorrectamente el punto de espera 'Lima one' como 'runway Lima 1', añadiendo una palabra inexistente, y colocó el distintivo de llamada al principio."
+GND,gnd_011,phraseology(2),2,"La fraseología es incorrecta; el distintivo de llamada del piloto debe ir al final de la colación, no al principio."
+GND,gnd_015,no_hallucination;phraseology(2),2,La colación añade la palabra 'runway' que no estaba en la instrucción original y coloca el distintivo al principio en lugar de al final.
+GND,gnd_017,completeness,3,La colación es incompleta al omitir la instrucción de la dirección de la cola y el indicativo está al principio en lugar de al final.
+GND,gnd_018,completeness;no_hallucination;phraseology(2),2,El piloto omitió 'and start' y añadió 'taxiing' sin autorización.
+GND,gnd_020,completeness;no_hallucination;phraseology(2),2,El piloto colacionó una instrucción de rodaje que no fue emitida y omitió la parte de la autorización de puesta en marcha.
+GND,gnd_022,phraseology(2),2,"El agente utilizó fraseología de controlador al repetir la transmisión completa, colocando el indicativo al principio en lugar de al final de la colación."
+GND,gnd_027,completeness,3,La colación omitió la instrucción de seguir al Boeing siete tres siete que iba delante.
+GND,gnd_030,completeness,3,La colación omite la confirmación de la instrucción 'expedite' (acelere).
+GND,gnd_035,completeness;no_hallucination,3,El collationnement omite la instrucción 'follow the Ryanair' y añade la palabra 'runway' que no estaba en la transmisión.
+GND,gnd_038,phraseology(2),2,"La fraseología es incorrecta: el distintivo de llamada debe ir al principio y la respuesta a una instrucción de 'standby' es 'standing by', no una repetición de la instrucción del controlador."
+GND,gnd_042,completeness;no_hallucination;phraseology(2),2,El piloto inventó una instrucción de rodaje ('taxi via Lima') en lugar de colacionar la orientación del retroceso ('tail towards taxiway Lima').
+GND,gnd_046,completeness;no_hallucination;phraseology(2),2,La colación omite la instrucción de ceder el paso y añade la palabra 'runway' que no fue instruida.
+GND,gnd_047,completeness,3,La colación omite la restricción 'tail to the south' y coloca el indicativo al principio en lugar de al final.
+GND,gnd_048,no_hallucination;phraseology(2),2,El piloto añadió la palabra 'runway' que no estaba en la instrucción del controlador y colocó el distintivo de llamada al principio de la colación.
+GND,gnd_050,completeness;no_hallucination;phraseology(2),2,El piloto omite la aprobación de arranque y responde con una instrucción de rodaje inventada en lugar de colacionar la dirección de retroceso.
+GND,gnd_052,no_hallucination;phraseology(2),2,El piloto añadió incorrectamente la palabra 'runway' en la colación y colocó el indicativo al principio en lugar de al final.
+GND,gnd_054,no_hallucination;phraseology(2),2,El piloto añade la palabra 'runway' que no estaba en la instrucción y coloca el indicativo al principio de la colación en lugar de al final.
+GND,gnd_057,values_correct;no_hallucination;phraseology(2),2,La colación añade incorrectamente la palabra 'runway' antes del punto de espera Sierra Two y sitúa el distintivo de llamada al principio en lugar de al final.
+GND,gnd_058,values_correct;no_hallucination,3,"La colación añade incorrectamente la palabra 'runway' antes del punto de espera, que no estaba en la instrucción original."
+GND,gnd_061,phraseology(2),2,"La llamada debe ir al final de la colación, no al principio, y se repite información superflua de la instrucción condicional."
+GND,gnd_065,no_hallucination,3,La colación añade la palabra 'runway' que no fue instruida por el controlador.
+GND,gnd_067,completeness,3,El collationnement omite la instrucción de posición de la cola 'tail towards stand Hotel five'.
+GND,gnd_068,completeness,3,La colación omite la aprobación para la puesta en marcha de motores ('and start') y coloca el distintivo de llamada al principio en lugar de al final.
+GND,gnd_070,completeness,3,La colación omite la aprobación de puesta en marcha ('and start') y coloca el distintivo de llamada al principio en lugar de al final.
+GND,gnd_080,completeness,3,La colación omite la instrucción condicional 'expedite' (acelere).
+GND,gnd_085,completeness,3,La colación omite la instrucción de seguir al Iberia que le precede y coloca el distintivo al principio en lugar de al final.
+GND,gnd_087,no_hallucination;phraseology(2),2,La colación añade la palabra 'runway' que no estaba en la instrucción y coloca el indicativo al principio en lugar de al final.
+GND,gnd_088,phraseology(2),2,El agente utilizó fraseología de controlador al colocar el indicativo al principio y repetir la instrucción en lugar de utilizar una colación estándar de piloto.
+GND,gnd_090,no_hallucination,3,"La colación añade la palabra 'runway', que no estaba en la instrucción del controlador, y coloca el distintivo de llamada al principio en lugar de al final."
+GND,gnd_096,completeness;no_hallucination,3,La colación omite la instrucción de ceder el paso y añade la palabra 'runway' que no fue transmitida.
+GND,gnd_098,completeness;no_hallucination;phraseology(2),2,La colación omite la instrucción de seguir al Lufthansa y añade incorrectamente la palabra 'runway' antes del punto de espera.
+GND,gnd_100,completeness,3,El collationamiento omite la aprobación de puesta en marcha ('and start') y coloca el distintivo de llamada al principio en lugar de al final.
+TWR,twr_003,phraseology(2),2,La frecuencia no se colacionó pronunciando los dígitos individualmente y se repitió la instrucción del controlador en lugar de solo el valor.
+TWR,twr_004,completeness,3,La colación omite la condición obligatoria 'behind the Swiss on short final'.
+TWR,twr_010,phraseology(2),2,La colación no pronuncia los dígitos de la frecuencia y del indicativo individualmente y utiliza fraseología de controlador.
+TWR,twr_024,completeness,3,La colación omite la instrucción condicional 'behind the Iberia on final' y la especificación 'behind'.
+TWR,twr_026,phraseology(2),2,La colación no sigue la fraseología estándar al no pronunciar los números dígito por dígito y al usar el imperativo 'Hold short' en lugar de 'Holding short'.
+TWR,twr_028,values_correct;no_hallucination;phraseology(2),2,El piloto colacionó una frecuencia incorrecta (121.655 en lugar de 121.65).
+TWR,twr_031,phraseology(2),2,"La colación no utiliza la fraseología fonética correcta para los números, diciendo '18L' y '8560' en lugar de deletrear los dígitos."
+TWR,twr_033,phraseology(2),2,La colación usa fraseología de controlador ('Contact Ground') y no lee la frecuencia dígito por dígito como es requerido.
+TWR,twr_037,completeness,3,La colación omite la instrucción clave de despegue 'inmediato'.
+TWR,twr_040,phraseology(2),2,La colación utilizó dígitos en lugar de la pronunciación fonética correcta para los números del indicativo y la pista.
+TWR,twr_046,completeness,4,El piloto no colacionó la instrucción de cambio de frecuencia.
+TWR,twr_050,phraseology(2),2,La frecuencia no se colaciona dígito por dígito y se repite la instrucción del controlador en lugar de usar fraseología de piloto.
+TWR,twr_051,phraseology(2),2,La colación falla al no pronunciar los dígitos de la pista y del indicativo de forma individual.
+TWR,twr_054,completeness,3,La colación omite la parte condicional de la autorización ('detrás del Vueling en final corta').
+TWR,twr_060,phraseology(2),2,El agente leyó la frecuencia como un número único en lugar de con los dígitos individuales.
+TWR,twr_061,phraseology(2),2,La fraseología es incorrecta; el piloto debe usar 'lining up' en lugar de repetir la instrucción del controlador 'line up and wait'.
+TWR,twr_074,completeness,3,La colación omite la condición obligatoria 'behind the Lufthansa on final'.
+TWR,twr_078,phraseology(2),2,"La colación utiliza fraseología de controlador ('Contact Ground') en lugar de la fraseología de piloto, que consiste únicamente en repetir la frecuencia."
+TWR,twr_080,phraseology(2),2,El indicativo se colacionó como '13H' en lugar de la fraseología estándar 'uno tres Hotel'.
+TWR,twr_087,completeness;no_hallucination;phraseology(2),2,"La colación omite la instrucción 'inmediato', introduce la frase no emitida 'autorizado para despegue' y lee incorrectamente los dígitos del indicativo."
+TWR,twr_091,no_hallucination,3,"La colación incluye incorrectamente la pista, que solo era parte de la información de tráfico, y además la lee con una fraseología no estándar."
+TWR,twr_096,completeness,4,La colación omite la frecuencia de contacto con Aproximación.
+TWR,twr_098,phraseology(2),2,"El piloto no deletreó los números individualmente en la colación (pista 'tres dos izquierda', indicativo 'siete nueve ocho')."

@@ -49,6 +49,42 @@ LETTER_WORDS_RE = (
 
 RUNWAY_SIDE: dict[str, str] = {"left": "L", "right": "R", "center": "C", "centre": "C"}
 
+# Radiotelephony airline name (lowercase) -> ICAO designator. Used to compact
+# spoken callsigns into their canonical ICAO form ("Ryanair four seven three"
+# -> "RYR473"). Exported so the offline benchmark can reuse the same mapping.
+AIRLINE_ICAO: dict[str, str] = {
+    "ryanair": "RYR",
+    "iberia": "IBE",
+    "vueling": "VLG",
+    "lufthansa": "DLH",
+    "swiss": "SWR",
+    "aer lingus": "EIN",
+    "wizzair": "WZZ",
+    "speedbird": "BAW",
+    "easyjet": "EZY",
+    "volotea": "VOE",
+    "helvetic": "OAW",
+    "air europa": "AEA",
+    "iberexpres": "IBS",
+    "air nostrum": "ANE",
+}
+
+# Words that must never be treated as the airline part of a callsign span.
+# The span finder can otherwise latch onto a phonetic SID/number tail preceding
+# a plain ATC word (e.g. "... one GOLF departure"), which would corrupt the
+# text. Real radiotelephony airline names never appear in this set.
+_NON_AIRLINE_WORDS: frozenset[str] = frozenset({
+    "departure", "arrival", "approach", "ground", "tower", "delivery",
+    "control", "radar", "information", "traffic", "apron", "runway",
+    "squawk", "contact", "report", "readback", "correct", "cleared",
+    "clear", "holding", "hold", "point", "taxi", "wait", "degrees",
+    "knots", "heading", "climb", "descend", "descent", "maintain",
+    "expect", "ready", "wind", "feet", "thousand", "level", "flight",
+    "left", "right", "center", "centre", "north", "south", "east", "west",
+    "pushback", "push", "start", "line", "when", "the", "via", "and",
+    "to", "on", "for", "with", "at", "of",
+})
+
 FUZZY_THRESHOLD = 80.0
 
 # ---------------------------------------------------------------------------
@@ -102,6 +138,13 @@ _THOUSAND_RE = re.compile(
 )
 _FLIGHT_LEVEL_RE = re.compile(
     rf"\bflight level\s+((?:{DIGIT_WORDS_RE}\s+){{2}}{DIGIT_WORDS_RE})\b", re.IGNORECASE)
+# Radio frequency: three integer digits, "decimal"/"point", then 1-3 decimals
+# ("one two one decimal six five five" -> "121.655").
+_FREQ_RE = re.compile(
+    rf"\b((?:{DIGIT_WORDS_RE}\s+){{2}}{DIGIT_WORDS_RE})\s+(?:decimal|point)\s+"
+    rf"({DIGIT_WORDS_RE}(?:\s+{DIGIT_WORDS_RE}){{0,2}})\b",
+    re.IGNORECASE,
+)
 
 
 def normalize_numbers(text: str) -> str:
@@ -126,11 +169,17 @@ def normalize_numbers(text: str) -> str:
     def _fl_sub(m: re.Match) -> str:
         return "FL" + _phonetic_words_to_digits(m.group(1).split())
 
+    def _freq_sub(m: re.Match) -> str:
+        integer = _phonetic_words_to_digits(m.group(1).split())
+        decimals = _phonetic_words_to_digits(m.group(2).split())
+        return f"{integer}.{decimals}"
+
     text = _SQUAWK_RE.sub(_squawk_sub, text)
     text = _QNH_RE.sub(_qnh_sub, text)
     text = _RUNWAY_RE.sub(_runway_sub, text)
     text = _THOUSAND_RE.sub(_thousand_sub, text)
     text = _FLIGHT_LEVEL_RE.sub(_fl_sub, text)
+    text = _FREQ_RE.sub(_freq_sub, text)
     return text
 
 
@@ -209,30 +258,76 @@ def _find_callsign_span(
     return None
 
 
-def _apply_callsign_fuzzy(text: str, session_callsigns: list[str]) -> tuple[str, str | None, float]:
-    if not session_callsigns:
-        return text, None, 0.0
+def _compact_callsign(airline: str, code: str) -> tuple[str, bool]:
+    """Return (compacted callsign, airline_known).
 
+    Known airline -> "<ICAO designator><code>" ("RYR473"). Unknown airline ->
+    the name kept verbatim with the compacted code ("Fictional 47B"); we never
+    invent a designator.
+    """
+    designator = AIRLINE_ICAO.get(airline.lower())
+    if designator:
+        return f"{designator}{code}", True
+    return f"{airline} {code}", False
+
+
+def _apply_callsign_compaction(
+    text: str, session_callsigns: list[str],
+) -> tuple[str, str | None, float, bool]:
+    """Compact every callsign span into ICAO form and optionally snap to session.
+
+    For each span found (start and/or end of the sentence):
+      * build the ICAO form via AIRLINE_ICAO,
+      * if session callsigns are given and the fuzzy score over the ICAO form
+        is >= FUZZY_THRESHOLD, replace with the canonical session callsign,
+      * otherwise leave the compacted ICAO form,
+      * unknown airlines keep their spoken name (flagged) and are never given a
+        made-up designator.
+
+    Returns (text, cs_icao, cs_fuzzy_score, cs_unknown_airline) for the primary
+    (most confidently resolved) span, or (text, None, 0.0, False) if none.
+    """
+    session_callsigns = session_callsigns or []
     tokens = _alpha_tokens(text)
-    hits: list[tuple[float, int, int, str, str]] = []
+
+    spans: list[tuple[int, int, str, str]] = []
+    seen: set[tuple[int, int]] = set()
     for at_end in (False, True):
         found = _find_callsign_span(tokens, at_end)
         if not found:
             continue
         start, end, airline, code = found
-        candidate = f"{airline} {code}"
-        target, score = _best_fuzzy_match(candidate, session_callsigns)
-        if target:
-            hits.append((score, start, end, candidate, target))
+        if any(w.lower() in _NON_AIRLINE_WORDS for w in airline.split()):
+            continue  # phonetic SID/number tail masquerading as a callsign
+        key = (start, end)
+        if key in seen:
+            continue
+        seen.add(key)
+        spans.append(found)
 
-    if not hits:
-        return text, None, 0.0
+    if not spans:
+        return text, None, 0.0, False
 
-    hits.sort(key=lambda h: h[0], reverse=True)
-    best_score, start, end, candidate, target = hits[0]
-    if best_score >= FUZZY_THRESHOLD:
-        text = text[:start] + target + text[end:]
-    return text, candidate, best_score
+    # (start, end, replacement, icao_form, known, score, resolved)
+    reps: list[tuple[int, int, str, str, bool, float, bool]] = []
+    for start, end, airline, code in spans:
+        icao_form, known = _compact_callsign(airline, code)
+        replacement, score, resolved = icao_form, 0.0, False
+        if session_callsigns:
+            target, score = _best_fuzzy_match(icao_form, session_callsigns)
+            if target and score >= FUZZY_THRESHOLD:
+                replacement, resolved = target, True
+        reps.append((start, end, replacement, icao_form, known, score, resolved))
+
+    # Apply right-to-left so earlier char offsets stay valid.
+    for start, end, replacement, *_ in sorted(reps, key=lambda r: r[0], reverse=True):
+        text = text[:start] + replacement + text[end:]
+
+    # Report the most confidently resolved span (resolved > known > score).
+    primary = max(reps, key=lambda r: (r[6], r[4], r[5]))
+    _, _, _, icao_form, known, score, resolved = primary
+    cs_unknown_airline = (not known) and (not resolved)
+    return text, icao_form, score, cs_unknown_airline
 
 
 # ---------------------------------------------------------------------------
@@ -252,23 +347,30 @@ def _sid_candidate_from_phrase(m: re.Match) -> str:
 
 
 def _apply_sid_fuzzy(text: str, session_sids: list[str]) -> tuple[str, str | None, float]:
-    if not session_sids:
-        return text, None, 0.0
+    session_sids = session_sids or []
 
     m = _SID_PHRASE_RE.search(text)
     if m:
         candidate = _sid_candidate_from_phrase(m)
-        target, score = _best_fuzzy_match(candidate, session_sids)
-        if target and score >= FUZZY_THRESHOLD:
-            text = text[:m.start(1)] + target + text[m.end(3):]
+        # Snap to the session SID if it matches confidently, otherwise compact
+        # the spelled-out phrase to the bare token ("via BELEN1G departure").
+        chosen, score = candidate, 0.0
+        if session_sids:
+            target, score = _best_fuzzy_match(candidate, session_sids)
+            if target and score >= FUZZY_THRESHOLD:
+                chosen = target
+        via_word = text[m.start():m.start() + 3]  # preserve "via"/"Via" casing
+        text = f"{text[:m.start()]}{via_word} {chosen} departure{text[m.end():]}"
         return text, candidate, score
 
     m = _SID_TOKEN_RE.search(text)
     if m:
         candidate = m.group(0).upper()
-        target, score = _best_fuzzy_match(candidate, session_sids)
-        if target and score >= FUZZY_THRESHOLD:
-            text = text[:m.start()] + target + text[m.end():]
+        score = 0.0
+        if session_sids:
+            target, score = _best_fuzzy_match(candidate, session_sids)
+            if target and score >= FUZZY_THRESHOLD:
+                text = text[:m.start()] + target + text[m.end():]
         return text, candidate, score
 
     return text, None, 0.0
@@ -286,7 +388,8 @@ def postprocess_transcription(
     """Run the full postprocessing pipeline and return every intermediate step.
 
     Returns a dict with: after_number_norm, after_callsign_fix, final,
-    cs_fuzzy_candidate, cs_fuzzy_score, sid_fuzzy_candidate, sid_fuzzy_score.
+    cs_fuzzy_candidate, cs_fuzzy_score, sid_fuzzy_candidate, sid_fuzzy_score,
+    cs_icao, cs_unknown_airline.
     """
     session_callsigns = session_callsigns or []
     session_sids = session_sids or []
@@ -294,7 +397,7 @@ def postprocess_transcription(
     after_number_norm = normalize_numbers(text)
 
     corrected = correct_callsigns(after_number_norm)
-    after_callsign_fix, cs_candidate, cs_score = _apply_callsign_fuzzy(
+    after_callsign_fix, cs_icao, cs_score, cs_unknown_airline = _apply_callsign_compaction(
         corrected, session_callsigns)
 
     after_sid_fix, sid_candidate, sid_score = _apply_sid_fuzzy(
@@ -308,8 +411,21 @@ def postprocess_transcription(
         "after_number_norm": after_number_norm,
         "after_callsign_fix": after_callsign_fix,
         "final": final,
-        "cs_fuzzy_candidate": cs_candidate,
+        "cs_fuzzy_candidate": cs_icao,
         "cs_fuzzy_score": cs_score,
         "sid_fuzzy_candidate": sid_candidate,
         "sid_fuzzy_score": sid_score,
+        "cs_icao": cs_icao,
+        "cs_unknown_airline": cs_unknown_airline,
     }
+
+
+def normalize_reference(text: str) -> str:
+    """Canonicalise a clean corpus reference the same way as a transcription.
+
+    Applies number/frequency normalisation, ICAO callsign compaction, SID
+    compaction and phonetic-letter expansion without needing any session list,
+    so a reference and a postprocessed hypothesis can be compared on equal
+    footing (WER-post). Returns just the canonicalised string.
+    """
+    return postprocess_transcription(text)["final"]

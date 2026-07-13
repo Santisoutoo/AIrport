@@ -1,13 +1,15 @@
 import json
 import logging
 import os
+import time
 
 import httpx
 from fastapi import APIRouter, Form, UploadFile, File
 
 from . import transcribe_service
 from core.config import get_settings, AVAILABLE_MODELS
-from core.postprocess import postprocess_transcription
+from core.postprocess import postprocess_transcription, FUZZY_THRESHOLD
+from core.llm_postprocess import llm_map_entities
 from prompts.whisper_context import ATC_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -85,6 +87,7 @@ async def transcribe(
     context_mode: str = Form("generic"),
     session_callsigns: str | None = Form(None),
     session_sids: str | None = Form(None),
+    llm_fallback: bool | None = Form(None),
 ):
     audio_bytes = await audio.read()
     filename = audio.filename or "audio.webm"
@@ -109,6 +112,8 @@ async def transcribe(
         audio_bytes, filename, initial_prompt=initial_prompt,
     )
 
+    cfg = get_settings()
+
     if apply_corrections:
         steps = postprocess_transcription(
             raw_text,
@@ -125,10 +130,41 @@ async def transcribe(
             "cs_fuzzy_score": 0.0,
             "sid_fuzzy_candidate": None,
             "sid_fuzzy_score": 0.0,
+            "cs_icao": None,
+            "cs_unknown_airline": False,
         }
         final_text = raw_text
 
-    cfg = get_settings()
+    # LLM fallback — only in session mode, when enabled, when we actually have
+    # session lists AND the deterministic pass could not confidently resolve an
+    # entity we have a list for (callsign, or SID if session SIDs were given).
+    llm_enabled = cfg.llm_fallback if llm_fallback is None else llm_fallback
+    cs_unresolved = bool(callsigns_list) and (
+        steps["cs_fuzzy_candidate"] is None or steps["cs_fuzzy_score"] < FUZZY_THRESHOLD
+    )
+    sid_unresolved = bool(sids_list) and (
+        steps["sid_fuzzy_candidate"] is None or steps["sid_fuzzy_score"] < FUZZY_THRESHOLD
+    )
+    deterministic_failed = cs_unresolved or sid_unresolved
+
+    llm_applied = False
+    llm_latency_s = 0.0
+    if (
+        apply_corrections
+        and context_mode == "session"
+        and llm_enabled
+        and (callsigns_list or sids_list)
+        and deterministic_failed
+    ):
+        t0 = time.perf_counter()
+        llm_text, applied = llm_map_entities(
+            final_text, callsigns_list, sids_list, cfg.llm_model,
+        )
+        llm_latency_s = time.perf_counter() - t0
+        if applied and llm_text and llm_text != final_text:
+            final_text = llm_text
+            llm_applied = True
+
     response: dict = {
         # "text" kept for backward compatibility with existing clients
         # (controller_hmi_service/static/js/ptt.js reads data.text).
@@ -139,6 +175,8 @@ async def transcribe(
         "duration_s": duration_s,
         "model": cfg.hf_model,
         "context_mode": context_mode,
+        "llm_applied": llm_applied,
+        "llm_latency_s": llm_latency_s,
     }
 
     # If orchestrator is configured, dispatch the transcription for agent routing
