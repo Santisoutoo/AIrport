@@ -181,8 +181,10 @@ Full guides live in the [project wiki](https://github.com/Santisoutoo/AIrport/wi
 
 <div align="center">
 
-[Wiki](https://github.com/Santisoutoo/AIrport/wiki) · [License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Dataset (Hugging Face)](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus) · [taxitolearn.com/airport.html](https://taxitolearn.com/airport.html)
+[Wiki](https://github.com/Santisoutoo/AIrport/wiki) · [License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Dataset (Hugging Face)](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus)
 
 *This repository accompanies the paper "Pseudopilot Automation via LLM-Based Multi-Agent Systems for ATC Training in X-Plane 12".*
+
+**Santiago Souto Ortega** · [soutoortegasantiago@gmail.com](mailto:soutoortegasantiago@gmail.com) · [taxitolearn.com](https://taxitolearn.com)
 
 </div>
