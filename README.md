@@ -43,27 +43,6 @@ The controller interacts with the system through voice and can observe the resul
 
 **Keywords:** *air traffic control · artificial intelligence · ATC training · aviation · simulation · virtual assistants*
 
----
-
-## Citation
-
-If you use this work in your research, please cite the paper:
-
-<!-- TODO: update volume/number/pages/DOI upon acceptance -->
-```bibtex
-@article{souto2026airport,
-  title     = {Pseudopilot Automation via {LLM}-Based Multi-Agent Systems for {ATC} Training in {X-Plane} 12},
-  author    = {Souto Ortega, Santiago and Gonz{\'a}lez L{\'o}pez, Isaac},
-  journal   = {Aerospace},
-  publisher = {MDPI},
-  year      = {2026},
-  volume    = {TODO},
-  number    = {TODO},
-  pages     = {TODO},
-  doi       = {TODO}
-}
-```
-
 The pilot readback corpus used to fine-tune the readback model is publicly available on [Hugging Face](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus):
 
 ```bibtex
@@ -77,8 +56,6 @@ The pilot readback corpus used to fine-tune the readback model is publicly avail
 ```
 
 The same agent-validation dataset is also available in audio form. The audio version is not publicly hosted -- to request access, contact [Santiago Souto Ortega](mailto:soutoortegasantiago@gmail.com).
-
----
 
 ## Overview
 
@@ -204,8 +181,10 @@ Full guides live in the [project wiki](https://github.com/Santisoutoo/AIrport/wi
 
 <div align="center">
 
-[Wiki](https://github.com/Santisoutoo/AIrport/wiki) · [License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Dataset (Hugging Face)](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus) · [taxitolearn.com/airport.html](https://taxitolearn.com/airport.html)
+[Wiki](https://github.com/Santisoutoo/AIrport/wiki) · [License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Dataset (Hugging Face)](https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus)
 
 *This repository accompanies the paper "Pseudopilot Automation via LLM-Based Multi-Agent Systems for ATC Training in X-Plane 12".*
+
+**Santiago Souto Ortega** · [soutoortegasantiago@gmail.com](mailto:soutoortegasantiago@gmail.com) · [taxitolearn.com](https://taxitolearn.com)
 
 </div>
