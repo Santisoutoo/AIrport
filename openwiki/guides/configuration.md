@@ -13,7 +13,7 @@ settings module.
 | `DEL_AGENT_URL` / `GND_AGENT_URL` / `TWR_AGENT_URL` | — | Cloud Run URLs of the pilot agents ([deployment guide](cloud-agents-deployment.md)). `.env.example` ships a stray `DEL_AGENT_URL=1` — replace it. |
 | `VERTEX_PROJECT` | — | GCP project ID. Compose forwards it as `GOOGLE_CLOUD_PROJECT` to ASR and Orchestrator. |
 | `VERTEX_LOCATION` | `global` | Forwarded as `GOOGLE_CLOUD_LOCATION`. |
-| `GEMINI_MODEL` | `gemini-3-flash-preview` | Forwarded as `ASR_LLM_MODEL` (ASR corrector) and `AGENT_MODEL` (Orchestrator agent; also required by each Cloud Run agent). |
+| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Forwarded as `ASR_LLM_MODEL` (ASR corrector) and `AGENT_MODEL` (Orchestrator agent; also required by each Cloud Run agent). |
 | ⚠ `GOOGLE_APPLICATION_CREDENTIALS_JSON` | — | Service-account JSON **on a single line**; read by ASR and Orchestrator (the Orchestrator entrypoint writes it to `/tmp/sa-key.json`). Missing from `.env.example`. |
 | `GOOGLE_GENAI_USE_VERTEXAI` | `True` (set by compose) | Makes google-genai/adk use Vertex AI instead of an API key. |
 | `GCP_SA_KEY_PATH` / `GCLOUD_CREDENTIALS_DIR` | `./secrets/sa-key.json` / — | Alternative key-file mounting paths. |

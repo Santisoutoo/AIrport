@@ -1,84 +1,133 @@
 # ATC Agents (DEL / GND / TWR)
 
-The three stateless ATC pilot agents that draft ICAO-compliant readbacks. Source under
-[`agents/`](../agents/). Called by the [orchestrator](services/orchestrator_service.md); see the
-[architecture](architecture.md) pipeline.
+Three stateless Gemini pilots, one per controller position, deployed independently to **Google
+Cloud Run** — not part of `docker-compose.yml`. Source under [`agents/`](../agents/); the
+orchestrator reaches them through `DEL_AGENT_URL` / `GND_AGENT_URL` / `TWR_AGENT_URL`. Called by
+the [orchestrator](services/orchestrator_service.md); see the [architecture](architecture.md)
+pipeline.
 
 ## What it does
 
-These are **the pilots**. Every readback a controller hears is drafted by one of three
-stateless Gemini agents, one per controller position (Delivery, Ground, Tower). They receive
-the transmission plus prefetched context, apply ICAO phraseology, and return the pilot's
-reply — they hold no memory and touch no database.
+These are the pilots on the other side of the radio. One Cloud Run service per controller
+position — Delivery, Ground, Tower — each wrapping a single Google ADK `Agent` on Gemini:
+stateless Gemini pilots that draft the ICAO readback — nothing more. They don't know what a
+controller phase is — that state machine (`APP`/`DEL`/`GND`/`TWR`) lives entirely in PostgreSQL,
+owned by the orchestrator; these three are phase-agnostic workers that take a transmission plus
+whatever context the orchestrator decided to attach, and hand back a readback.
 
 | Relations | Modules |
 |---|---|
-| **Called by** | [Orchestrator](services/orchestrator_service.md) (`forward` tool → `POST /agents/<role>/run` on Cloud Run) |
-| **Calls** | Gemini on Vertex AI — nothing else in the stack |
+| **Called by** | The orchestrator's `forward_to_agent` tool only — the routing brain that decides which aircraft, which controller phase, which pilot agent, and turns the reply into state and motion |
+| **Calls** | Gemini (`gemini-3.1-flash-lite`) via Google ADK / Vertex AI — nothing else in the stack |
 
-**Deploy & smoke-test them:** [Cloud Agents Deployment](guides/cloud-agents-deployment.md).
+The call itself is a plain HTTP `POST` — no A2A protocol, no `/tasks/send` handshake.
+`forward_to_agent()` is a single `httpx.post()` against `DEL_AGENT_URL` / `GND_AGENT_URL` /
+`TWR_AGENT_URL` plus the role's path. (An earlier prototype, `services/pilots_communication/`,
+did speak `/tasks/send`; it was never wired into `docker-compose.yml` and isn't part of this
+pipeline.)
 
-## Overview
+## One call, one readback
 
-| Agent | Dir | Role |
-|---|---|---|
-| **DEL** — Clearance Delivery | [`agents/del/`](../agents/del/) | Issues IFR clearances (pre-pushback) |
-| **GND** — Ground Control | [`agents/gnd/`](../agents/gnd/) | Pushback approval, taxi routes |
-| **TWR** — Tower | [`agents/twr/`](../agents/twr/) | Takeoff / landing clearances, runway sequencing |
+Follow one ground exchange end to end. By the time this call happens, the orchestrator has
+already matched the callsign, resolved the phase to GND, and — because this is a taxi
+clearance — run the A\* search over the taxiway graph itself; none of that happens inside the
+agent.
 
-- **Framework:** `google-adk` (Agent Development Kit) + **Gemini** (`gemini-3-flash-preview` by
-  default; via `AGENT_MODEL` / Vertex AI).
-- **Deployment:** each agent is deployed **independently to Google Cloud Run** and reached by the
-  orchestrator through `DEL_AGENT_URL` / `GND_AGENT_URL` / `TWR_AGENT_URL`. They are **not** part
-  of `docker-compose.yml`.
-- **Stateless:** the orchestrator passes all needed context (flight plan, clearances, weather,
-  aircraft state) on every call; agents hold no cross-request memory of their own.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant O as Orchestrator forward tool
+    participant M as main.py FastAPI
+    participant R as runner.py ADK Runner
+    participant G as Gemini gemini-3.1-flash-lite
+    O->>M: POST /agents/ground/run
+    M->>R: run_agent(session_id, message, clearance_data)
+    R->>R: get or create ADK session by session_id
+    R->>G: Content = message + CONTEXT block
+    Note over G: tools = none - the agent cannot look anything up
+    G-->>R: streamed events, final response text
+    R->>R: regex-extract the JSON block
+    R-->>M: instruction_text + taxi_data
+    M-->>O: RunResponse JSON
+```
 
-## Per-agent layout
+`main.py` is a thin FastAPI wrapper: the `POST` handler hands the call to `run_agent()` on a
+four-worker `ThreadPoolExecutor`, because `runner.py` opens its own event loop with
+`asyncio.run()` and a FastAPI handler is already inside one — the same constraint the
+orchestrator's own runner works around. Inside `runner.py`, an `InMemorySessionService` keyed by
+`session_id` gives the ADK `Runner` a place to keep turn history for a live conversation; it
+isn't depended on for facts, since the orchestrator re-attaches full context on every call — a
+cold Cloud Run instance with an empty session table produces the same reply. Once Gemini answers,
+the runner regexes `\{.*\}` out of the raw text, `json.loads`s it, and pulls the two fields the
+prompt's output contract promised.
 
-Each agent directory follows the same shape:
+## Why stateless
+
+The design argument is upstream, not in these services. The orchestrator already merges
+PostgreSQL clearances, the flight plan, live Redis state, and — for GND taxi clearances — a
+pre-computed A\* route, before it ever calls `forward_to_agent()`. Because all of that lands in
+the request body, the pilot agent needs no database connection, no Redis client, and no tool the
+way the orchestrator's own routing agent has six. That buys three things: Cloud Run can scale
+each agent to zero between transmissions since there's no persistent connection to keep warm;
+benchmarking is hermetic — [`benchmark_agents.py`](../agents_evaluation/benchmark_agents.py) can
+replay a fixed corpus entry against the live endpoint and get a repeatable grade without standing
+up the rest of the stack; and there's no cross-request drift, because nothing about aircraft N's
+clearance can leak into aircraft M's readback through shared state.
+
+## The three positions
+
+| Agent | Source | Clears | Receives | Returns |
+|---|---|---|---|---|
+| **DEL** | [`agents/del/`](../agents/del/) | IFR clearance, pre-pushback | `flight_plan`, `atis` | `clearance_text` + `clearance_data` (squawk, initial_altitude, instrumental_departure, runway_in_use, altimeter, destination_icao) |
+| **GND** | [`agents/gnd/`](../agents/gnd/) | Pushback + taxi route | `clearance_data`, incl. `taxi_route.taxiway_sequence` | `instruction_text` + `taxi_data` (pushback_approved, taxi_route, runway_in_use, stand_id, taxi_purpose) |
+| **TWR** | [`agents/twr/`](../agents/twr/) | Lineup, takeoff, landing, go-around, handoff to ground | `clearance_data` | `reply_text` + `reply_data` (runway_in_use, sid or frequency) |
+
+*DEL:* "Cleared to Barcelona via DVOR2G departure, maintain 6000 feet, squawk 2341, QNH 1013,
+EC-REU." *GND:* "Iberia 123, taxi holding point runway 06R via Bravo, Delta, Echo." *TWR:*
+"Runway 32L, cleared for takeoff, NANDO3R departure, EC-REU."
+
+TWR's prompt actually classifies every reply into a `clearance_type` — `takeoff` / `lineup` /
+`landing` / `goaround` / `handoff_gnd` / `other` — as a top-level sibling of `reply_text` in the
+JSON it's told to emit. `runner.py`, though, only extracts `reply_text` and `reply_data`;
+`clearance_type` is parsed and then discarded, and `RunResponse` has no field for it. The
+classification logic is real and drives the phrasing, it just never crosses the HTTP boundary
+back to the orchestrator today.
+
+## Anatomy of an agent
 
 ```
 agents/<phase>/
-  main.py                     # FastAPI/HTTP entrypoint exposed on Cloud Run
-  runner.py                   # google-adk Runner wiring: builds Content, runs the agent, extracts reply
-  agent/agent.py              # the adk Agent definition (model, tools, instruction)
-  agent/prompts/              # system / instruction prompts (ICAO phraseology rules)
-  agent/tools/                # (gnd, twr) agent-side tools
-  shared/callbacks.py         # (gnd, twr) adk callbacks (logging / guardrails)
-  Dockerfile, requirements.txt
+  main.py                   # FastAPI: POST /agents/<role>/run, GET /health, GET /agents/<role>/info
+  runner.py                 # ADK Runner + InMemorySessionService, JSON extraction
+  agent/agent.py             # Agent(model=AGENT_MODEL, tools=[], instruction=SYSTEM_PROMPT)
+  agent/prompts/system.py     # ICAO phraseology rules + the JSON output contract
+  agent/tools/                # gnd, twr only - present but empty, nothing registered on the Agent
+  shared/callbacks.py          # log_before / log_after - a local copy per agent
 ```
 
-## Runner pattern
+The prompt in `agent/prompts/system.py` is where all the ATC knowledge actually lives:
+message-type classification (a clearance versus a greeting versus "say again"), the exact ICAO
+readback phrasing, and the JSON shape the runner expects back. `agent/tools/` exists as an empty
+package under GND and TWR — a leftover from an earlier shape. It's not used: the `Agent(...)`
+constructor in every `agent/agent.py` passes `tools=[]` explicitly, so nothing is actually
+callable from inside the model. `shared/callbacks.py` is duplicated per agent rather than
+imported once — one `log_before`/`log_after` pair per file, each tuned to that agent's own field
+names (`clearance_data`, `taxi_data`, `reply_data`) for structured before/after-agent logging.
+Despite the name, this is not the repo-wide [`shared/`](shared.md) package — it's a same-named,
+independent directory local to each agent.
 
-Runners use an in-memory adk session keyed by `session_id`, create the session on first contact,
-then stream events and collect the final response text. Example
-([`agents/gnd/runner.py`](../agents/gnd/runner.py)):
+## Deployment and evaluation
 
-```python
-_runner = Runner(agent=gnd_agent, app_name="airport_gnd", session_service=InMemorySessionService())
-
-def run_agent(session_id, message, clearance_data=None):
-    # orchestrator-provided context is appended under a [CONTEXT] block
-    enriched = message + f"\n[CONTEXT]\nClearance data: {clearance_data}"
-    # ... create/get session, run_async, collect event.is_final_response() text
-```
-
-The orchestrator enriches each call with pre-fetched context so the agent doesn't have to fetch
-data itself. GND, for instance, receives `clearance_data`.
-
-## How the orchestrator reaches them
-
-The orchestrator's `forward` tool
-([`services/orchestrator_service/agent/tools/forward.py`](../services/orchestrator_service/agent/tools/forward.py))
-posts the transmission to the selected agent's endpoint and returns the readback. Which agent is
-chosen depends on the aircraft's phase (see the state machine in [architecture](architecture.md)).
-
-## Evaluation
-
-Agent quality and WER are benchmarked against phase-specific corpora under
-[`agents_evaluation/`](../agents_evaluation/) (`corpus_wer/del|gnd|twr`). See
-[data-and-testing](data-and-testing.md).
+Each agent deploys independently with its own `gcloud run deploy`; the walkthrough, required env
+vars, and smoke-test `curl` commands are in
+[Cloud Agents Deployment](guides/cloud-agents-deployment.md). Quality is tracked outside the
+request path: [`benchmark_agents.py`](../agents_evaluation/benchmark_agents.py) replays a
+142-entry corpus (42 DEL + 50 GND + 50 TWR) against the live Cloud Run endpoints and reports
+latency percentiles plus schema validity per agent; [`validate_agents.py`](../agents_evaluation/validate_agents.py)
+goes further, phonetically decoding the expected squawk/altitude/runway out of the ATC text and
+comparing it field by field against what the agent actually returned. Both read their corpus from
+[`agents_evaluation/corpus_wer/`](../agents_evaluation/corpus_wer/) (`del/`, `gnd/`, `twr/`); see
+[data-and-testing](data-and-testing.md) for the rest of the evaluation and test layout.
 
 ## Related
-[index](index.md) · [architecture](architecture.md) · [orchestrator](services/orchestrator_service.md) · [data-and-testing](data-and-testing.md)
+[index](index.md) · [architecture](architecture.md) · [orchestrator](services/orchestrator_service.md) · [data-and-testing](data-and-testing.md) · [Cloud Agents Deployment](guides/cloud-agents-deployment.md)

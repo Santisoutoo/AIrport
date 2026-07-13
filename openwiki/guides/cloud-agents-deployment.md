@@ -31,11 +31,11 @@ gcloud run deploy airport-del-agent \
   --source agents/del \
   --region europe-west1 \
   --service-account <sa-name>@<project>.iam.gserviceaccount.com \
-  --set-env-vars AGENT_MODEL=gemini-3-flash-preview,GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=<project>,GOOGLE_CLOUD_LOCATION=global
+  --set-env-vars AGENT_MODEL=gemini-3.1-flash-lite,GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=<project>,GOOGLE_CLOUD_LOCATION=global
 ```
 
 `AGENT_MODEL` is **required** — the agents read it at startup (`os.environ["AGENT_MODEL"]`).
-Keep it aligned with `GEMINI_MODEL` in your `.env` (default `gemini-3-flash-preview`).
+Keep it aligned with `GEMINI_MODEL` in your `.env` (default `gemini-3.1-flash-lite`).
 
 ## 3. Wire the URLs into `.env`
 
