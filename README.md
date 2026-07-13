@@ -147,7 +147,7 @@ Pilot (TTS): "Taxi to holding point runway 25 via Charlie, Iberia 5471."
 | Runtime | Python 3.11, [uv](https://github.com/astral-sh/uv) |
 | Web framework | FastAPI + Uvicorn |
 | Voice ASR | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) + [Whisper fine-tuned for ATC](https://huggingface.co/jacktol/whisper-medium.en-fine-tuned-for-ATC-faster-whisper) |
-| AI agents | google-adk + Gemini (`gemini-3-flash-preview`) on Cloud Run |
+| AI agents | google-adk + Gemini (`gemini-3.1-flash-lite`) on Cloud Run |
 | Voice TTS | X-Plane 12 built-in |
 | Graph routing | networkx (taxi route graphs) |
 | Simulator | X-Plane 12 + [XPPython3](https://xppython3.readthedocs.io/), xplane-airports |
