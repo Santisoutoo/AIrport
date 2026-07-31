@@ -111,6 +111,11 @@ def _transcribe_transformers(
     if initial_prompt:
         try:
             prompt_ids = pipe.tokenizer.get_prompt_ids(initial_prompt, return_tensors="pt")
+            # The prompt tensor must live on the model's device: on GPU the
+            # tokenizer returns it on CPU and generate() fails with "Expected
+            # all tensors to be on the same device" (then the fallback below
+            # silently dropped the prompt).
+            prompt_ids = prompt_ids.to(pipe.device)
         except Exception as exc:
             logger.warning(
                 "[ASR] could not build prompt_ids for this transformers version (%s) — "
