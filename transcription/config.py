@@ -21,7 +21,7 @@ class Config:
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
     # Cloud — Vertex AI via LiteLLM
-    VERTEX_MODEL: str = os.getenv("VERTEX_MODEL", "gemini-3-flash-preview")
+    VERTEX_MODEL: str = os.getenv("VERTEX_MODEL", "gemini-3.1-flash-lite")
     VERTEX_PROJECT: str = os.getenv("VERTEX_PROJECT", "")
     VERTEX_LOCATION: str = os.getenv("VERTEX_LOCATION", "us-central1")
 

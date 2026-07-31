@@ -38,7 +38,7 @@ Every variable defined in [`.env.example`](../.env.example), grouped by subsyste
 |---|---|---|
 | `VERTEX_PROJECT` | -- | GCP project ID |
 | `VERTEX_LOCATION` | `global` | Vertex AI region |
-| `GEMINI_MODEL` | `gemini-3-flash-preview` | Gemini model used by agents |
+| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Gemini model used by agents |
 | `GCP_SA_KEY_PATH` | `./secrets/sa-key.json` | Path to service account JSON |
 | `GCLOUD_CREDENTIALS_DIR` | -- | Optional directory for additional GCP credentials |
 

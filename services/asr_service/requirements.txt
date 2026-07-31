@@ -7,3 +7,4 @@ faster-whisper
 transformers
 accelerate
 rapidfuzz
+google-genai

@@ -1,0 +1,5 @@
+dep,values_correct_pass_pct,completeness_pass_pct,no_hallucination_pass_pct,phraseology_mean,phraseology_p5_pct
+DEL,100.0,76.8,94.0,3.4,41.0
+GND,92.2,81.2,78.0,3.02,21.0
+TWR,98.7,91.9,97.0,3.51,44.0
+TOTAL,97.4,83.4,89.7,3.31,35.3

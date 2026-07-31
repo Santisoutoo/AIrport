@@ -125,7 +125,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - ORCHESTRATOR_URL=http://orchestrator_service:8006
-      - ASR_LLM_MODEL=${GEMINI_MODEL:-gemini-3-flash-preview}
+      - ASR_LLM_MODEL=${GEMINI_MODEL:-gemini-3.1-flash-lite}
       - GOOGLE_GENAI_USE_VERTEXAI=True
       - GOOGLE_CLOUD_PROJECT=${VERTEX_PROJECT}
       - GOOGLE_CLOUD_LOCATION=${VERTEX_LOCATION:-global}
@@ -236,7 +236,7 @@ services:
       - DEL_AGENT_URL=${DEL_AGENT_URL:-}
       - GND_AGENT_URL=${GND_AGENT_URL:-}
       - TWR_AGENT_URL=${TWR_AGENT_URL:-}
-      - AGENT_MODEL=${GEMINI_MODEL:-gemini-3-flash-preview}
+      - AGENT_MODEL=${GEMINI_MODEL:-gemini-3.1-flash-lite}
       - GOOGLE_GENAI_USE_VERTEXAI=True
       - GOOGLE_CLOUD_PROJECT=${VERTEX_PROJECT}
       - GOOGLE_CLOUD_LOCATION=${VERTEX_LOCATION:-global}
