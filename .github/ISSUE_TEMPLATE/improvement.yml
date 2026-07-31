@@ -1,0 +1,50 @@
+name: Improvement / tech debt
+description: Proposal for an improvement, refactor, or code cleanup
+title: "[Improvement] "
+labels: ["improvement"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and evidence
+      description: "What the problem is and how it was detected (file:line, metrics, analysis reports)"
+      placeholder: e.g. dispatch_taxi_plan is 176 lines with degree 68 in the call graph
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Concrete change being proposed
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Verifiable checklist to consider the issue done
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 (now)
+        - P1 (next)
+        - P2 (planned)
+        - P3 (someday)
+    validations:
+      required: true
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Estimated effort
+      options:
+        - S (hours)
+        - M (a day)
+        - L (multiple days)
+    validations:
+      required: true
