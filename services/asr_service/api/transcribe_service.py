@@ -41,11 +41,17 @@ def load_model() -> Any:
     else:  # transformers pipeline (large-v3 etc.)
         import torch
         from transformers import pipeline
-        device = 0 if cfg.whisper_device == "cuda" and torch.cuda.is_available() else -1
+        on_gpu = cfg.whisper_device == "cuda" and torch.cuda.is_available()
+        device = 0 if on_gpu else -1
+        pipe_kwargs: dict = {}
+        if on_gpu:
+            # fp16 on GPU halves memory / speeds up inference; CPU stays fp32.
+            pipe_kwargs["torch_dtype"] = torch.float16
         _model = pipeline(
             "automatic-speech-recognition",
             model=cfg.hf_model,
             device=device,
+            **pipe_kwargs,
         )
 
     _loaded_model_id = cfg.hf_model
@@ -105,6 +111,11 @@ def _transcribe_transformers(
     if initial_prompt:
         try:
             prompt_ids = pipe.tokenizer.get_prompt_ids(initial_prompt, return_tensors="pt")
+            # The prompt tensor must live on the model's device: on GPU the
+            # tokenizer returns it on CPU and generate() fails with "Expected
+            # all tensors to be on the same device" (then the fallback below
+            # silently dropped the prompt).
+            prompt_ids = prompt_ids.to(pipe.device)
         except Exception as exc:
             logger.warning(
                 "[ASR] could not build prompt_ids for this transformers version (%s) — "

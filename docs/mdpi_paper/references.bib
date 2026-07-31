@@ -1,0 +1,173 @@
+% References for "Pseudopilot Automation via LLM-Based Multi-Agent
+% Systems for ATC Training in X-Plane 12"
+% MDPI Aerospace, 2026
+
+% --- Whisper / ASR ---------------------------------------------------
+
+@article{radford2023whisper,
+  author    = {Radford, Alec and Kim, Jong Wook and Xu, Tao and Brockman, Greg and McLeavey, Christine and Sutskever, Ilya},
+  title     = {Robust Speech Recognition via Large-Scale Weak Supervision},
+  journal   = {Proceedings of the 40th International Conference on Machine Learning (ICML)},
+  year      = {2023},
+  volume    = {202},
+  pages     = {28492--28518}
+}
+
+@inproceedings{zuluaga2023atco2,
+  author    = {Zuluaga-Gomez, Juan and Vesel{\'y}, Karel and Blatt, Alexander and Motlicek, Petr and Kl\'{a}k, Daniel and Tart, Allan and Sz{\"o}ke, Igor and Prasad, Amrutha and Sarfjoo, Seyyed Saeed and Kol\v{c}\'{a}\v{r}, Petr and others},
+  title     = {ATCO2 Corpus: A Large-Scale Dataset for Research on Automatic Speech Recognition and Natural Language Understanding of Air Traffic Control Communications},
+  booktitle = {Proceedings of the 24th Annual Conference of the International Speech Communication Association (INTERSPEECH)},
+  year      = {2023},
+  pages     = {3078--3082},
+  doi       = {10.21437/Interspeech.2023-1063}
+}
+
+@misc{atco2_corpus,
+  author       = {Zuluaga-Gomez, Juan and others},
+  title        = {{ATCO2} Corpus},
+  year         = {2023},
+  publisher    = {OpenSLR},
+  howpublished = {\url{https://www.openslr.org/140/}},
+  note         = {SLR140}
+}
+
+@article{nandakumar2024mixed,
+  author    = {Nandakumar, Karthik and others},
+  title     = {Mixed-Precision Training of Deep Neural Networks},
+  journal   = {arXiv preprint},
+  year      = {2024},
+  eprint    = {1710.03740},
+  note      = {arXiv:1710.03740}
+}
+
+@misc{faster_whisper,
+  author       = {{SYSTRAN}},
+  title        = {faster-whisper: Faster Whisper transcription with CTranslate2},
+  year         = {2023},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/SYSTRAN/faster-whisper}}
+}
+
+@misc{vanDoorn_whisper_atc,
+  author       = {van Doorn, J.},
+  title        = {Whisper fine-tuned for ATC on {ATCO2}},
+  year         = {2024},
+  publisher    = {Hugging Face},
+  howpublished = {\url{https://huggingface.co/jlvdoorn}}
+}
+
+@misc{jacktol_whisper_atc,
+  author       = {Tol, Jack},
+  title        = {Whisper medium.en fine-tuned for {ATC}},
+  year         = {2024},
+  publisher    = {Hugging Face},
+  howpublished = {\url{https://huggingface.co/jacktol/whisper-medium.en-fine-tuned-for-ATC-faster-whisper}}
+}
+
+% --- Pseudopilot / ATC training --------------------------------------
+
+@inproceedings{schmidt2019pseudopilot,
+  author    = {Schmidt, Anna and others},
+  title     = {A Speech-Enabled Simulation System for Air Traffic Controller Training},
+  booktitle = {Proceedings of the 13th USA/Europe Air Traffic Management Research and Development Seminar (ATM Seminar)},
+  year      = {2019}
+}
+
+@article{helmke2021asr,
+  author    = {Helmke, Hartmut and others},
+  title     = {Automatic Speech Recognition and Understanding for Air Traffic Control},
+  journal   = {Aerospace},
+  year      = {2021},
+  volume    = {8},
+  number    = {8},
+  pages     = {219},
+  doi       = {10.3390/aerospace8080219}
+}
+
+% --- LLM Agents / Google ADK / Gemini ---------------------------------
+
+@misc{google_adk,
+  author       = {{Google}},
+  title        = {Agent Development Kit {(ADK)}},
+  year         = {2025},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/google/adk-python}}
+}
+
+@misc{gemini_flash,
+  author       = {{Google DeepMind}},
+  title        = {{Gemini} 2.0 Flash},
+  year         = {2025},
+  howpublished = {\url{https://deepmind.google/technologies/gemini/flash/}}
+}
+
+% --- X-Plane / Simulation --------------------------------------------
+
+@misc{xplane12,
+  author       = {{Laminar Research}},
+  title        = {{X-Plane} 12},
+  year         = {2022},
+  howpublished = {\url{https://www.x-plane.com/}}
+}
+
+@misc{xppython3,
+  author       = {Buck, Peter},
+  title        = {{XPPython3} — Python Interface for {X-Plane}},
+  year         = {2020},
+  howpublished = {\url{https://xppython3.readthedocs.io/}}
+}
+
+% --- Own prior / dataset ----------------------------------------------
+
+@misc{SoutoReadbackCorpus2024,
+  author       = {Souto Ortega, Santiago},
+  title        = {Pilot Readback Corpus},
+  year         = {2024},
+  publisher    = {Hugging Face},
+  howpublished = {\url{https://huggingface.co/datasets/santiisoutoo/pilot-readback-corpus}}
+}
+
+% --- ICAO Standards ---------------------------------------------------
+
+@misc{icao4444,
+  author       = {{International Civil Aviation Organization}},
+  title        = {Procedures for Air Navigation Services — Air Traffic Management ({PANS-ATM}, {Doc}~4444)},
+  year         = {2016},
+  edition      = {16th},
+  publisher    = {ICAO}
+}
+
+@misc{icao9432,
+  author       = {{International Civil Aviation Organization}},
+  title        = {Manual of Radiotelephony ({Doc}~9432)},
+  year         = {2007},
+  edition      = {4th},
+  publisher    = {ICAO}
+}
+
+% --- Cloud / Infrastructure -------------------------------------------
+
+@misc{cloud_run,
+  author       = {{Google Cloud}},
+  title        = {Cloud {Run}},
+  year         = {2025},
+  howpublished = {\url{https://cloud.google.com/run}}
+}
+
+@misc{ctranslate2,
+  author       = {Klein, Guillaume and others},
+  title        = {{CTranslate2}: Fast inference engine for Transformer models},
+  year         = {2022},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/OpenNMT/CTranslate2}}
+}
+
+% --- Evaluation metrics -----------------------------------------------
+
+@misc{rapidfuzz,
+  author       = {Bachmann, Max},
+  title        = {rapidfuzz: Rapid fuzzy string matching in {Python}},
+  year         = {2023},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/rapidfuzz/rapidfuzz}}
+}

@@ -1,0 +1,37 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps: ffmpeg for audio decoding
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python deps — CPU build of torch (only needed to run the CT2 converter;
+# faster-whisper itself uses CTranslate2 at inference time).
+COPY requirements.txt .
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir ctranslate2
+
+# Convert the jlvdoorn ATC-fine-tuned Whisper to an int8 CTranslate2 model at
+# build time so the container ships with the model baked in. faster-whisper
+# then loads this local directory (get_model_backend maps unknown/local IDs to
+# the faster-whisper backend, and int8 is already the default compute type).
+RUN ct2-transformers-converter \
+    --model jlvdoorn/whisper-medium-atco2-asr \
+    --output_dir /models/medium-atco2-ct2 \
+    --quantization int8 \
+    --copy_files tokenizer.json preprocessor_config.json
+
+# Point the service at the local CT2 model on CPU. NOTE: do NOT run
+# download_model.py here — this local non-"faster-whisper" ID would make it
+# attempt transformers.pipeline on the CT2 directory and fail.
+ENV ASR_HF_MODEL=/models/medium-atco2-ct2
+ENV ASR_WHISPER_DEVICE=cpu
+
+COPY . .
+
+# Cloud Run injects PORT env var; default to 8000
+ENV PORT=8000
+
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
