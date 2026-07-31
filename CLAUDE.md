@@ -1,11 +1,14 @@
 # AIrport — Project Instructions
 
-## State Management
+## Language
 
-Always use **Redux Toolkit (RTK)** for all state management.  
-- Use `createSlice`, `createAsyncThunk`, and `configureStore` from `@reduxjs/toolkit`.  
-- Never introduce plain Redux, Zustand, Context API (for global state), or any other state library.  
-- RTK Query is preferred for server state / API calls.
+Everything in this repo is written in **English**, regardless of the language used in
+conversation:
+
+- Code: identifiers, comments, docstrings, log messages.
+- Git: commit messages, branch names.
+- GitHub: issue and PR titles and bodies, labels, milestones, reviews.
+- Documentation: `docs/`, `openwiki/`, READMEs.
 
 ## Documentation (openwiki)
 
