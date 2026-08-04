@@ -2,7 +2,7 @@
 
 import { generateAtis, getAtis } from '../api/client';
 import type { AtisRequest, AtisResponse } from '../types/api';
-import { setILSForArrivalRunway } from './app.js';
+import { setILSForArrivalRunway } from './app';
 
 type TrackedElement = HTMLElement & { _atisTracked?: boolean; _prevTracked?: boolean };
 

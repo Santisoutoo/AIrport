@@ -33,17 +33,8 @@ export default tseslint.config(
     },
   },
   {
-    // Pre-migration vanilla JS: rules that would force rewrites are relaxed
-    // here and removed file-by-file as each module is converted to TS
-    // (epic #59, Phase 2).
-    files: ['src/legacy/**/*.js'],
     rules: {
-      'no-var': 'off',
-      'prefer-const': 'off',
       'no-empty': ['error', { allowEmptyCatch: true }],
-      'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { args: 'none' }],
-      '@typescript-eslint/no-unused-expressions': 'off',
     },
   }
 );

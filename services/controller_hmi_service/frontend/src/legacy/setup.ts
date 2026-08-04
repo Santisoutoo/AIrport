@@ -2,7 +2,7 @@
 
 import { getSessionStatus, login, register, startSession } from '../api/client';
 import { setUsername } from '../lib/storage';
-import { Asr } from './asr.js';
+import { Asr } from './asr';
 
 const HMI_URL = '/';
 

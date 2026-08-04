@@ -6,11 +6,11 @@ import './styles/debrief.css';
 
 import './legacy/weather';
 import './legacy/wind';
-import './legacy/efs.js';
+import './legacy/efs';
 import './legacy/resize';
 import './legacy/atis';
 import './legacy/debrief';
-import './legacy/ptt.js';
+import './legacy/ptt';
 import './legacy/chat';
-import './legacy/app.js';
-import './legacy/header-widgets.js';
+import './legacy/app';
+import './legacy/header-widgets';

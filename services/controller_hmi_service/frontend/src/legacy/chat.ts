@@ -8,7 +8,7 @@
 // only listens and renders each line through Ptt.addAgentMessage().
 
 import type { ChatPayload } from '../types/api';
-import { Ptt } from './ptt.js';
+import { Ptt } from './ptt';
 
 const RECONNECT_MIN_MS = 1000;
 const RECONNECT_MAX_MS = 15000;
