@@ -215,7 +215,6 @@ __marimo__/
 # proyect
 
 *.html
-!services/controller_hmi_service/static/**/*.html
 !services/controller_hmi_service/frontend/*.html
 .env
 *.dat
@@ -228,6 +227,11 @@ __marimo__/
 *.DS_Store
 cloudbuild.yaml
 *.yaml
+
+# Controller HMI frontend: node deps and Vite build output.
+# static/ is entirely generated (npm run build + config.js from main.py).
+services/controller_hmi_service/frontend/node_modules/
+services/controller_hmi_service/static/
 
 # --- CI test fixture: commit the LEBL taxi-router graph data ---
 # Overrides *.dat / *.json above ONLY for the LEBL fixture used by the

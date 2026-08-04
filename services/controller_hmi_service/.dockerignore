@@ -1,0 +1,5 @@
+# Never ship host build state into the image build context
+frontend/node_modules/
+static/
+__pycache__/
+*.pyc

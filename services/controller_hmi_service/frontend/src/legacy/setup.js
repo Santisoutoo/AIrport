@@ -1,3 +1,5 @@
+import { Asr } from './asr.js';
+
 const API = '/api/v1/plugin';
 const HMI_URL = '/';
 
@@ -232,3 +234,7 @@ const App = (() => {
     return { showWelcome, showLogin, showRegister, showSession, showAsr, submitLogin, submitRegister, submitStartSession };
 
 })();
+
+// Bridge for the inline on*= handlers in setup.html (removed in Phase 3).
+window.App = App;
+export { App };

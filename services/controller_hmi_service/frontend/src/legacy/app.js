@@ -1,5 +1,24 @@
 // app.js -- TWR HMI: Main application controller & SMR Map
 
+import {
+    renderFlightStrips,
+    loadStripStates,
+    getStripColumn,
+    getStripPhase,
+    formatFL,
+    formatSpeed,
+    generateSquawk,
+} from './efs.js';
+import {
+    renderWeatherModule,
+    renderTafModule,
+    startUTCClock,
+    updateRefreshTimestamp,
+    setConnectionStatus,
+    escapeHtml,
+} from './weather.js';
+import { initWindInstruments, updateWindInstruments, setRunwayGroups } from './wind.js';
+
 var STRIP_REFRESH_MS = 15000;
 var WEATHER_REFRESH_MS = 60000;
 var AIRPORT_REFRESH_MS = 30000;
@@ -1269,3 +1288,5 @@ function updateRunwaySequence(plans) {
         depContainer.innerHTML = depHtml;
     }
 }
+
+export { currentICAO, flightPlans, rerenderStrips, updateSMRAircraft, setILSForArrivalRunway };

@@ -121,3 +121,7 @@ const Debrief = (() => {
 
     return { openAndGenerate, waitClose };
 })();
+
+// Bridge for the inline on*= handlers in index.html (removed in Phase 3).
+window.Debrief = Debrief;
+export { Debrief };
