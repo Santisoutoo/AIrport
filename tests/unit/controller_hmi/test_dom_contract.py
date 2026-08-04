@@ -49,13 +49,14 @@ JS_CREATED_CLASSES = {
     "screen",  # static in HTML but also toggled generically
 }
 
-# Inline-handler globals -> the JS file whose public surface must expose them.
-MODULE_FILES = {
-    "App": "setup.js",
-    "Asr": "asr.js",
-    "AtisModal": "atis.js",
-    "Ptt": "ptt.js",
-    "Debrief": "debrief.js",
+# Inline-handler globals -> the module (js during migration, ts after) whose
+# public surface must expose them.
+MODULE_STEMS = {
+    "App": "setup",
+    "Asr": "asr",
+    "AtisModal": "atis",
+    "Ptt": "ptt",
+    "Debrief": "debrief",
 }
 
 
@@ -69,8 +70,8 @@ def _html_sources():
 
 
 def _js_sources():
-    files = sorted(JS_DIR.glob("*.js"))
-    assert files, f"no JS files found in {JS_DIR}"
+    files = sorted(JS_DIR.glob("*.js")) + sorted(JS_DIR.glob("*.ts"))
+    assert files, f"no JS/TS files found in {JS_DIR}"
     return {p.name: _read(p) for p in files}
 
 
@@ -165,8 +166,11 @@ def test_inline_handlers_exist_in_js_public_surface():
 
     missing = []
     for (module, method), sources in sorted(handlers.items()):
-        js_file = MODULE_FILES.get(module)
-        if js_file is None:
+        stem = MODULE_STEMS.get(module)
+        js_file = next(
+            (name for name in (f"{stem}.ts", f"{stem}.js") if name in js), None
+        )
+        if stem is None or js_file is None:
             missing.append(
                 f"{module}.{method}  (unknown module, used by {', '.join(sorted(sources))})"
             )
