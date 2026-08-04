@@ -1,6 +1,8 @@
 // efs.ts — 4-column electronic flight strips with drag & drop.
 
 import { getStripStates as fetchStripStates, patchStripState } from '../api/client';
+import { formatFL, formatSpeed, formatTime, generateSquawk, truncateRoute } from '../efs/format';
+import { moveInOrder, sortByUserOrder, sortFlightPlans } from '../efs/ordering';
 import { getStripLabel, setStripLabel } from '../lib/storage';
 import type { FlightPlan, StripColumn, StripStates } from '../types/api';
 import { currentICAO, flightPlans, rerenderStrips, updateSMRAircraft } from './app';
@@ -62,15 +64,7 @@ function _moveOrder(
     const order = stripOrder[col];
     if (order) stripOrder[col] = order.filter((r) => r !== dragReg);
   }
-  const order = (stripOrder[targetColumn] ??= []);
-  const idx = order.indexOf(targetReg);
-  if (idx === -1) {
-    order.push(dragReg);
-  } else if (insertBefore) {
-    order.splice(idx, 0, dragReg);
-  } else {
-    order.splice(idx + 1, 0, dragReg);
-  }
+  stripOrder[targetColumn] = moveInOrder(stripOrder[targetColumn] ?? [], dragReg, targetReg, insertBefore);
 }
 
 // ---- Load strip states from server ----
@@ -155,14 +149,7 @@ export function renderFlightStrips(plans: FlightPlan[]): void {
 
   // Sort each column by user-defined order, new arrivals go to the end
   COLUMNS.forEach((col) => {
-    const order = stripOrder[col] || [];
-    byColumn[col].sort((a, b) => {
-      let ai = order.indexOf(a.aircraft_registration);
-      let bi = order.indexOf(b.aircraft_registration);
-      if (ai === -1) ai = Infinity;
-      if (bi === -1) bi = Infinity;
-      return ai - bi;
-    });
+    byColumn[col] = sortByUserOrder(byColumn[col], stripOrder[col] || []);
   });
 
   // Render each column in order
@@ -208,24 +195,7 @@ function emptyState(): string {
   );
 }
 
-// ---- Format helpers ----
-
-export function formatFL(feet: number | undefined): string {
-  if (!feet) return '----';
-  if (feet >= 10000) return 'F' + Math.round(feet / 100);
-  return 'A' + String(Math.round(feet / 100)).padStart(3, '0');
-}
-
-export function formatSpeed(knots: number | undefined): string {
-  if (!knots) return '-----';
-  return 'N' + String(knots).padStart(4, '0');
-}
-
-export function formatTime(hhmm: number | undefined): string {
-  if (!hhmm && hhmm !== 0) return '--:--';
-  const s = String(Math.floor(hhmm)).padStart(4, '0');
-  return s.slice(0, 2) + ':' + s.slice(2, 4);
-}
+// Format helpers now live in src/efs/format.ts (re-exported below).
 
 // ---- Create Strip Card (IVAO paper-strip grid) ----
 
@@ -374,30 +344,6 @@ function createStripElement(plan: FlightPlan, phase: string, isArrival: boolean)
   return strip;
 }
 
-export function generateSquawk(reg: string): string {
-  // Simple hash-based squawk code from registration
-  let hash = 0;
-  for (let i = 0; i < reg.length; i++) {
-    hash = (hash << 5) - hash + reg.charCodeAt(i);
-    hash |= 0;
-  }
-  const code = (Math.abs(hash) % 7000) + 1000;
-  // Ensure valid squawk (digits 0-7 only)
-  const str = String(code);
-  let result = '';
-  for (let j = 0; j < 4; j++) {
-    const d = parseInt(str[j] ?? '0') || 0;
-    result += Math.min(d, 7);
-  }
-  return result;
-}
-
-export function truncateRoute(route: string | undefined, maxLen: number): string {
-  if (!route) return 'DCT';
-  if (route.length <= maxLen) return route;
-  return route.substring(0, maxLen) + '...';
-}
-
 function _initDropZones(): void {
   Object.keys(COLUMN_DEFAULT_PHASE).forEach((colId) => {
     const col = document.getElementById(colId);
@@ -439,17 +385,5 @@ function _initDropZones(): void {
   });
 }
 
-export function sortFlightPlans(plans: FlightPlan[], sortBy: string): FlightPlan[] {
-  return plans.slice().sort((a, b) => {
-    switch (sortBy) {
-      case 'departure_time':
-        return (a.departure_time ?? 0) - (b.departure_time ?? 0);
-      case 'callsign':
-        return a.aircraft_registration.localeCompare(b.aircraft_registration);
-      case 'destination':
-        return (a.destination_ICAO ?? '').localeCompare(b.destination_ICAO ?? '');
-      default:
-        return 0;
-    }
-  });
-}
+// Re-export the pure helpers so existing importers keep one entry point.
+export { formatFL, formatSpeed, formatTime, generateSquawk, truncateRoute, sortFlightPlans };
