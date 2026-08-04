@@ -206,15 +206,19 @@ def test_route_with_via_passes_through_taxiway_node(lebl_graph):
     )
 
 
-# ---- Documented behaviour (xfail) ------------------------------------------
+# ---- Unknown-via behaviour: lenient vs strict (issue #71) -------------------
+# find_route_via keeps its historical best-effort behaviour for legacy
+# callers (plot scripts, destination-only fallback): an unknown taxiway in
+# `via` is silently ignored. Controller clearances are now routed by the
+# strict API instead (issue #67), which must fail naming the token — the
+# former xfail documenting the silent drop is replaced by these two tests.
 
-@pytest.mark.xfail(
-    reason="Best-effort via behaviour: an unknown taxiway in `via` is silently "
-    "ignored by _find_nearest_via_start (graph.py). The route succeeds but "
-    "does not force the missing waypoint. Documented for memoria 5.3.3 as a "
-    "deliberate design decision to be discussed."
-)
-def test_via_with_unknown_taxiway_raises_or_warns(lebl_graph):
+def test_lenient_via_with_unknown_taxiway_still_routes(lebl_graph):
     r = lebl_graph.find_route_via("Q", "06R", via=["ZZ99"])
+    assert r["success"] is True
+
+
+def test_strict_via_with_unknown_taxiway_fails(lebl_graph):
+    r = lebl_graph.find_route_strict("Q", ["ZZ99"], "06R")
     assert r["success"] is False
-    assert "ZZ99" in r.get("error", "")
+    assert "ZZ99" in r["error"]
