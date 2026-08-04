@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIrport TWR — Controller HMI</title>
+    <link rel="stylesheet" href="css/efs.css">
+    <link rel="stylesheet" href="css/debrief.css">
+</head>
+<body>
+
+    <!-- ================= Header ================= -->
+    <header id="header">
+        <div class="header-left">
+            <h1>AIrport TWR</h1>
+            <span id="airport-badge" class="badge airport-badge">----</span>
+        </div>
+        <div class="header-right">
+            <div id="stopwatch-widget" title="Stopwatch">
+                <span class="sw-dot"></span>
+                <span class="sw-display" id="sw-display">00:00</span>
+                <button class="sw-btn" id="sw-toggle" title="Start / stop">&#9654;</button>
+                <button class="sw-btn" id="sw-reset" title="Reset">&#8634;</button>
+            </div>
+            <span id="utc-clock" class="clock">--:--:--Z</span>
+            <button id="atis-btn" onclick="AtisModal.open()">ATIS</button>
+            <button id="end-session-btn">END SESSION</button>
+        </div>
+    </header>
+
+    <!-- ================= Main layout ================= -->
+    <div id="twr-layout">
+
+        <!-- ---- Left panel: dashboard + strips + wind ---- -->
+        <div id="left-panel">
+
+            <div id="dashboard-superior">
+                <div id="dash-pressure" class="dash-block">
+                    <div class="dash-pressure-item">
+                        <label>QNH</label>
+                        <span id="qnh-value" class="pressure-value">----</span>
+                        <span class="pressure-unit">hPa</span>
+                    </div>
+                    <div class="dash-pressure-item">
+                        <label>QFE</label>
+                        <span id="qfe-value" class="pressure-value">----</span>
+                        <span class="pressure-unit">hPa</span>
+                    </div>
+                    <span class="elev-badge">ELEV 1211 FT</span>
+                </div>
+
+                <div id="dash-metar" class="dash-block">
+                    <div class="dash-metar-header">
+                        <span class="dash-label">METAR</span>
+                        <span id="wx-flight-cat" class="flight-cat-badge">--</span>
+                    </div>
+                    <span id="wx-raw-metar" class="raw-metar-mini">--</span>
+                    <div class="dash-metar-icons">
+                        <div class="metar-icon-item" title="Clouds">
+                            <svg class="metar-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a4.5 4.5 0 100-9 6 6 0 10-11.6 2A4 4 0 007 19h10.5z"/></svg>
+                            <span id="metar-clouds-text" class="metar-icon-label">--</span>
+                        </div>
+                        <div class="metar-icon-item" title="Visibility">
+                            <svg class="metar-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span id="metar-vis-text" class="metar-icon-label">--</span>
+                            <div class="vis-bar-container"><div id="metar-vis-bar" class="vis-bar-fill"></div></div>
+                        </div>
+                        <div class="metar-icon-item" title="Wind">
+                            <svg class="metar-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.6 4.6A2 2 0 1111 8H2m10.6 11.4A2 2 0 1014 16H2m15.7-8.3A2.5 2.5 0 1119.5 12H2"/></svg>
+                            <span id="metar-wind-text" class="metar-icon-label">--</span>
+                        </div>
+                        <div class="metar-icon-item" title="Weather">
+                            <svg class="metar-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 13v8m-8-8v8m4-6v8m8-13a4.5 4.5 0 00-4-6.5 6 6 0 00-11.6 2A4 4 0 005 13h15z"/></svg>
+                            <span id="metar-wx-text" class="metar-icon-label">NIL</span>
+                        </div>
+                        <div class="metar-icon-item" title="Temperature / Dewpoint">
+                            <svg class="metar-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>
+                            <span id="metar-temp-text" class="metar-icon-label">--/--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="dash-taf" class="dash-block">
+                    <div class="dash-taf-header">
+                        <span class="dash-label">TAF</span>
+                        <span id="taf-validity" class="taf-validity-badge">--</span>
+                    </div>
+                    <span id="wx-raw-taf" class="raw-metar-mini">--</span>
+                    <div id="wx-decoded-taf" class="taf-mini-content"></div>
+                </div>
+            </div>
+
+            <div id="rh-dash" class="resize-handle resize-handle--horizontal"></div>
+
+            <div id="strips-columns">
+                <div class="strip-column">
+                    <div class="strip-col-header pretaxi-header">
+                        <span class="col-title">Pre-Taxi</span>
+                        <span class="col-desc">Clearance / Pushback</span>
+                        <span id="count-pretaxi" class="col-count">0</span>
+                    </div>
+                    <div id="strips-pretaxi" class="strip-col-body"></div>
+                </div>
+                <div class="strip-column">
+                    <div class="strip-col-header taxi-header">
+                        <span class="col-title">Taxi</span>
+                        <span class="col-desc">Moving to RWY</span>
+                        <span id="count-taxi" class="col-count">0</span>
+                    </div>
+                    <div id="strips-taxi" class="strip-col-body"></div>
+                </div>
+                <div class="strip-column">
+                    <div class="strip-col-header runway-header">
+                        <span class="col-title">Runway</span>
+                        <span class="col-desc">Line-up / Cleared</span>
+                        <span id="count-runway" class="col-count">0</span>
+                    </div>
+                    <div id="strips-runway" class="strip-col-body"></div>
+                </div>
+                <div class="strip-column">
+                    <div class="strip-col-header arrivals-header">
+                        <span class="col-title">Arrivals</span>
+                        <span class="col-desc">Approach / Landed</span>
+                        <span id="count-arrivals" class="col-count">0</span>
+                    </div>
+                    <div id="strips-arrivals" class="strip-col-body"></div>
+                </div>
+            </div>
+
+            <div id="rh-wind" class="resize-handle resize-handle--horizontal"></div>
+
+            <div id="bottom-bar">
+                <div id="wind-safety-widget">
+                    <div class="wind-widget-header">
+                        <span class="module-title">Wind &amp; Safety</span>
+                    </div>
+                    <div id="wind-pairs-container" class="wind-pairs-container"></div>
+                </div>
+                <div id="rwy-sequence-panel">
+                    <div class="rwy-seq-header">
+                        <span class="module-title">Runway Sequence</span>
+                    </div>
+                    <div class="rwy-seq-body">
+                        <div class="rwy-seq-section">
+                            <div class="rwy-seq-section-title arr-title">ARRIVALS</div>
+                            <div id="rwy-seq-arrivals" class="rwy-seq-list"></div>
+                        </div>
+                        <div class="rwy-seq-section">
+                            <div class="rwy-seq-section-title dep-title">DEPARTURES</div>
+                            <div id="rwy-seq-departures" class="rwy-seq-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rh-lr" class="resize-handle resize-handle--vertical"></div>
+
+        <!-- ---- Right panel: SMR + lighting + comms ---- -->
+        <div id="right-panel">
+
+            <div id="smr-panel">
+                <div class="smr-header">
+                    <span id="smr-airport" class="smr-airport-label">----</span>
+                    <div id="lvp-indicator" class="lvp-indicator lvp-off" title="Low Visibility Procedures">
+                        <span class="lvp-light"></span>
+                        <span class="lvp-label">LVP</span>
+                    </div>
+                </div>
+                <div id="smr-map" class="smr-map-container"></div>
+                <div id="rimcas-alert" class="rimcas-alert hidden">RIMCAS &mdash; RUNWAY INCURSION</div>
+            </div>
+
+            <div id="lighting-panel">
+                <div class="lighting-header">
+                    <span class="module-title">Lighting</span>
+                </div>
+                <div class="lighting-controls">
+                    <div class="lighting-row">
+                        <label>PAPI</label>
+                        <div class="papi-slider-container">
+                            <input id="papi-slider" class="papi-slider" type="range" min="1" max="5" value="3">
+                            <span id="papi-value" class="papi-value">3</span>
+                        </div>
+                    </div>
+                    <div class="lighting-row">
+                        <label>STOPBAR</label>
+                        <button id="stopbar-btn" class="stopbar-btn stopbar-on">ON</button>
+                    </div>
+                    <div class="lighting-row">
+                        <label>RWY LIGHTS</label>
+                        <button id="rwy-lights-btn" class="stopbar-btn stopbar-on">ON</button>
+                    </div>
+                    <div class="lighting-row">
+                        <label>APPROACH</label>
+                        <button id="approach-lights-btn" class="stopbar-btn stopbar-off">OFF</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="rh-comms" class="resize-handle resize-handle--horizontal"></div>
+
+            <div id="comms-panel">
+                <div class="comms-header">
+                    <span class="module-title">Comms</span>
+                    <div class="ptt-controls">
+                        <span id="ptt-led" class="ptt-led ptt-idle"></span>
+                        <span id="ptt-state-label" class="ptt-state-label ptt-label-idle">IDLE</span>
+                        <span id="ptt-key-badge" class="ptt-key-badge">Space</span>
+                        <button id="comms-gear-btn" class="comms-gear-btn" title="Audio settings" onclick="Ptt.toggleConfig()">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="chat-filter-bar">
+                    <button class="chat-filter-btn active" data-filter="all">ALL</button>
+                    <button class="chat-filter-btn" data-filter="DEL">DEL<span class="chat-filter-freq">121.805</span></button>
+                    <button class="chat-filter-btn" data-filter="GND">GND<span class="chat-filter-freq">121.700</span></button>
+                    <button class="chat-filter-btn" data-filter="TWR">TWR<span class="chat-filter-freq">118.100</span></button>
+                </div>
+
+                <div id="chat-log"></div>
+
+                <div id="comms-config" class="hidden">
+                    <div class="cc-field">
+                        <span class="cc-label">Microphone</span>
+                        <select id="cc-mic" class="cc-select"></select>
+                    </div>
+                    <div class="cc-field">
+                        <span class="cc-label">Output</span>
+                        <select id="cc-out" class="cc-select"></select>
+                    </div>
+                    <div class="cc-field">
+                        <span class="cc-label">PTT Key</span>
+                        <div class="cc-ptt-row">
+                            <span id="cc-ptt-key" class="cc-ptt-badge">Space</span>
+                            <button class="cc-btn-capture" onclick="Ptt.capturePttKey()">CAPTURE</button>
+                        </div>
+                    </div>
+                    <div class="cc-actions">
+                        <button class="cc-btn-save" onclick="Ptt.saveQuickConfig()">SAVE</button>
+                        <button class="cc-btn-cancel" onclick="Ptt.toggleConfig()">CANCEL</button>
+                    </div>
+                </div>
+
+                <div id="ptt-status-bar">
+                    <span id="ptt-status-text">Presiona PTT para transmitir...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Status bar ================= -->
+    <div id="status-bar">
+        <span id="last-refresh">Last refresh: --:--:--Z</span>
+        <span id="connection-status" class="status-indicator disconnected">CONNECTING</span>
+    </div>
+
+    <!-- ================= ATIS modal ================= -->
+    <div id="atis-overlay" class="atis-overlay" onclick="AtisModal.onOverlayClick(event)">
+        <div class="atis-modal">
+            <div class="atis-modal-header">
+                <span class="atis-modal-title">ATIS</span>
+                <button class="atis-close-btn" onclick="AtisModal.close()">&#10005;</button>
+            </div>
+            <div class="atis-modal-body">
+                <div class="atis-col-left">
+                    <div class="atis-row">
+                        <span class="atis-label-inline">Information</span>
+                        <input id="atis-letter-field" class="atis-input-short" readonly>
+                        <span class="atis-label-inline">Station</span>
+                        <input id="atis-metar-station" class="atis-input-rwy" placeholder="ICAO">
+                    </div>
+                    <div class="atis-section-bar">RUNWAYS IN USE</div>
+                    <div class="atis-row atis-rwy-row">
+                        <svg class="atis-plane-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+                        <span class="atis-rwy-label">Arrival</span>
+                        <input id="atis-arrival-rwy" class="atis-input-rwy" placeholder="--">
+                    </div>
+                    <div class="atis-row atis-rwy-row">
+                        <svg class="atis-plane-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+                        <span class="atis-rwy-label">Departure</span>
+                        <input id="atis-dep-rwy" class="atis-input-rwy" placeholder="--">
+                    </div>
+                    <div class="atis-section-bar">TRANSITION</div>
+                    <div class="atis-row atis-transition-row">
+                        <label class="atis-checkbox-label">
+                            <input id="atis-tl-chk" type="checkbox" checked> TL
+                        </label>
+                        <div class="atis-fl-row">
+                            <span class="atis-fl-prefix">FL</span>
+                            <input id="atis-fl-val" class="atis-input-fl" readonly>
+                        </div>
+                        <label class="atis-checkbox-label">
+                            <input id="atis-ta-chk" type="checkbox" checked> TA
+                        </label>
+                        <div class="atis-fl-row">
+                            <input id="atis-alt-val" class="atis-input-fl" readonly>
+                            <span class="atis-fl-suffix">ft</span>
+                        </div>
+                    </div>
+                    <div class="atis-row atis-row-qfe">
+                        <span class="atis-label-inline">QFE</span>
+                        <input id="atis-qfe" class="atis-input-short" placeholder="--">
+                        <span class="atis-label-inline">ATC Position</span>
+                        <input id="atis-atc-pos" class="atis-input-full" placeholder="e.g. Santiago Tower">
+                    </div>
+                    <div class="atis-section-bar">BROADCAST TEXT</div>
+                    <textarea id="atis-text-output" class="atis-text-output" readonly></textarea>
+                </div>
+                <div class="atis-col-right">
+                    <span class="atis-remarks-label">Remarks</span>
+                    <textarea id="atis-remarks" class="atis-remarks-area" placeholder="RMK..."></textarea>
+                    <label class="atis-checkbox-label">
+                        <input id="atis-active-chk" type="checkbox" checked> ATIS active
+                    </label>
+                </div>
+            </div>
+            <div class="atis-modal-footer">
+                <button class="atis-btn-cancel" onclick="AtisModal.close()">CANCEL</button>
+                <button class="atis-btn-send" onclick="AtisModal.send()">SEND</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Debrief modal ================= -->
+    <div id="debrief-modal" class="debrief-hidden">
+        <div class="debrief-card">
+            <div class="debrief-header">
+                <h2>Instructor Debrief</h2>
+                <button id="debrief-close">&#10005;</button>
+            </div>
+            <div id="debrief-body" class="debrief-body"></div>
+        </div>
+    </div>
+
+    <!-- Runtime config generated by main.py (window.HMI_CONFIG) -->
+    <script src="config.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/wind.js"></script>
+    <script src="js/efs.js"></script>
+    <script src="js/resize.js"></script>
+    <script src="js/atis.js"></script>
+    <script src="js/debrief.js"></script>
+    <script src="js/ptt.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Header widgets (stopwatch + end-session). Kept inline until the
+         TypeScript migration moves them into their own module. -->
+    <script>
+        (function () {
+            'use strict';
+
+            // --- Stopwatch ---
+            var swSeconds = 0;
+            var swTimer = null;
+            var swDisplay = document.getElementById('sw-display');
+            var swWidget = document.getElementById('stopwatch-widget');
+            var swDot = swWidget.querySelector('.sw-dot');
+
+            function swRender() {
+                var m = String(Math.floor(swSeconds / 60)).padStart(2, '0');
+                var s = String(swSeconds % 60).padStart(2, '0');
+                swDisplay.textContent = m + ':' + s;
+            }
+
+            document.getElementById('sw-toggle').addEventListener('click', function () {
+                if (swTimer) {
+                    clearInterval(swTimer);
+                    swTimer = null;
+                    swWidget.classList.remove('sw-active');
+                    swDot.classList.remove('sw-running');
+                    this.innerHTML = '&#9654;';
+                } else {
+                    swTimer = setInterval(function () { swSeconds++; swRender(); }, 1000);
+                    swWidget.classList.add('sw-active');
+                    swDot.classList.add('sw-running');
+                    this.innerHTML = '&#10074;&#10074;';
+                }
+            });
+
+            document.getElementById('sw-reset').addEventListener('click', function () {
+                swSeconds = 0;
+                swRender();
+            });
+
+            // --- End session: stop backend session, then instructor debrief ---
+            document.getElementById('end-session-btn').addEventListener('click', function () {
+                var btn = this;
+                btn.disabled = true;
+                fetch('/api/v1/plugin/session/stop', { method: 'POST' })
+                    .catch(function () { /* stop is best-effort */ })
+                    .then(function () {
+                        var icao = document.getElementById('airport-badge').textContent.trim();
+                        return Debrief.openAndGenerate(Ptt.getSessionId(), icao === '----' ? '' : icao);
+                    })
+                    .then(function () { return Debrief.waitClose(); })
+                    .then(function () { window.location.href = '/setup'; })
+                    .catch(function () { btn.disabled = false; });
+            });
+        })();
+    </script>
+</body>
+</html>

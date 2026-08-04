@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIrport TWR — Session Setup</title>
+    <link rel="stylesheet" href="css/setup.css">
+    <link rel="stylesheet" href="css/asr.css">
+</head>
+<body>
+
+    <canvas id="radar-bg"></canvas>
+
+    <div id="app">
+
+        <!-- ================= Welcome ================= -->
+        <section id="screen-welcome" class="screen active">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">AIrport TWR</div>
+                        <div class="card-subtitle">Controller Workstation</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="airport-block">
+                        <span id="welcome-icao" class="icao-display">----</span>
+                        <div class="airport-meta">
+                            <span id="welcome-airport-name" class="airport-name">No airport detected</span>
+                            <div class="status-row">
+                                <span id="welcome-status-dot" class="status-dot"></span>
+                                <span id="welcome-status-text" class="status-text">Waiting for X-Plane...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="App.showLogin()">Login</button>
+                        <button class="btn btn-secondary" onclick="App.showRegister()">Register</button>
+                    </div>
+                    <div class="footer-text">ATC Simulation Environment</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= Login ================= -->
+        <section id="screen-login" class="screen">
+            <div class="card">
+                <div class="card-header">
+                    <button class="btn-back" onclick="App.showWelcome()">&#8249;</button>
+                    <div>
+                        <div class="card-title">Login</div>
+                        <div class="card-subtitle">Controller Access</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="login-form" onsubmit="App.submitLogin(event)">
+                        <div class="card-body" style="padding:0">
+                            <div class="field">
+                                <label class="label" for="login-username">Username</label>
+                                <input id="login-username" class="input" type="text" autocomplete="username" required>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="login-password">Password</label>
+                                <input id="login-password" class="input" type="password" autocomplete="current-password" required>
+                            </div>
+                            <div id="login-error" class="error-msg hidden"></div>
+                            <button id="login-btn" class="btn btn-primary" type="submit" data-label="Login">Login</button>
+                            <div class="link-row">No account? <a class="link" onclick="App.showRegister()">Register</a></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= Register ================= -->
+        <section id="screen-register" class="screen">
+            <div class="card">
+                <div class="card-header">
+                    <button class="btn-back" onclick="App.showWelcome()">&#8249;</button>
+                    <div>
+                        <div class="card-title">Register</div>
+                        <div class="card-subtitle">New Controller</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="register-form" onsubmit="App.submitRegister(event)">
+                        <div class="card-body" style="padding:0">
+                            <div class="field">
+                                <label class="label" for="register-username">Username</label>
+                                <input id="register-username" class="input" type="text" autocomplete="username" required>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="register-password">Password</label>
+                                <input id="register-password" class="input" type="password" autocomplete="new-password" required>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="register-confirm">Confirm password</label>
+                                <input id="register-confirm" class="input" type="password" autocomplete="new-password" required>
+                            </div>
+                            <div id="register-error" class="error-msg hidden"></div>
+                            <button id="register-btn" class="btn btn-primary" type="submit" data-label="Register">Register</button>
+                            <div class="link-row">Already registered? <a class="link" onclick="App.showLogin()">Login</a></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= Session setup ================= -->
+        <section id="screen-session" class="screen">
+            <div class="card">
+                <div class="card-header">
+                    <button class="btn-back" onclick="App.showWelcome()">&#8249;</button>
+                    <div>
+                        <div class="card-title">Session Setup</div>
+                        <div class="card-subtitle">Airport <span id="session-icao-label">----</span></div>
+                    </div>
+                    <button class="btn-gear" title="ASR settings" onclick="App.showAsr()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="field">
+                        <label class="label" for="session-type">Session type</label>
+                        <select id="session-type" class="input">
+                            <option value="departures">Departures</option>
+                            <option value="arrivals">Arrivals</option>
+                            <option value="mixed">Mixed</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="session-weather">Weather</label>
+                        <select id="session-weather" class="input">
+                            <option value="real">Real weather</option>
+                            <option value="clear">Clear</option>
+                            <option value="stormy">Stormy</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="session-aircraft">Aircraft count</label>
+                        <input id="session-aircraft" class="input" type="number" min="1" max="50" value="5">
+                    </div>
+                    <div class="field">
+                        <label class="label" for="session-complexity">Complexity</label>
+                        <select id="session-complexity" class="input">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div id="session-error" class="error-msg hidden"></div>
+                    <button id="start-btn" class="btn btn-success" data-label="Start Session" onclick="App.submitStartSession()">Start Session</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ASR settings ================= -->
+        <section id="screen-asr" class="screen">
+            <div class="card card-wide">
+                <div class="card-header">
+                    <button class="btn-back" onclick="Asr.teardown(); App.showSession()">&#8249;</button>
+                    <div>
+                        <div class="card-title">ASR Settings</div>
+                        <div class="card-subtitle">Speech Recognition</div>
+                    </div>
+                </div>
+                <div class="card-body asr-body">
+                    <div class="asr-top-grid">
+                        <div class="asr-card">
+                            <div class="asr-card-header">
+                                <svg class="asr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+                                <span class="asr-card-title">Audio Devices</span>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="asr-input-device">Input (microphone)</label>
+                                <select id="asr-input-device" class="input" onchange="Asr.onInputDeviceChange()"></select>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="asr-output-device">Output (speakers)</label>
+                                <select id="asr-output-device" class="input"></select>
+                            </div>
+                            <div class="vu-wrap">
+                                <span class="vu-label">MIC</span>
+                                <div class="vu-track"><div id="asr-vu-bar" class="vu-bar"></div></div>
+                                <span id="asr-vu-hint" class="vu-hint">&mdash;</span>
+                            </div>
+                        </div>
+                        <div class="asr-card">
+                            <div class="asr-card-header">
+                                <svg class="asr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 11v2M10 10v4M14 11v2M18 10v4"/></svg>
+                                <span class="asr-card-title">Push-To-Talk</span>
+                            </div>
+                            <div class="field">
+                                <span class="label">PTT key</span>
+                                <button id="asr-ptt-btn" class="ptt-key" data-key="Space" onclick="Asr.capturePtt()">Space</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="asr-card">
+                        <div class="asr-card-header">
+                            <svg class="asr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="8" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+                            <span class="asr-card-title">AI Backend</span>
+                        </div>
+                        <div class="asr-backend-layout">
+                            <div class="asr-backend-left">
+                                <div class="asr-toggle-row">
+                                    <label class="asr-toggle-opt">
+                                        <input type="radio" name="asr-backend" value="ollama" checked onchange="Asr.switchBackend(this.value)"> Ollama (local)
+                                    </label>
+                                    <label class="asr-toggle-opt">
+                                        <input type="radio" name="asr-backend" value="api" onchange="Asr.switchBackend(this.value)"> ASR API
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="asr-backend-right">
+                                <div id="asr-sec-ollama" class="asr-backend-sec">
+                                    <div class="field">
+                                        <label class="label" for="asr-ollama-url">Ollama URL</label>
+                                        <input id="asr-ollama-url" class="input" type="text" placeholder="http://localhost:11434">
+                                    </div>
+                                    <div class="field">
+                                        <label class="label" for="asr-ollama-model">Model</label>
+                                        <div class="asr-refresh-row">
+                                            <span id="asr-ollama-led" class="status-led"></span>
+                                            <select id="asr-ollama-model" class="input"></select>
+                                            <button class="btn-refresh" type="button" onclick="Asr.reloadOllamaModels()">Refresh</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="asr-sec-api" class="asr-backend-sec hidden">
+                                    <div class="field">
+                                        <label class="label" for="asr-api-key">API key</label>
+                                        <input id="asr-api-key" class="input" type="password" autocomplete="off">
+                                    </div>
+                                    <div class="asr-inline-row">
+                                        <div class="field" style="flex:1">
+                                            <label class="label" for="asr-api-base">Base URL</label>
+                                            <input id="asr-api-base" class="input" type="text" placeholder="https://...">
+                                        </div>
+                                        <div class="field">
+                                            <label class="label" for="asr-api-model">Model</label>
+                                            <select id="asr-api-model" class="input">
+                                                <option value="medium">Whisper medium</option>
+                                                <option value="large">Whisper large</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="asr-error" class="error-msg hidden"></div>
+                    <button class="btn btn-primary" onclick="Asr.saveConfig()">Save Settings</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Runtime config generated by main.py (window.HMI_CONFIG) -->
+    <script src="config.js"></script>
+    <script src="js/radar.js"></script>
+    <script src="js/asr.js"></script>
+    <script src="js/setup.js"></script>
+</body>
+</html>

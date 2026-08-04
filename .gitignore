@@ -215,10 +215,13 @@ __marimo__/
 # proyect
 
 *.html
+!services/controller_hmi_service/static/**/*.html
+!services/controller_hmi_service/frontend/*.html
 .env
 *.dat
 *.json
 !openwiki/.last-update.json
+!services/controller_hmi_service/frontend/**/*.json
 *.iso
 
 # custom
