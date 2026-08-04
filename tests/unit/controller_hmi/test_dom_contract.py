@@ -24,7 +24,7 @@ FRONTEND_DIR = (
 )
 
 HTML_FILES = [FRONTEND_DIR / "index.html", FRONTEND_DIR / "setup.html"]
-JS_DIR = FRONTEND_DIR / "src" / "legacy"
+SRC_DIR = FRONTEND_DIR / "src"
 
 # Ids the JS looks up but creates itself at runtime (never in the HTML).
 JS_CREATED_IDS = {
@@ -49,17 +49,6 @@ JS_CREATED_CLASSES = {
     "screen",  # static in HTML but also toggled generically
 }
 
-# Inline-handler globals -> the module (js during migration, ts after) whose
-# public surface must expose them.
-MODULE_STEMS = {
-    "App": "setup",
-    "Asr": "asr",
-    "AtisModal": "atis",
-    "Ptt": "ptt",
-    "Debrief": "debrief",
-}
-
-
 def _read(path: Path) -> str:
     assert path.exists(), f"missing file: {path}"
     return path.read_text(encoding="utf-8")
@@ -70,9 +59,11 @@ def _html_sources():
 
 
 def _js_sources():
-    files = sorted(JS_DIR.glob("*.js")) + sorted(JS_DIR.glob("*.ts"))
-    assert files, f"no JS/TS files found in {JS_DIR}"
-    return {p.name: _read(p) for p in files}
+    files = sorted(
+        p for p in SRC_DIR.rglob("*.ts") if not p.name.endswith(".test.ts")
+    )
+    assert files, f"no TS files found in {SRC_DIR}"
+    return {str(p.relative_to(SRC_DIR)): _read(p) for p in files}
 
 
 def _all_html() -> str:
@@ -145,46 +136,18 @@ def test_every_js_selector_resolves_in_html():
 
 
 # ---------------------------------------------------------------------------
-# 3. Inline on*= handlers -> JS public surface
+# 3. No inline handlers (replaced by addEventListener wiring in Phase 3)
 # ---------------------------------------------------------------------------
 
-def _collect_inline_handlers():
-    handlers = {}
-    attr_pattern = re.compile(r'\son[a-z]+="([^"]+)"')
-    call_pattern = re.compile(r"\b([A-Z][A-Za-z]*)\.([A-Za-z_][A-Za-z0-9_]*)\s*\(")
-    for name, src in _html_sources().items():
-        for attr in attr_pattern.finditer(src):
-            for call in call_pattern.finditer(attr.group(1)):
-                handlers.setdefault(call.groups(), set()).add(name)
-    return handlers
-
-
-def test_inline_handlers_exist_in_js_public_surface():
-    js = _js_sources()
-    handlers = _collect_inline_handlers()
-    assert handlers, "no inline handlers found — HTML wiring unexpectedly empty"
-
-    missing = []
-    for (module, method), sources in sorted(handlers.items()):
-        stem = MODULE_STEMS.get(module)
-        js_file = next(
-            (name for name in (f"{stem}.ts", f"{stem}.js") if name in js), None
-        )
-        if stem is None or js_file is None:
-            missing.append(
-                f"{module}.{method}  (unknown module, used by {', '.join(sorted(sources))})"
-            )
-            continue
-        src = js[js_file]
-        defined = re.search(rf"\b{re.escape(method)}\b", src) is not None
-        if not defined:
-            missing.append(
-                f"{module}.{method}  (not found in {js_file}, "
-                f"used by {', '.join(sorted(sources))})"
-            )
-    assert not missing, (
-        "HTML inline handlers reference undefined JS functions:\n  "
-        + "\n  ".join(missing)
+def test_html_has_no_inline_event_handlers():
+    offenders = []
+    pattern = re.compile(r'\son[a-z]+="[^"]*"')
+    for name, html in _html_sources().items():
+        for match in pattern.finditer(html):
+            offenders.append(f"{name}: {match.group(0).strip()}")
+    assert not offenders, (
+        "Inline on*= handlers are forbidden since epic #59 Phase 3 — "
+        "wire listeners in the module's init instead:\n  " + "\n  ".join(offenders)
     )
 
 

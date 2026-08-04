@@ -5,7 +5,8 @@ import { formatFL, formatSpeed, formatTime, generateSquawk, truncateRoute } from
 import { moveInOrder, sortByUserOrder, sortFlightPlans } from '../efs/ordering';
 import { getStripLabel, setStripLabel } from '../lib/storage';
 import type { FlightPlan, StripColumn, StripStates } from '../types/api';
-import { currentICAO, flightPlans, rerenderStrips, updateSMRAircraft } from './app';
+import { currentICAO, flightPlans, rerenderStrips } from '../polling';
+import { updateSMRAircraft } from '../smr/render';
 import { escapeHtml } from './weather';
 
 // Client-side strip states: { "registration": { phase, column } }

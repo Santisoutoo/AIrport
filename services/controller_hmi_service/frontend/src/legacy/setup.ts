@@ -2,257 +2,263 @@
 
 import { getSessionStatus, login, register, startSession } from '../api/client';
 import { setUsername } from '../lib/storage';
-import { Asr } from './asr';
+import { initAsrScreen, teardownAsr } from './asr';
 
 const HMI_URL = '/';
 
-const App = (() => {
-  let _statusPollTimer: ReturnType<typeof setInterval> | null = null;
+let _statusPollTimer: ReturnType<typeof setInterval> | null = null;
 
-  // --- Screen navigation ---
+// --- Screen navigation ---
 
-  function showScreen(id: string): void {
-    document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
-    document.getElementById('screen-' + id)?.classList.add('active');
+function showScreen(id: string): void {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+  document.getElementById('screen-' + id)?.classList.add('active');
+}
+
+export function showWelcome(): void {
+  stopStatusPoll();
+  showScreen('welcome');
+  refreshStatus();
+}
+
+export function showLogin(): void {
+  clearError('login-error');
+  (document.getElementById('login-form') as HTMLFormElement | null)?.reset();
+  showScreen('login');
+}
+
+export function showRegister(): void {
+  clearError('register-error');
+  (document.getElementById('register-form') as HTMLFormElement | null)?.reset();
+  showScreen('register');
+}
+
+export function showSession(): void {
+  clearError('session-error');
+  const icao = document.getElementById('welcome-icao')?.textContent ?? '----';
+  const label = document.getElementById('session-icao-label');
+  if (label) label.textContent = icao;
+  resetStartBtn();
+  showScreen('session');
+}
+
+export async function showAsr(): Promise<void> {
+  showScreen('asr');
+  await initAsrScreen();
+}
+
+// --- Helpers ---
+
+function _input(id: string): HTMLInputElement | null {
+  return document.getElementById(id) as HTMLInputElement | null;
+}
+
+function showError(id: string, msg: string): void {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function clearError(id: string): void {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = '';
+  el.classList.add('hidden');
+}
+
+function setLoading(btnId: string, loading: boolean): void {
+  const btn = document.getElementById(btnId) as HTMLButtonElement | null;
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? 'Please wait...' : btn.dataset.label || btn.textContent;
+}
+
+function resetStartBtn(): void {
+  const btn = document.getElementById('start-btn') as HTMLButtonElement | null;
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.label || 'Start Session';
   }
+}
 
-  function showWelcome(): void {
-    stopStatusPoll();
-    showScreen('welcome');
-    refreshStatus();
-  }
+// --- Status polling ---
 
-  function showLogin(): void {
-    clearError('login-error');
-    (document.getElementById('login-form') as HTMLFormElement | null)?.reset();
-    showScreen('login');
-  }
+async function refreshStatus(): Promise<void> {
+  const icaoEl = document.getElementById('welcome-icao');
+  const nameEl = document.getElementById('welcome-airport-name');
+  const dot = document.getElementById('welcome-status-dot');
+  const txt = document.getElementById('welcome-status-text');
+  try {
+    const data = await getSessionStatus();
+    const icao = data.icao || '----';
 
-  function showRegister(): void {
-    clearError('register-error');
-    (document.getElementById('register-form') as HTMLFormElement | null)?.reset();
-    showScreen('register');
-  }
+    if (icaoEl) icaoEl.textContent = icao;
+    if (nameEl) nameEl.textContent = icao !== '----' ? icao : 'No airport detected';
 
-  function showSession(): void {
-    clearError('session-error');
-    const icao = document.getElementById('welcome-icao')?.textContent ?? '----';
-    const label = document.getElementById('session-icao-label');
-    if (label) label.textContent = icao;
-    resetStartBtn();
-    showScreen('session');
-  }
-
-  async function showAsr(): Promise<void> {
-    showScreen('asr');
-    await Asr.initScreen();
-  }
-
-  // --- Helpers ---
-
-  function _input(id: string): HTMLInputElement | null {
-    return document.getElementById(id) as HTMLInputElement | null;
-  }
-
-  function showError(id: string, msg: string): void {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.remove('hidden');
-  }
-
-  function clearError(id: string): void {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = '';
-    el.classList.add('hidden');
-  }
-
-  function setLoading(btnId: string, loading: boolean): void {
-    const btn = document.getElementById(btnId) as HTMLButtonElement | null;
-    if (!btn) return;
-    btn.disabled = loading;
-    btn.textContent = loading ? 'Please wait...' : btn.dataset.label || btn.textContent;
-  }
-
-  function resetStartBtn(): void {
-    const btn = document.getElementById('start-btn') as HTMLButtonElement | null;
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = btn.dataset.label || 'Start Session';
+    if (icao !== '----') {
+      dot?.classList.add('online');
+      if (txt) txt.textContent = data.status === 'active' ? 'Session active' : 'X-Plane connected';
+    } else {
+      dot?.classList.remove('online');
+      if (txt) txt.textContent = 'Waiting for X-Plane...';
     }
+  } catch {
+    if (icaoEl) icaoEl.textContent = '----';
+    dot?.classList.remove('online');
+    if (txt) txt.textContent = 'Service unreachable';
   }
+}
 
-  // --- Status polling ---
-
-  async function refreshStatus(): Promise<void> {
-    const icaoEl = document.getElementById('welcome-icao');
-    const nameEl = document.getElementById('welcome-airport-name');
-    const dot = document.getElementById('welcome-status-dot');
-    const txt = document.getElementById('welcome-status-text');
+function startStatusPoll(onActive: () => void): void {
+  stopStatusPoll();
+  _statusPollTimer = setInterval(async () => {
     try {
       const data = await getSessionStatus();
-      const icao = data.icao || '----';
-
-      if (icaoEl) icaoEl.textContent = icao;
-      if (nameEl) nameEl.textContent = icao !== '----' ? icao : 'No airport detected';
-
-      if (icao !== '----') {
-        dot?.classList.add('online');
-        if (txt)
-          txt.textContent = data.status === 'active' ? 'Session active' : 'X-Plane connected';
-      } else {
-        dot?.classList.remove('online');
-        if (txt) txt.textContent = 'Waiting for X-Plane...';
+      if (data.status === 'active') {
+        stopStatusPoll();
+        onActive();
       }
     } catch {
-      if (icaoEl) icaoEl.textContent = '----';
-      dot?.classList.remove('online');
-      if (txt) txt.textContent = 'Service unreachable';
+      /* ignore */
     }
+  }, 1500);
+}
+
+function stopStatusPoll(): void {
+  if (_statusPollTimer) {
+    clearInterval(_statusPollTimer);
+    _statusPollTimer = null;
+  }
+}
+
+// --- Login ---
+
+async function submitLogin(e: Event): Promise<void> {
+  e.preventDefault();
+  clearError('login-error');
+  setLoading('login-btn', true);
+
+  const username = _input('login-username')?.value.trim() ?? '';
+  const password = _input('login-password')?.value ?? '';
+
+  try {
+    const data = await login(username, password);
+    if (data.success) {
+      setUsername(data.username ?? username);
+      showSession();
+    } else {
+      showError('login-error', data.message || 'Login failed');
+    }
+  } catch {
+    showError('login-error', 'Could not connect to server');
+  } finally {
+    setLoading('login-btn', false);
+  }
+}
+
+// --- Register ---
+
+async function submitRegister(e: Event): Promise<void> {
+  e.preventDefault();
+  clearError('register-error');
+
+  const username = _input('register-username')?.value.trim() ?? '';
+  const password = _input('register-password')?.value ?? '';
+  const confirm = _input('register-confirm')?.value ?? '';
+
+  if (password !== confirm) {
+    showError('register-error', 'Passwords do not match');
+    return;
+  }
+  if (password.length < 6) {
+    showError('register-error', 'Password must be at least 6 characters');
+    return;
   }
 
-  function startStatusPoll(onActive: () => void): void {
-    stopStatusPoll();
-    _statusPollTimer = setInterval(async () => {
-      try {
-        const data = await getSessionStatus();
-        if (data.status === 'active') {
-          stopStatusPoll();
-          onActive();
-        }
-      } catch {
-        /* ignore */
-      }
-    }, 1500);
+  setLoading('register-btn', true);
+
+  try {
+    const data = await register(username, password);
+    if (data.success) {
+      showLogin();
+    } else {
+      showError('register-error', data.message || 'Registration failed');
+    }
+  } catch {
+    showError('register-error', 'Could not connect to server');
+  } finally {
+    setLoading('register-btn', false);
+  }
+}
+
+// --- Start Session ---
+
+async function submitStartSession(): Promise<void> {
+  clearError('session-error');
+
+  const aircraft_count = parseInt(_input('session-aircraft')?.value ?? '', 10);
+  if (isNaN(aircraft_count) || aircraft_count < 1 || aircraft_count > 50) {
+    showError('session-error', 'Aircraft count must be between 1 and 50');
+    return;
   }
 
-  function stopStatusPoll(): void {
-    if (_statusPollTimer) {
-      clearInterval(_statusPollTimer);
-      _statusPollTimer = null;
-    }
-  }
+  setLoading('start-btn', true);
 
-  // --- Login ---
+  const payload = {
+    session_type: _input('session-type')?.value ?? '',
+    weather: _input('session-weather')?.value ?? '',
+    aircraft_count,
+    complexity: _input('session-complexity')?.value ?? '',
+  };
 
-  async function submitLogin(e: Event): Promise<void> {
-    e.preventDefault();
-    clearError('login-error');
-    setLoading('login-btn', true);
+  try {
+    const data = await startSession(payload);
 
-    const username = _input('login-username')?.value.trim() ?? '';
-    const password = _input('login-password')?.value ?? '';
-
-    try {
-      const data = await login(username, password);
-      if (data.success) {
-        setUsername(data.username ?? username);
-        showSession();
-      } else {
-        showError('login-error', data.message || 'Login failed');
-      }
-    } catch {
-      showError('login-error', 'Could not connect to server');
-    } finally {
-      setLoading('login-btn', false);
-    }
-  }
-
-  // --- Register ---
-
-  async function submitRegister(e: Event): Promise<void> {
-    e.preventDefault();
-    clearError('register-error');
-
-    const username = _input('register-username')?.value.trim() ?? '';
-    const password = _input('register-password')?.value ?? '';
-    const confirm = _input('register-confirm')?.value ?? '';
-
-    if (password !== confirm) {
-      showError('register-error', 'Passwords do not match');
-      return;
-    }
-    if (password.length < 6) {
-      showError('register-error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    setLoading('register-btn', true);
-
-    try {
-      const data = await register(username, password);
-      if (data.success) {
-        showLogin();
-      } else {
-        showError('register-error', data.message || 'Registration failed');
-      }
-    } catch {
-      showError('register-error', 'Could not connect to server');
-    } finally {
-      setLoading('register-btn', false);
-    }
-  }
-
-  // --- Start Session ---
-
-  async function submitStartSession(): Promise<void> {
-    clearError('session-error');
-
-    const aircraft_count = parseInt(_input('session-aircraft')?.value ?? '', 10);
-    if (isNaN(aircraft_count) || aircraft_count < 1 || aircraft_count > 50) {
-      showError('session-error', 'Aircraft count must be between 1 and 50');
-      return;
-    }
-
-    setLoading('start-btn', true);
-
-    const payload = {
-      session_type: _input('session-type')?.value ?? '',
-      weather: _input('session-weather')?.value ?? '',
-      aircraft_count,
-      complexity: _input('session-complexity')?.value ?? '',
-    };
-
-    try {
-      const data = await startSession(payload);
-
-      if (data.success) {
-        const btn = document.getElementById('start-btn');
-        if (btn) btn.textContent = 'Waiting for X-Plane...';
-        // Poll until X-Plane confirms session is active, then go to HMI
-        startStatusPoll(() => {
-          window.location.href = HMI_URL;
-        });
-      } else {
-        showError('session-error', data.message || 'Failed to start session');
-        resetStartBtn();
-      }
-    } catch {
-      showError('session-error', 'Could not connect to server');
+    if (data.success) {
+      const btn = document.getElementById('start-btn');
+      if (btn) btn.textContent = 'Waiting for X-Plane...';
+      // Poll until X-Plane confirms session is active, then go to HMI
+      startStatusPoll(() => {
+        window.location.href = HMI_URL;
+      });
+    } else {
+      showError('session-error', data.message || 'Failed to start session');
       resetStartBtn();
     }
+  } catch {
+    showError('session-error', 'Could not connect to server');
+    resetStartBtn();
   }
+}
 
-  // --- Init ---
+// --- Wiring (replaces the former inline on*= handlers) ---
 
-  document.addEventListener('DOMContentLoaded', () => {
-    showWelcome();
-    setInterval(refreshStatus, 30000);
+export function initSetupScreens(): void {
+  document.getElementById('welcome-login-btn')?.addEventListener('click', showLogin);
+  document.getElementById('welcome-register-btn')?.addEventListener('click', showRegister);
+
+  document.querySelectorAll('.setup-back-btn').forEach((btn) => {
+    btn.addEventListener('click', showWelcome);
+  });
+  document.getElementById('asr-back-btn')?.addEventListener('click', () => {
+    teardownAsr();
+    showSession();
   });
 
-  return {
-    showWelcome,
-    showLogin,
-    showRegister,
-    showSession,
-    showAsr,
-    submitLogin,
-    submitRegister,
-    submitStartSession,
-  };
-})();
+  document.getElementById('login-form')?.addEventListener('submit', (e) => void submitLogin(e));
+  document
+    .getElementById('register-form')
+    ?.addEventListener('submit', (e) => void submitRegister(e));
 
-// Bridge for the inline on*= handlers in setup.html (removed in Phase 3).
-window.App = App;
-export { App };
+  document.getElementById('goto-register-link')?.addEventListener('click', showRegister);
+  document.getElementById('goto-login-link')?.addEventListener('click', showLogin);
+
+  document.getElementById('session-gear-btn')?.addEventListener('click', () => void showAsr());
+  document.getElementById('start-btn')?.addEventListener('click', () => void submitStartSession());
+
+  showWelcome();
+  setInterval(refreshStatus, 30000);
+}
+
+document.addEventListener('DOMContentLoaded', initSetupScreens);

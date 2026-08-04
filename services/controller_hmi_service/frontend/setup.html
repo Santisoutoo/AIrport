@@ -32,8 +32,8 @@
                         </div>
                     </div>
                     <div class="btn-group">
-                        <button class="btn btn-primary" onclick="App.showLogin()">Login</button>
-                        <button class="btn btn-secondary" onclick="App.showRegister()">Register</button>
+                        <button id="welcome-login-btn" class="btn btn-primary">Login</button>
+                        <button id="welcome-register-btn" class="btn btn-secondary">Register</button>
                     </div>
                     <div class="footer-text">ATC Simulation Environment</div>
                 </div>
@@ -44,14 +44,14 @@
         <section id="screen-login" class="screen">
             <div class="card">
                 <div class="card-header">
-                    <button class="btn-back" onclick="App.showWelcome()">&#8249;</button>
+                    <button class="btn-back setup-back-btn">&#8249;</button>
                     <div>
                         <div class="card-title">Login</div>
                         <div class="card-subtitle">Controller Access</div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <form id="login-form" onsubmit="App.submitLogin(event)">
+                    <form id="login-form">
                         <div class="card-body" style="padding:0">
                             <div class="field">
                                 <label class="label" for="login-username">Username</label>
@@ -63,7 +63,7 @@
                             </div>
                             <div id="login-error" class="error-msg hidden"></div>
                             <button id="login-btn" class="btn btn-primary" type="submit" data-label="Login">Login</button>
-                            <div class="link-row">No account? <a class="link" onclick="App.showRegister()">Register</a></div>
+                            <div class="link-row">No account? <a id="goto-register-link" class="link">Register</a></div>
                         </div>
                     </form>
                 </div>
@@ -74,14 +74,14 @@
         <section id="screen-register" class="screen">
             <div class="card">
                 <div class="card-header">
-                    <button class="btn-back" onclick="App.showWelcome()">&#8249;</button>
+                    <button class="btn-back setup-back-btn">&#8249;</button>
                     <div>
                         <div class="card-title">Register</div>
                         <div class="card-subtitle">New Controller</div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <form id="register-form" onsubmit="App.submitRegister(event)">
+                    <form id="register-form">
                         <div class="card-body" style="padding:0">
                             <div class="field">
                                 <label class="label" for="register-username">Username</label>
@@ -97,7 +97,7 @@
                             </div>
                             <div id="register-error" class="error-msg hidden"></div>
                             <button id="register-btn" class="btn btn-primary" type="submit" data-label="Register">Register</button>
-                            <div class="link-row">Already registered? <a class="link" onclick="App.showLogin()">Login</a></div>
+                            <div class="link-row">Already registered? <a id="goto-login-link" class="link">Login</a></div>
                         </div>
                     </form>
                 </div>
@@ -108,12 +108,12 @@
         <section id="screen-session" class="screen">
             <div class="card">
                 <div class="card-header">
-                    <button class="btn-back" onclick="App.showWelcome()">&#8249;</button>
+                    <button class="btn-back setup-back-btn">&#8249;</button>
                     <div>
                         <div class="card-title">Session Setup</div>
                         <div class="card-subtitle">Airport <span id="session-icao-label">----</span></div>
                     </div>
-                    <button class="btn-gear" title="ASR settings" onclick="App.showAsr()">
+                    <button id="session-gear-btn" class="btn-gear" title="ASR settings">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                     </button>
                 </div>
@@ -147,7 +147,7 @@
                         </select>
                     </div>
                     <div id="session-error" class="error-msg hidden"></div>
-                    <button id="start-btn" class="btn btn-success" data-label="Start Session" onclick="App.submitStartSession()">Start Session</button>
+                    <button id="start-btn" class="btn btn-success" data-label="Start Session">Start Session</button>
                 </div>
             </div>
         </section>
@@ -156,7 +156,7 @@
         <section id="screen-asr" class="screen">
             <div class="card card-wide">
                 <div class="card-header">
-                    <button class="btn-back" onclick="Asr.teardown(); App.showSession()">&#8249;</button>
+                    <button id="asr-back-btn" class="btn-back">&#8249;</button>
                     <div>
                         <div class="card-title">ASR Settings</div>
                         <div class="card-subtitle">Speech Recognition</div>
@@ -171,7 +171,7 @@
                             </div>
                             <div class="field">
                                 <label class="label" for="asr-input-device">Input (microphone)</label>
-                                <select id="asr-input-device" class="input" onchange="Asr.onInputDeviceChange()"></select>
+                                <select id="asr-input-device" class="input"></select>
                             </div>
                             <div class="field">
                                 <label class="label" for="asr-output-device">Output (speakers)</label>
@@ -190,7 +190,7 @@
                             </div>
                             <div class="field">
                                 <span class="label">PTT key</span>
-                                <button id="asr-ptt-btn" class="ptt-key" data-key="Space" onclick="Asr.capturePtt()">Space</button>
+                                <button id="asr-ptt-btn" class="ptt-key" data-key="Space">Space</button>
                             </div>
                         </div>
                     </div>
@@ -204,10 +204,10 @@
                             <div class="asr-backend-left">
                                 <div class="asr-toggle-row">
                                     <label class="asr-toggle-opt">
-                                        <input type="radio" name="asr-backend" value="ollama" checked onchange="Asr.switchBackend(this.value)"> Ollama (local)
+                                        <input type="radio" name="asr-backend" value="ollama" checked> Ollama (local)
                                     </label>
                                     <label class="asr-toggle-opt">
-                                        <input type="radio" name="asr-backend" value="api" onchange="Asr.switchBackend(this.value)"> ASR API
+                                        <input type="radio" name="asr-backend" value="api"> ASR API
                                     </label>
                                 </div>
                             </div>
@@ -222,7 +222,7 @@
                                         <div class="asr-refresh-row">
                                             <span id="asr-ollama-led" class="status-led"></span>
                                             <select id="asr-ollama-model" class="input"></select>
-                                            <button class="btn-refresh" type="button" onclick="Asr.reloadOllamaModels()">Refresh</button>
+                                            <button id="asr-refresh-btn" class="btn-refresh" type="button">Refresh</button>
                                         </div>
                                     </div>
                                 </div>
@@ -250,7 +250,7 @@
                     </div>
 
                     <div id="asr-error" class="error-msg hidden"></div>
-                    <button class="btn btn-primary" onclick="Asr.saveConfig()">Save Settings</button>
+                    <button id="asr-save-btn" class="btn btn-primary">Save Settings</button>
                 </div>
             </div>
         </section>
