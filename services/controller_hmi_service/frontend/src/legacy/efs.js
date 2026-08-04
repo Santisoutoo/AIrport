@@ -1,7 +1,7 @@
 // efs.js -- TWR HMI: 3-Column Electronic Flight Strips with Action Buttons
 
 import { currentICAO, flightPlans, rerenderStrips, updateSMRAircraft } from './app.js';
-import { escapeHtml } from './weather.js';
+import { escapeHtml } from './weather';
 
 var API_BASE = '/api/v1/hmi';
 

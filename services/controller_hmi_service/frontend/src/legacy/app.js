@@ -16,8 +16,8 @@ import {
     updateRefreshTimestamp,
     setConnectionStatus,
     escapeHtml,
-} from './weather.js';
-import { initWindInstruments, updateWindInstruments, setRunwayGroups } from './wind.js';
+} from './weather';
+import { initWindInstruments, updateWindInstruments, setRunwayGroups } from './wind';
 
 var STRIP_REFRESH_MS = 15000;
 var WEATHER_REFRESH_MS = 60000;

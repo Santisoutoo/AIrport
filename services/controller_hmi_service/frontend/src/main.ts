@@ -4,13 +4,13 @@
 import './styles/efs.css';
 import './styles/debrief.css';
 
-import './legacy/weather.js';
-import './legacy/wind.js';
+import './legacy/weather';
+import './legacy/wind';
 import './legacy/efs.js';
 import './legacy/resize';
 import './legacy/atis';
 import './legacy/debrief';
 import './legacy/ptt.js';
-import './legacy/chat.js';
+import './legacy/chat';
 import './legacy/app.js';
 import './legacy/header-widgets.js';

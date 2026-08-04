@@ -3,6 +3,6 @@
 import './styles/setup.css';
 import './styles/asr.css';
 
-import './legacy/radar.js';
-import './legacy/asr.js';
+import './legacy/radar';
+import './legacy/asr';
 import './legacy/setup';
