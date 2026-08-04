@@ -7,6 +7,8 @@
 // Anything sent by the client is discarded server-side, so this module
 // only listens and renders each line through Ptt.addAgentMessage().
 
+import { Ptt } from './ptt.js';
+
 (function () {
     'use strict';
 
@@ -30,9 +32,7 @@
         if (!payload || typeof payload.text !== 'string' || !payload.text) return;
 
         var callsign = payload.callsign || payload.sender || 'PILOT';
-        if (typeof Ptt !== 'undefined' && Ptt.addAgentMessage) {
-            Ptt.addAgentMessage(String(callsign), payload.text);
-        }
+        Ptt.addAgentMessage(String(callsign), payload.text);
     }
 
     function _connect() {

@@ -451,3 +451,7 @@ const Ptt = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', () => Ptt.init());
+
+// Bridge for the inline on*= handlers in index.html (removed in Phase 3).
+window.Ptt = Ptt;
+export { Ptt };

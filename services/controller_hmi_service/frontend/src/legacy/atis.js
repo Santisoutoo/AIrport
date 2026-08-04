@@ -1,5 +1,7 @@
 // atis.js -- ATIS modal controller
 
+import { setILSForArrivalRunway } from './app.js';
+
 var AtisModal = (function () {
 
     var _manualFields  = {};
@@ -263,3 +265,7 @@ var AtisModal = (function () {
 
     return { open: open, close: close, onOverlayClick: onOverlayClick, send: send };
 })();
+
+// Bridge for the inline on*= handlers in index.html (removed in Phase 3).
+window.AtisModal = AtisModal;
+export { AtisModal };

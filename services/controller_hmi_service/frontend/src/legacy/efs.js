@@ -1,5 +1,8 @@
 // efs.js -- TWR HMI: 3-Column Electronic Flight Strips with Action Buttons
 
+import { currentICAO, flightPlans, rerenderStrips, updateSMRAircraft } from './app.js';
+import { escapeHtml } from './weather.js';
+
 var API_BASE = '/api/v1/hmi';
 
 // Client-side strip states: { "registration": { phase, column } }
@@ -442,3 +445,17 @@ function sortFlightPlans(plans, sortBy) {
         }
     });
 }
+
+export {
+    loadStripStates,
+    getStripPhase,
+    getStripColumn,
+    setStripPhase,
+    renderFlightStrips,
+    formatFL,
+    formatSpeed,
+    formatTime,
+    generateSquawk,
+    truncateRoute,
+    sortFlightPlans,
+};

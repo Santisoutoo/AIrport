@@ -350,3 +350,5 @@ function updateLimitBar(prefix, value, limit) {
     }
 }
 
+
+export { initWindInstruments, setRunwayGroups, updateWindInstruments };
