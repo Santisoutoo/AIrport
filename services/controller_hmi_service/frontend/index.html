@@ -21,7 +21,7 @@
                 <button class="sw-btn" id="sw-reset" title="Reset">&#8634;</button>
             </div>
             <span id="utc-clock" class="clock">--:--:--Z</span>
-            <button id="atis-btn" onclick="AtisModal.open()">ATIS</button>
+            <button id="atis-btn">ATIS</button>
             <button id="end-session-btn">END SESSION</button>
         </div>
     </header>
@@ -205,7 +205,7 @@
                         <span id="ptt-led" class="ptt-led ptt-idle"></span>
                         <span id="ptt-state-label" class="ptt-state-label ptt-label-idle">IDLE</span>
                         <span id="ptt-key-badge" class="ptt-key-badge">Space</span>
-                        <button id="comms-gear-btn" class="comms-gear-btn" title="Audio settings" onclick="Ptt.toggleConfig()">
+                        <button id="comms-gear-btn" class="comms-gear-btn" title="Audio settings">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                         </button>
                     </div>
@@ -233,12 +233,12 @@
                         <span class="cc-label">PTT Key</span>
                         <div class="cc-ptt-row">
                             <span id="cc-ptt-key" class="cc-ptt-badge">Space</span>
-                            <button class="cc-btn-capture" onclick="Ptt.capturePttKey()">CAPTURE</button>
+                            <button id="cc-capture-btn" class="cc-btn-capture">CAPTURE</button>
                         </div>
                     </div>
                     <div class="cc-actions">
-                        <button class="cc-btn-save" onclick="Ptt.saveQuickConfig()">SAVE</button>
-                        <button class="cc-btn-cancel" onclick="Ptt.toggleConfig()">CANCEL</button>
+                        <button id="cc-save-btn" class="cc-btn-save">SAVE</button>
+                        <button id="cc-cancel-btn" class="cc-btn-cancel">CANCEL</button>
                     </div>
                 </div>
 
@@ -256,11 +256,11 @@
     </div>
 
     <!-- ================= ATIS modal ================= -->
-    <div id="atis-overlay" class="atis-overlay" onclick="AtisModal.onOverlayClick(event)">
+    <div id="atis-overlay" class="atis-overlay">
         <div class="atis-modal">
             <div class="atis-modal-header">
                 <span class="atis-modal-title">ATIS</span>
-                <button class="atis-close-btn" onclick="AtisModal.close()">&#10005;</button>
+                <button class="atis-close-btn">&#10005;</button>
             </div>
             <div class="atis-modal-body">
                 <div class="atis-col-left">
@@ -316,8 +316,8 @@
                 </div>
             </div>
             <div class="atis-modal-footer">
-                <button class="atis-btn-cancel" onclick="AtisModal.close()">CANCEL</button>
-                <button class="atis-btn-send" onclick="AtisModal.send()">SEND</button>
+                <button class="atis-btn-cancel">CANCEL</button>
+                <button class="atis-btn-send">SEND</button>
             </div>
         </div>
     </div>

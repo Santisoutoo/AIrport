@@ -3,8 +3,8 @@
 // proper modules during Phase 3.
 
 import { stopSession } from '../api/client';
-import { Debrief } from './debrief';
-import { Ptt } from './ptt';
+import { openAndGenerate, waitClose } from './debrief';
+import { getSessionId } from './ptt';
 
 document.addEventListener('DOMContentLoaded', () => {
   // --- Stopwatch ---
@@ -57,9 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .then(() => {
         const icao = document.getElementById('airport-badge')?.textContent?.trim() ?? '';
-        return Debrief.openAndGenerate(Ptt.getSessionId(), icao === '----' ? '' : icao);
+        return openAndGenerate(getSessionId(), icao === '----' ? '' : icao);
       })
-      .then(() => Debrief.waitClose())
+      .then(() => waitClose())
       .then(() => {
         window.location.href = '/setup';
       })

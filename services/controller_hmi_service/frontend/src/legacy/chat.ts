@@ -5,10 +5,10 @@
 // (shared/services/taxi_router/hmi_chat.py):
 //   { ts, session_id, sender: "pilot", callsign, registration, kind, text }
 // Anything sent by the client is discarded server-side, so this module
-// only listens and renders each line through Ptt.addAgentMessage().
+// only listens and renders each line through the PTT chat log.
 
 import type { ChatPayload } from '../types/api';
-import { Ptt } from './ptt';
+import { addAgentMessage } from './ptt';
 
 const RECONNECT_MIN_MS = 1000;
 const RECONNECT_MAX_MS = 15000;
@@ -30,7 +30,7 @@ function _onMessage(event: MessageEvent): void {
   if (!payload || typeof payload.text !== 'string' || !payload.text) return;
 
   const callsign = payload.callsign || payload.sender || 'PILOT';
-  Ptt.addAgentMessage(String(callsign), payload.text);
+  addAgentMessage(String(callsign), payload.text);
 }
 
 function _connect(): void {
