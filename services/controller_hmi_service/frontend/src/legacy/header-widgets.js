@@ -2,7 +2,7 @@
 // Recreated from the lost inline script (issue #59, Phase 0); split into
 // proper modules during Phase 3.
 
-import { Debrief } from './debrief.js';
+import { Debrief } from './debrief';
 import { Ptt } from './ptt.js';
 
 document.addEventListener('DOMContentLoaded', function () {

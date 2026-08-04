@@ -5,4 +5,4 @@ import './styles/asr.css';
 
 import './legacy/radar.js';
 import './legacy/asr.js';
-import './legacy/setup.js';
+import './legacy/setup';
