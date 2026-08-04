@@ -56,9 +56,50 @@ test = [
     "fastapi>=0.110",
     "sqlalchemy>=2.0",
 ]
+dev = [
+    "ruff>=0.14,<0.15",
+]
 
 [tool.setuptools.packages.find]
 include = ["xplane_plugin*"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["*.ipynb", "data", "output", "logs", "wiki"]
+
+[tool.ruff.lint]
+# Ruff's default E subset. E501 (line length) is deliberately left out: ~40
+# files exceed 100 characters and `ruff format` cannot break long strings or
+# comments, so selecting it would mean hand-reflowing with no autofix behind
+# it. Add it once the formatting pass has landed.
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]     # re-exports are the point of these files
+"tests/**" = ["E402"]           # sys.path setup has to precede project imports
+"plugins/**" = ["E402"]         # XPPython3 plugins import after the path hack
+"xplane_plugin/**" = ["E402"]
+# _load_env_file() must populate os.environ before FastAPI and the service
+# modules are imported, and routes.py extends sys.path the same way.
+"services/controller_hmi_service/main.py" = ["E402"]
+"services/controller_hmi_service/api/routes.py" = ["E402"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection defaults are function calls by design, so
+# B008 would fire on every endpoint signature in the repo.
+extend-immutable-calls = [
+    "fastapi.Body",
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Query",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["services", "shared", "tests", "xplane_plugin"]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "services/orchestrator_service", "services/arrival_simulator_service"]

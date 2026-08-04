@@ -50,6 +50,30 @@ jobs:
           path: coverage.xml
           if-no-files-found: warn
 
+  lint:
+    runs-on: ubuntu-latest
+    # Advisory until the repo-wide `ruff check --fix` + `ruff format` pass
+    # lands — see issue #48. Flip this off in that same commit so the job
+    # starts blocking.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install ruff
+        run: pip install "ruff>=0.14,<0.15"
+
+      - name: Lint
+        run: ruff check --output-format=github .
+
+      - name: Format check
+        run: ruff format --check .
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
