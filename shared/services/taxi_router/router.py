@@ -9,10 +9,11 @@ Two public entry points:
   expects.
 
 - `dispatch_taxi_plan(clearance_data, pilot_readback_text, *, registration,
-  callsign)`: merges controller + pilot waypoints, builds the two-leg
-  plan (pushback -> waypoints), writes it to Redis for the plugin to
-  consume, and emits a `hmi:chat` rejection when the readback cannot be
-  routed.
+  callsign)`: routes strictly on the controller's spoken taxiway sequence
+  (issue #69), builds the two-leg plan (pushback -> waypoints), writes it
+  to Redis for the plugin to consume, and emits a `hmi:chat` rejection
+  when the issued sequence cannot be flown. The pilot readback never
+  alters the route; a mismatch is only logged.
 """
 
 import json
@@ -23,7 +24,6 @@ import uuid
 from typing import Optional
 
 from . import config
-from .constraints import merge_constraints
 from .destination_parser import extract_destination
 from .errors import RouteNotFoundError, UnknownTaxiwayError
 from .hmi_chat import format_readback_rejected, publish_pilot_message
@@ -116,7 +116,13 @@ def compute_taxi_route(
     via: list[str],
     callsign: str,
 ) -> dict:
-    """A* over the taxiway graph from the aircraft's live position.
+    """Route over the taxiway graph from the aircraft's live position.
+
+    When the controller named via taxiways, the route follows them strictly
+    (issue #69): each leg runs only on edges of the authorized taxiway and an
+    infeasible sequence fails instead of being silently re-routed. With no
+    vias (destination-only clearance) the lenient A* is used and the result
+    is tagged `"strict": False`.
 
     Mirrors the contract expected by
     `services/orchestrator_service/agent/tools/taxi_route.py`:
@@ -139,10 +145,18 @@ def compute_taxi_route(
         return {"success": False, "error": str(exc)}
 
     lat, lon, _hdg = pos
+    via = list(via or [])
+    if via:
+        return graph.find_route_strict_from_position(
+            start_lat=lat, start_lon=lon,
+            sequence=via, destination_token=destination,
+        )
     result = graph.find_route_from_position(
         start_lat=lat, start_lon=lon,
-        end_token=destination, via=list(via or []),
+        end_token=destination, via=[],
     )
+    if result.get("success"):
+        result["strict"] = False
     return result
 
 
@@ -198,17 +212,34 @@ def dispatch_taxi_plan(
         known_tokens=known_tokens,
     )
 
-    # Controller via-points came from the precomputed taxi_route attached
-    # to the GND clearance. Fall back to its taxiway_sequence.
-    taxi_route = clearance_data.get("taxi_route") or {}
-    controller_via = list(taxi_route.get("taxiway_sequence") or [])
+    # The controller's SPOKEN sequence is the single routing source of truth
+    # (issue #69). The precomputed taxi_route attached to the clearance is
+    # the output of an earlier A* run and is never used for routing again.
+    controller_seq = extract_taxiway_tokens(
+        None, fallback_text=controller_instruction or "",
+        known_tokens=known_tokens, dedup=False,
+    )
+
+    # Destination comes ONLY from what the controller said. The DB's
+    # runway_in_use is not consulted. When the controller doesn't state
+    # an endpoint, the route ends at the last spoken taxiway.
+    destination = (
+        extract_destination(controller_instruction or "")
+        or extract_destination(pilot_readback_text or "")
+    )
+    if destination:
+        dest_upper = destination.upper()
+        controller_seq = [t for t in controller_seq if t.upper() != dest_upper]
+    elif controller_seq:
+        destination = controller_seq[-1]
+        controller_seq = controller_seq[:-1]
 
     # A clearance can carry pushback, taxi, or both. Three legitimate cases:
     #   - pushback only             -> one pushback leg
     #   - pushback + taxi via X     -> pushback + waypoints
     #   - taxi only (follow-up)     -> waypoints leg, no pushback
     pushback_approved = bool(taxi_data.get("pushback_approved")) if isinstance(taxi_data, dict) else False
-    has_taxi_clearance = bool(controller_via) or bool(readback_via)
+    has_taxi_clearance = bool(controller_seq) or bool(destination)
     pushback_dir = parse_pushback_direction(instruction_text)
     delay = random.uniform(*delay_range)
 
@@ -240,34 +271,35 @@ def dispatch_taxi_plan(
     if not has_taxi_clearance:
         return {"success": False, "error": "no taxi clearance and no pushback"}
 
-    # Full taxi clearance: merge constraints and run A*
-    merged = merge_constraints(controller_via, readback_via)
+    # The pilot readback never alters the flown route: it is only compared
+    # against the controller sequence and a mismatch is logged for debrief.
+    if readback_via and readback_via != list(dict.fromkeys(controller_seq)):
+        logger.warning(
+            "[taxi_router] readback mismatch for %s: controller=%s readback=%s",
+            registration, controller_seq, readback_via,
+        )
 
-    # Destination comes ONLY from what the controller said. The DB's
-    # runway_in_use is not consulted. When the controller doesn't state
-    # an endpoint, the route ends at the last via-point.
-    destination = (
-        extract_destination(controller_instruction or "")
-        or extract_destination(pilot_readback_text or "")
-    )
-    if not destination:
-        if merged:
-            destination = merged[-1]
-            merged = merged[:-1]
-        else:
-            return {"success": False, "error": "no taxi clearance"}
-
-    route_result = graph.find_route_from_position(
-        start_lat=stand_lat, start_lon=stand_lon,
-        end_token=destination, via=merged,
-    )
+    strict = bool(controller_seq)
+    if strict:
+        route_result = graph.find_route_strict_from_position(
+            start_lat=stand_lat, start_lon=stand_lon,
+            sequence=controller_seq, destination_token=destination,
+        )
+    else:
+        # Destination-only clearance ("taxi to runway 24L"): there is no
+        # sequence to follow strictly, so fall back to the lenient A* and
+        # tag the plan explicitly.
+        route_result = graph.find_route_from_position(
+            start_lat=stand_lat, start_lon=stand_lon,
+            end_token=destination, via=[],
+        )
     if not route_result.get("success"):
         reason_detail = route_result.get("error", "route unavailable")
-        logger.info(
-            "[taxi_router] route rejected for %s via=%s dest=%s: %s",
-            registration, merged, destination, reason_detail,
+        logger.warning(
+            "[taxi_router] route rejected for %s seq=%s dest=%s strict=%s: %s",
+            registration, controller_seq, destination, strict, reason_detail,
         )
-        short_reason = _shorten_reason(reason_detail, merged, readback_via)
+        short_reason = _shorten_reason(reason_detail, controller_seq, readback_via)
         _reject(
             r, callsign=callsign, registration=registration,
             reason=short_reason, session_id=session_id,
@@ -311,15 +343,16 @@ def dispatch_taxi_plan(
         "plan_id": str(uuid.uuid4()),
         "started_at": time.time(),
         "delay_before_start_s": round(delay, 2),
+        "strict": strict,
         "legs": legs,
     }
 
     key = config.MOVE_CMD_KEY.format(registration=registration)
     r.set(key, json.dumps(plan), ex=ttl)
     logger.info(
-        "[taxi_router] dispatched plan %s for %s: delay=%.1fs pushback=%.1fm taxi=%dwp dest=%s legs=%d",
+        "[taxi_router] dispatched plan %s for %s: delay=%.1fs pushback=%.1fm taxi=%dwp dest=%s legs=%d strict=%s",
         plan["plan_id"], registration, delay, pushback_dist,
-        len(waypoints), destination, len(legs),
+        len(waypoints), destination, len(legs), strict,
     )
     return {"success": True, "plan_id": plan["plan_id"], "ttl_s": ttl, "legs": len(legs)}
 
@@ -328,14 +361,32 @@ def dispatch_taxi_plan(
 
 def _shorten_reason(
     detail: str,
-    merged_via: list[str],
+    controller_via: list[str],
     pilot_via: list[str],
 ) -> str:
     """Map a graph-layer error string to a pilot-facing phrase."""
+    import re
+
     low = detail.lower()
+    # Strict-routing failures (issue #70): the pilot names the exact problem
+    # so the trainee controller can re-issue a valid clearance.
+    m = re.search(r"unknown taxiway '([^']+)'", detail)
+    if m:
+        return f"taxiway {m.group(1)} not available"
+    m = re.search(r"sequence not connected: (\S+) -> (\S+)", detail)
+    if m:
+        return f"taxiways {m.group(1)} and {m.group(2)} are not connected"
+    m = re.search(r"no path from start to taxiway '([^']+)'", detail)
+    if m:
+        return f"unable to reach taxiway {m.group(1)}"
+    if "destination too far from taxiway" in low or (
+        "destination not reachable along taxiway" in low
+    ):
+        return "the issued route does not reach the destination"
+    # Lenient-routing failures (legacy phrasing)
     if "via point" in low:
         # Try to extract the offending token
-        for tok in pilot_via + merged_via:
+        for tok in pilot_via + controller_via:
             if f"'{tok}'" in detail or f"{tok!r}" in detail:
                 return f"taxiway {tok} not found"
         return "requested taxiway not found"

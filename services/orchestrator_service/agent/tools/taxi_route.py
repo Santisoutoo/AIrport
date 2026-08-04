@@ -36,10 +36,13 @@ def get_taxi_route(
         known_tokens = None
 
     destination = extract_destination(instruction_text)
+    # dedup=False: a clearance may legitimately revisit a taxiway
+    # ("via A, B, A") and strict routing (issue #69) must keep the order.
     via = extract_taxiway_tokens(
         taxi_route_text=None,
         fallback_text=instruction_text,
         known_tokens=known_tokens,
+        dedup=False,
     )
 
     # If the destination token also appeared as a via token, remove it from via
