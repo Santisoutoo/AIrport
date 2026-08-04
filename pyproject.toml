@@ -129,4 +129,8 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
 ]
-fail_under = 70
+# Baseline measured on CI at 79% over 1364 statements (PR #80), with the
+# `source` scope corrected above. The gate sits two points below it to absorb
+# line-count noise; raise it as coverage improves. The old 70% target was set
+# against the broken scope and is already cleared.
+fail_under = 77
