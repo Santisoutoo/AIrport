@@ -9,6 +9,15 @@ import {
   getWeather,
 } from '../api/client';
 import { getSmrLabelOffset, getStripLabel, setSmrLabelOffset } from '../lib/storage';
+import {
+  bearingDeg,
+  computeSmrBounds,
+  geoToSVG,
+  leaderAttachPoint,
+  projectGeoFromBearing,
+  type Point,
+  type SmrBounds,
+} from '../smr/projection';
 import type {
   AircraftPosition,
   AirportGraph,
@@ -171,23 +180,8 @@ function loadTaf(): void {
 // SMR Map (Surface Movement Radar) - Real Data
 // ============================================
 
-interface SmrBounds {
-  minLat: number;
-  maxLat: number;
-  minLon: number;
-  maxLon: number;
-  cosLat: number;
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
 let smrGraph: AirportGraph | null = null; // Airport graph data from API
 let smrBounds: SmrBounds | null = null;
-const SMR_PADDING = 5;
-const SMR_SIZE = 100;
 
 // Pan & Zoom state
 let smrViewBox = { x: 0, y: 0, w: 100, h: 100 };
@@ -227,72 +221,12 @@ function initSMRMap(): void {
 }
 
 function computeSMRBounds(): void {
-  if (!smrGraph) return;
-  const lats: number[] = [];
-  const lons: number[] = [];
-
-  // Nodes (keyed by id)
-  Object.values(smrGraph.nodes).forEach((n) => {
-    lats.push(n.lat);
-    lons.push(n.lon);
-  });
-
-  // Stands
-  smrGraph.stands.forEach((s) => {
-    lats.push(s.lat);
-    lons.push(s.lon);
-  });
-
-  // Runway endpoints
-  smrGraph.runways.forEach((r) => {
-    lats.push(r.end1.lat, r.end2.lat);
-    lons.push(r.end1.lon, r.end2.lon);
-  });
-
-  if (lats.length === 0) return;
-
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLon = Math.min(...lons);
-  const maxLon = Math.max(...lons);
-
-  // Add margin
-  const latMargin = (maxLat - minLat) * 0.08;
-  const lonMargin = (maxLon - minLon) * 0.08;
-
-  // Cosine correction: at this latitude, 1° lon is shorter than 1° lat
-  const centerLat = (minLat + maxLat) / 2;
-  const cosLat = Math.cos((centerLat * Math.PI) / 180);
-
-  smrBounds = {
-    minLat: minLat - latMargin,
-    maxLat: maxLat + latMargin,
-    minLon: minLon - lonMargin,
-    maxLon: maxLon + lonMargin,
-    cosLat,
-  };
+  smrBounds = smrGraph ? computeSmrBounds(smrGraph) : null;
 }
 
-// Convert GPS lat/lon to SVG x/y (0-100 viewBox) with correct 2D projection
-function geoToSVG(lat: number, lon: number): Point {
-  if (!smrBounds) return { x: 50, y: 50 };
-
-  const dLat = smrBounds.maxLat - smrBounds.minLat;
-  const dLon = (smrBounds.maxLon - smrBounds.minLon) * smrBounds.cosLat;
-
-  // Fit proportionally inside the viewBox (preserve aspect ratio)
-  const usable = SMR_SIZE - 2 * SMR_PADDING;
-  const scale = usable / Math.max(dLat, dLon);
-
-  const mapW = dLon * scale;
-  const mapH = dLat * scale;
-  const offX = SMR_PADDING + (usable - mapW) / 2;
-  const offY = SMR_PADDING + (usable - mapH) / 2;
-
-  const x = offX + (lon - smrBounds.minLon) * smrBounds.cosLat * scale;
-  // Invert Y: north (high lat) = top
-  const y = offY + (smrBounds.maxLat - lat) * scale;
-  return { x, y };
+// Convert GPS lat/lon to SVG x/y using the current bounds
+function toSVG(lat: number, lon: number): Point {
+  return geoToSVG(smrBounds, lat, lon);
 }
 
 function renderSMRFromData(): void {
@@ -313,8 +247,8 @@ function renderSMRFromData(): void {
 
   // --- Runways ---
   smrGraph.runways.forEach((rwy) => {
-    const p1 = geoToSVG(rwy.end1.lat, rwy.end1.lon);
-    const p2 = geoToSVG(rwy.end2.lat, rwy.end2.lon);
+    const p1 = toSVG(rwy.end1.lat, rwy.end1.lon);
+    const p2 = toSVG(rwy.end2.lat, rwy.end2.lon);
 
     // Thick runway strip
     svg +=
@@ -348,8 +282,8 @@ function renderSMRFromData(): void {
     const n2 = smrGraph!.nodes[edge.to];
     if (!n1 || !n2) return;
 
-    const p1 = geoToSVG(n1.lat, n1.lon);
-    const p2 = geoToSVG(n2.lat, n2.lon);
+    const p1 = toSVG(n1.lat, n1.lon);
+    const p2 = toSVG(n2.lat, n2.lon);
 
     const isRunway = edge.category === 'runway';
 
@@ -376,7 +310,7 @@ function renderSMRFromData(): void {
     if (/^Node\s+\d+$/.test(n.name)) return;
     if (n.name.indexOf('_') !== -1) return;
     if (n.name.length > 4) return;
-    const pn = geoToSVG(n.lat, n.lon);
+    const pn = toSVG(n.lat, n.lon);
     const entry = (labelByName[n.name] ??= { sx: 0, sy: 0, n: 0 });
     entry.sx += pn.x;
     entry.sy += pn.y;
@@ -403,7 +337,7 @@ function renderSMRFromData(): void {
 
   // --- Stands / Gates ---
   smrGraph.stands.forEach((stand) => {
-    const p = geoToSVG(stand.lat, stand.lon);
+    const p = toSVG(stand.lat, stand.lon);
 
     const isMil = stand.name.indexOf('Mil') !== -1;
     const isGA =
@@ -429,7 +363,7 @@ function renderSMRFromData(): void {
   // --- Taxi nodes (dim dots) ---
   Object.keys(smrGraph.nodes).forEach((id) => {
     const n = smrGraph!.nodes[id]!;
-    const p = geoToSVG(n.lat, n.lon);
+    const p = toSVG(n.lat, n.lon);
     svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="0.3" data-base-r="0.3" fill="#1a2a3a" opacity="0.2"/>';
   });
 
@@ -474,14 +408,9 @@ function autoFitSMRView(): void {
     const ends = _findRunwayEnds(activeILSRunway);
     if (ends) {
       const { threshold, otherEnd } = ends;
-      const l1 = (otherEnd.lat * Math.PI) / 180;
-      const l2 = (threshold.lat * Math.PI) / 180;
-      const dl = ((threshold.lon - otherEnd.lon) * Math.PI) / 180;
-      const by = Math.sin(dl) * Math.cos(l2);
-      const bx = Math.cos(l1) * Math.sin(l2) - Math.sin(l1) * Math.cos(l2) * Math.cos(dl);
-      const brDeg = ((Math.atan2(by, bx) * 180) / Math.PI + 360) % 360;
-      const endGeo = _projectGeoFromBearing(threshold.lat, threshold.lon, brDeg, ILS_RANGE_NM);
-      const endSvg = geoToSVG(endGeo.lat, endGeo.lon);
+      const brDeg = bearingDeg(otherEnd.lat, otherEnd.lon, threshold.lat, threshold.lon);
+      const endGeo = projectGeoFromBearing(threshold.lat, threshold.lon, brDeg, ILS_RANGE_NM);
+      const endSvg = toSVG(endGeo.lat, endGeo.lon);
       const pad = 5;
       minX = Math.min(minX, endSvg.x - pad);
       minY = Math.min(minY, endSvg.y - pad);
@@ -509,19 +438,6 @@ function autoFitSMRView(): void {
   }
 }
 
-function _projectGeoFromBearing(
-  lat: number,
-  lon: number,
-  bearingDeg: number,
-  distNm: number,
-): { lat: number; lon: number } {
-  const br = (bearingDeg * Math.PI) / 180;
-  const dLat = (distNm / 60) * Math.cos(br);
-  const latRad = (lat * Math.PI) / 180;
-  const dLon = ((distNm / 60) * Math.sin(br)) / Math.cos(latRad);
-  return { lat: lat + dLat, lon: lon + dLon };
-}
-
 function drawILSCenterline(): void {
   const group = document.getElementById('smr-ils-group');
   if (!group) return;
@@ -533,17 +449,12 @@ function drawILSCenterline(): void {
   const { threshold, otherEnd } = ends;
 
   // Bearing from otherEnd -> threshold = landing direction
-  const lat1 = (otherEnd.lat * Math.PI) / 180;
-  const lat2 = (threshold.lat * Math.PI) / 180;
-  const dLonRad = ((threshold.lon - otherEnd.lon) * Math.PI) / 180;
-  const y = Math.sin(dLonRad) * Math.cos(lat2);
-  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLonRad);
-  const bearingDeg = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-  const perpDeg = (bearingDeg + 90) % 360;
+  const landingBrg = bearingDeg(otherEnd.lat, otherEnd.lon, threshold.lat, threshold.lon);
+  const perpDeg = (landingBrg + 90) % 360;
 
-  const thrSvg = geoToSVG(threshold.lat, threshold.lon);
-  const endGeo = _projectGeoFromBearing(threshold.lat, threshold.lon, bearingDeg, ILS_RANGE_NM);
-  const endSvg = geoToSVG(endGeo.lat, endGeo.lon);
+  const thrSvg = toSVG(threshold.lat, threshold.lon);
+  const endGeo = projectGeoFromBearing(threshold.lat, threshold.lon, landingBrg, ILS_RANGE_NM);
+  const endSvg = toSVG(endGeo.lat, endGeo.lon);
 
   let svg =
     '<line x1="' + thrSvg.x + '" y1="' + thrSvg.y +
@@ -552,11 +463,11 @@ function drawILSCenterline(): void {
     ' vector-effect="non-scaling-stroke" opacity="0.85"/>';
 
   for (let n = ILS_TICK_NM; n <= ILS_RANGE_NM; n += ILS_TICK_NM) {
-    const c = _projectGeoFromBearing(threshold.lat, threshold.lon, bearingDeg, n);
-    const a = _projectGeoFromBearing(c.lat, c.lon, perpDeg, ILS_TICK_HALF_NM);
-    const b = _projectGeoFromBearing(c.lat, c.lon, perpDeg, -ILS_TICK_HALF_NM);
-    const pa = geoToSVG(a.lat, a.lon);
-    const pb = geoToSVG(b.lat, b.lon);
+    const c = projectGeoFromBearing(threshold.lat, threshold.lon, landingBrg, n);
+    const a = projectGeoFromBearing(c.lat, c.lon, perpDeg, ILS_TICK_HALF_NM);
+    const b = projectGeoFromBearing(c.lat, c.lon, perpDeg, -ILS_TICK_HALF_NM);
+    const pa = toSVG(a.lat, a.lon);
+    const pb = toSVG(b.lat, b.lon);
     svg +=
       '<line x1="' + pa.x + '" y1="' + pa.y +
       '" x2="' + pb.x + '" y2="' + pb.y +
@@ -795,78 +706,6 @@ function applySMRViewBox(): void {
 
 // --- Aurora-style HMI ground label for SMR ---
 
-// Return the point on the box boundary nearest to (dotX,dotY) by ray-casting
-// from the box centre toward the dot and finding the first edge intersection.
-function leaderAttachPoint(
-  dotX: number,
-  dotY: number,
-  boxX: number,
-  boxY: number,
-  boxW: number,
-  boxH: number,
-): Point {
-  const cx = boxX + boxW / 2;
-  const cy = boxY + boxH / 2;
-  const vx = dotX - cx;
-  const vy = dotY - cy;
-  if (vx === 0 && vy === 0) return { x: boxX, y: cy };
-
-  let tMin = Infinity,
-    bestX = boxX,
-    bestY = cy;
-  let t: number, iy: number, ix: number;
-
-  // Left edge
-  if (vx !== 0) {
-    t = (boxX - cx) / vx;
-    if (t > 0) {
-      iy = cy + t * vy;
-      if (iy >= boxY && iy <= boxY + boxH && t < tMin) {
-        tMin = t;
-        bestX = boxX;
-        bestY = iy;
-      }
-    }
-  }
-  // Right edge
-  if (vx !== 0) {
-    t = (boxX + boxW - cx) / vx;
-    if (t > 0) {
-      iy = cy + t * vy;
-      if (iy >= boxY && iy <= boxY + boxH && t < tMin) {
-        tMin = t;
-        bestX = boxX + boxW;
-        bestY = iy;
-      }
-    }
-  }
-  // Top edge
-  if (vy !== 0) {
-    t = (boxY - cy) / vy;
-    if (t > 0) {
-      ix = cx + t * vx;
-      if (ix >= boxX && ix <= boxX + boxW && t < tMin) {
-        tMin = t;
-        bestX = ix;
-        bestY = boxY;
-      }
-    }
-  }
-  // Bottom edge
-  if (vy !== 0) {
-    t = (boxY + boxH - cy) / vy;
-    if (t > 0) {
-      ix = cx + t * vx;
-      if (ix >= boxX && ix <= boxX + boxW && t < tMin) {
-        tMin = t;
-        bestX = ix;
-        bestY = boxY + boxH;
-      }
-    }
-  }
-  return { x: bestX, y: bestY };
-}
-
 const smrLabelOffsets: Record<string, { ox: number; oy: number }> = {}; // persisted user-drag offsets
 let _smrLabelDragState: {
   reg: string;
@@ -1077,7 +916,7 @@ export function updateSMRAircraft(plans: FlightPlan[]): void {
   const runwayPositions: Point[] = [];
 
   smrGraph.stands.forEach((s) => {
-    standPositions.push(geoToSVG(s.lat, s.lon));
+    standPositions.push(toSVG(s.lat, s.lon));
   });
 
   // Collect unique taxiway node positions
@@ -1087,7 +926,7 @@ export function updateSMRAircraft(plans: FlightPlan[]): void {
       if (!seenTaxiNodes[edge.from]) {
         const n = smrGraph!.nodes[edge.from];
         if (n) {
-          taxiPositions.push(geoToSVG(n.lat, n.lon));
+          taxiPositions.push(toSVG(n.lat, n.lon));
           seenTaxiNodes[edge.from] = true;
         }
       }
@@ -1096,8 +935,8 @@ export function updateSMRAircraft(plans: FlightPlan[]): void {
 
   // Interpolated positions along runway
   smrGraph.runways.forEach((rwy) => {
-    const p1 = geoToSVG(rwy.end1.lat, rwy.end1.lon);
-    const p2 = geoToSVG(rwy.end2.lat, rwy.end2.lon);
+    const p1 = toSVG(rwy.end1.lat, rwy.end1.lon);
+    const p2 = toSVG(rwy.end2.lat, rwy.end2.lon);
     for (let t = 0.2; t <= 0.8; t += 0.1) {
       runwayPositions.push({
         x: p1.x + (p2.x - p1.x) * t,
@@ -1120,7 +959,7 @@ export function updateSMRAircraft(plans: FlightPlan[]): void {
     // 1) Preferred: live lat/lon from the Redis state store
     const live = livePositions[reg];
     if (live && isFinite(live.latitude) && isFinite(live.longitude)) {
-      pos = geoToSVG(live.latitude, live.longitude);
+      pos = toSVG(live.latitude, live.longitude);
     }
     // 2) Fallback: place by column index when no live position is available
     else if (column === 'PRE_TAXI' && standPositions.length > 0) {

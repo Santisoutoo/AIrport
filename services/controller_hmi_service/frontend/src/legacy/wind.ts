@@ -1,6 +1,7 @@
 // wind.ts — paired runway wind widget with safety alerts.
 
 import type { Metar } from '../types/api';
+import { checkWindLimits, computeWindComponents } from '../wind/calc';
 
 export interface RunwayGroup {
   hdg: number;
@@ -327,11 +328,7 @@ function updateCardWind(card: HTMLElement, rwyHdg: number): void {
   if (speedSvg) speedSvg.textContent = windState.hasData ? String(speed) : '--';
 
   // Wind components for this runway heading
-  const angleDiff = ((dir - rwyHdg) * Math.PI) / 180;
-  const headwind = Math.round(speed * Math.cos(angleDiff));
-  const crosswind = Math.round(Math.abs(speed * Math.sin(angleDiff)));
-  const tailwind = headwind < 0 ? Math.abs(headwind) : 0;
-  const hwDisplay = headwind >= 0 ? headwind : 0;
+  const { crosswind, tailwind, hwDisplay } = computeWindComponents(dir, speed, rwyHdg);
 
   // Update XW bar
   updateLimitBar('xw-' + rwyHdg, crosswind, windState.XW_LIMIT);
@@ -350,9 +347,9 @@ function updateCardWind(card: HTMLElement, rwyHdg: number): void {
 
   const alertEl = document.getElementById('rwy-alert-' + rwyHdg);
   if (alertEl) {
-    if (crosswind > windState.XW_LIMIT || tailwind > windState.TW_LIMIT) {
-      const msg = crosswind > windState.XW_LIMIT ? 'XW LIMIT EXCEEDED' : 'TW LIMIT EXCEEDED';
-      alertEl.textContent = msg;
+    const limits = checkWindLimits(crosswind, tailwind, windState.XW_LIMIT, windState.TW_LIMIT);
+    if (limits.exceeded) {
+      alertEl.textContent = limits.message ?? '';
       alertEl.classList.remove('hidden');
     } else {
       alertEl.classList.add('hidden');
