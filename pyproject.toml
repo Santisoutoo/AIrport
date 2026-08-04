@@ -78,21 +78,19 @@ filterwarnings = [
 # (aircraft_mover FSM, debrief endpoint, shared/services/aircraft_*) are
 # tracked but excluded from the fail_under threshold since they are out of
 # scope for the current phase — see memoria 5.3.3 for the deferred items.
+#
+# `source` must list packages or DIRECTORIES only. Single .py file paths are
+# not valid entries: coverage treats them as module names, warns
+# "Module ... was never imported", and silently drops them from the report —
+# which is what used to happen to debrief_builder, runner, session_log,
+# frequency_audit, config, event_bridge, arrival_planner, runway_config,
+# phases and geo. Scope is therefore expressed as directories here and
+# narrowed in `omit` below.
 source = [
-    "services/orchestrator_service/agent",
-    "services/orchestrator_service/api",
-    "services/orchestrator_service/db",
-    "services/orchestrator_service/frequency_audit.py",
-    "services/orchestrator_service/runner.py",
-    "services/orchestrator_service/session_log.py",
-    "services/orchestrator_service/debrief_builder.py",
-    "services/orchestrator_service/config.py",
-    "services/arrival_simulator_service/core/event_bridge.py",
-    "services/arrival_simulator_service/core/arrival_planner.py",
-    "services/arrival_simulator_service/core/runway_config.py",
-    "services/arrival_simulator_service/core/phases.py",
-    "services/arrival_simulator_service/core/geo.py",
-    "shared/services/taxi_router",
+    "services/orchestrator_service",
+    "services/arrival_simulator_service/core",
+    "shared/services",
+    "shared/models",
 ]
 omit = [
     "*/__pycache__/*",
@@ -101,13 +99,26 @@ omit = [
     "*/agent/prompts.py",
     "*/agent/debrief_agent.py",
     "*/agent/debrief_prompt.py",
-    "*/agent/tools/confirm.py",
     "*/api/aircraft.py",
     "*/api/clearances.py",
     "*/api/debrief.py",
     "*/api/flight_plans.py",
     "*/api/weather.py",
     "*/shared/callbacks.py",
+    # Pulled in by the directory-level `source` entries above but out of scope
+    # for this phase: no test battery covers them yet. Several are also
+    # deletion candidates under issue #46.
+    "*/arrival_simulator_service/core/plan_catalog.py",
+    "*/arrival_simulator_service/core/scheduler.py",
+    "*/shared/services/aircraft_state_store.py",
+    "*/shared/services/aircraft_tracker.py",
+    "*/shared/services/airport_data_store.py",
+    "*/shared/services/stand_assigner.py",
+    "*/shared/models/aircraft.py",
+    "*/shared/models/aircraft_state.py",
+    "*/shared/models/airport.py",
+    "*/shared/models/command_parser.py",
+    "*/shared/models/communications.py",
     "tests/*",
 ]
 
