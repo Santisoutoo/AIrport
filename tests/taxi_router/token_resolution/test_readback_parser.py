@@ -55,6 +55,35 @@ def test_empty_inputs():
     assert extract_taxiway_tokens("   ") == []
 
 
+# ---- dedup=False (strict-routing path, issue #68) ---------------------------
+
+def test_no_dedup_preserves_non_adjacent_repeat():
+    got = extract_taxiway_tokens(
+        "via alpha bravo alpha", known_tokens=["A", "B"], dedup=False,
+    )
+    assert got == ["A", "B", "A"]
+
+
+def test_no_dedup_collapses_consecutive_stutter():
+    # "alpha alpha bravo" is phonetic repetition, not a route revisit
+    assert extract_taxiway_tokens("alpha alpha bravo", dedup=False) == ["A", "B"]
+
+
+def test_no_dedup_known_tokens_filter_still_applies():
+    got = extract_taxiway_tokens(
+        "Bravo, Zulu, Bravo", known_tokens=["B", "D"], dedup=False,
+    )
+    # After Zulu is filtered the two Bravos become consecutive -> collapse
+    assert got == ["B"]
+
+
+def test_no_dedup_numeric_suffix_repeat():
+    assert (
+        extract_taxiway_tokens("Golf one zero, Hotel, Golf one zero", dedup=False)
+        == ["G10", "H", "G10"]
+    )
+
+
 # ---- parse_pushback_direction ----------------------------------------------
 
 def test_cardinal_directions():
