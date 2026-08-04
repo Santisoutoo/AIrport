@@ -338,6 +338,15 @@ class AircraftMover:
         elif mode == "waypoints":
             plan.phase = Phase.TAXI_OUT.value
             plan.wp_index = self._first_unreached_wp(plan, leg)
+            # Telemetry only (issue #72): log the authorized taxiway
+            # sequence for debrief correlation. The mover stays a dumb
+            # waypoint executor and never re-derives routes.
+            taxiway_sequence = leg.get("taxiway_sequence") or []
+            if taxiway_sequence:
+                xp.log(
+                    f"AIrport Mover: taxi leg for {plan.registration} "
+                    f"authorized sequence: {taxiway_sequence}"
+                )
             self._emit(plan.registration, "taxi_started")
         elif mode == "straight":
             plan.phase = Phase.TAXI_OUT.value

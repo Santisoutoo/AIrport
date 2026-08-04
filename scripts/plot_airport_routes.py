@@ -3,6 +3,12 @@
 Usage (from the AIrport project root):
     ./.venv/Scripts/python.exe scripts/plot_airport_routes.py LEST
     ./.venv/Scripts/python.exe scripts/plot_airport_routes.py LEIB
+    ./.venv/Scripts/python.exe scripts/plot_airport_routes.py LEST --strict
+
+With --strict, routes that carry a via sequence are computed with
+find_route_strict_from_position (issue #67) instead of the lenient
+find_route_from_position, for visual validation of strict adherence
+to the controller sequence. Routes without vias keep the lenient path.
 
 Outputs the PNG into the chapter-5 figure directory of the thesis.
 """
@@ -24,10 +30,13 @@ DATA_DIR = Path("data/airport_data")
 # Per-airport route plan: list of (label, color, start_lat_lon_or_token, end_token, via)
 ROUTES = {
     "LEST": [
-        # Use stand 11 and stand 19 coordinates from LEST_graph.json
-        ("Stand 11 -> RWY 35 (directa)", "#2e7d32", (42.89347487, -8.41920889), "35", None),
-        ("Stand 11 -> RWY 35 via E1",    "#c62828", (42.89347487, -8.41920889), "35", ["E1"]),
-        ("Stand 19 -> RWY 17",           "#1565c0", (42.89546741, -8.41854799), "17", None),
+        # Use stand 11 and stand 19 coordinates from LEST_graph.json.
+        # The strict via sequences are realistic controller clearances: the
+        # aircraft joins the first named taxiway perpendicularly (straight
+        # centerline join) and never leaves the authorized sequence.
+        ("Stand 11 -> RWY 35 (directa)",  "#2e7d32", (42.89347487, -8.41920889), "35", None),
+        ("Stand 11 -> RWY 35 via D3 R",   "#c62828", (42.89347487, -8.41920889), "35", ["D3", "R"]),
+        ("Stand 19 -> RWY 17 via T",      "#1565c0", (42.89546741, -8.41854799), "17", ["T"]),
     ],
     "LEIB": [
         # Stand 07 (north gate) and stand 19A (middle gate) toward RWY 06,
@@ -40,13 +49,20 @@ ROUTES = {
 }
 
 
-def plot_route(ax, graph, path_node_ids, color, label, linewidth=2.2):
-    xs = [graph.nodes[n]["lon"] for n in path_node_ids]
-    ys = [graph.nodes[n]["lat"] for n in path_node_ids]
+def plot_route(ax, graph, route, color, label, linewidth=2.2):
+    # Prefer waypoints (they include the synthetic centerline-join point,
+    # which is what the aircraft actually flies); fall back to graph nodes.
+    wps = route.get("waypoints")
+    if wps:
+        xs = [w["lon"] for w in wps]
+        ys = [w["lat"] for w in wps]
+    else:
+        xs = [graph.nodes[n]["lon"] for n in route["path_node_ids"]]
+        ys = [graph.nodes[n]["lat"] for n in route["path_node_ids"]]
     ax.plot(xs, ys, color=color, linewidth=linewidth, label=label, zorder=3)
 
 
-def plot_airport(icao: str):
+def plot_airport(icao: str, strict: bool = False):
     json_path = DATA_DIR / icao / f"{icao}_graph.json"
     g = AirportGraph(str(json_path))
 
@@ -79,16 +95,31 @@ def plot_airport(icao: str):
     # Routes
     results = []
     for label, color, start, end_token, via in ROUTES[icao]:
-        if isinstance(start, tuple):
+        if strict and via:
+            label = f"{label} [strict]"
+            if isinstance(start, tuple):
+                r = g.find_route_strict_from_position(
+                    start[0], start[1], via, end_token,
+                )
+            else:
+                r = g.find_route_strict(start, via, end_token)
+        elif isinstance(start, tuple):
             r = g.find_route_from_position(start[0], start[1], end_token, via=via)
         else:
             r = g.find_route_via(start, end_token, via=via)
         results.append((label, r))
         if r.get("success"):
-            plot_route(ax, g.graph, r["path_node_ids"], color, label)
-            # Start marker
+            plot_route(ax, g.graph, r, color, label)
+            # Start marker + straight join segment to the first waypoint
+            # (for strict routes this is the perpendicular centerline join).
             if isinstance(start, tuple):
                 ax.plot(start[1], start[0], "o", color=color, markersize=7, zorder=5)
+                wps = r.get("waypoints")
+                if wps:
+                    ax.plot(
+                        [start[1], wps[0]["lon"]], [start[0], wps[0]["lat"]],
+                        color=color, linewidth=1.4, linestyle="--", zorder=3,
+                    )
 
     ax.set_xlabel("Longitud (grados)")
     ax.set_ylabel("Latitud (grados)")
@@ -99,7 +130,8 @@ def plot_airport(icao: str):
     ax.set_aspect("equal", adjustable="datalim")
     ax.grid(True, linestyle=":", color="#dddddd", linewidth=0.5)
 
-    out = FIG_DIR / f"{icao.lower()}_rutas.png"
+    suffix = "_strict" if strict else ""
+    out = FIG_DIR / f"{icao.lower()}_rutas{suffix}.png"
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
     fig.savefig(out, dpi=200, bbox_inches="tight")
@@ -114,12 +146,14 @@ def plot_airport(icao: str):
 
 
 def main():
-    if len(sys.argv) > 1:
-        icaos = [sys.argv[1].upper()]
+    args = [a for a in sys.argv[1:] if a != "--strict"]
+    strict = "--strict" in sys.argv[1:]
+    if args:
+        icaos = [args[0].upper()]
     else:
         icaos = list(ROUTES.keys())
     for icao in icaos:
-        plot_airport(icao)
+        plot_airport(icao, strict=strict)
 
 
 if __name__ == "__main__":
