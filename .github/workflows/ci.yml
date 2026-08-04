@@ -33,7 +33,7 @@ jobs:
           pip install \
             "pytest>=8" "pytest-asyncio>=0.23" "pytest-mock>=3.12" \
             "pytest-cov>=5" "respx>=0.20" "fastapi>=0.110" \
-            "sqlalchemy>=2.0" httpx redis pydantic networkx psycopg2-binary
+            "sqlalchemy>=2.0" httpx requests redis pydantic networkx psycopg2-binary
 
       # No --cov-fail-under override here: `fail_under` in pyproject.toml is
       # the single source of truth for the gate. It sits two points below the

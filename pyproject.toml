@@ -89,6 +89,7 @@ filterwarnings = [
 source = [
     "services/orchestrator_service",
     "services/arrival_simulator_service/core",
+    "services/weather_service/core",
     "shared/services",
     "shared/models",
 ]
@@ -110,6 +111,8 @@ omit = [
     # deletion candidates under issue #46.
     "*/arrival_simulator_service/core/plan_catalog.py",
     "*/arrival_simulator_service/core/scheduler.py",
+    "*/weather_service/core/database/*",
+    "*/weather_service/core/metar_taf_fetcher.py",
     "*/shared/services/aircraft_state_store.py",
     "*/shared/services/aircraft_tracker.py",
     "*/shared/services/airport_data_store.py",
@@ -129,8 +132,9 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
 ]
-# Baseline measured on CI at 79% over 1364 statements (PR #80), with the
-# `source` scope corrected above. The gate sits two points below it to absorb
-# line-count noise; raise it as coverage improves. The old 70% target was set
-# against the broken scope and is already cleared.
-fail_under = 77
+# The gate sits two points below the measured baseline to absorb line-count
+# noise, and is raised whenever a PR lifts coverage. History:
+#   77 — 78.89% over 1364 statements, `source` scope corrected (#47, PR #80)
+#   79 — 81.81% over 1523 statements, weather_service covered (#49)
+# The old 70% target was set against the broken scope and is already cleared.
+fail_under = 79
