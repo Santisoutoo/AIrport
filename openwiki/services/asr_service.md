@@ -84,7 +84,7 @@ untouched, with a strict JSON schema, an 8-second timeout, and a fail-open contr
 keeps the deterministic result.
 
 One live-wiring nuance: the browser client
-([`ptt.js`](../../services/controller_hmi_service/static/js/ptt.js)) posts only `audio` and
+([`legacy/ptt.ts`](../../services/controller_hmi_service/frontend/src/legacy/ptt.ts)) posts only `audio` and
 `session_id` — never `session_callsigns`, `session_sids` or `context_mode` — and the HMI's proxy
 forwards that multipart body byte-for-byte. So every PTT transmission today runs stages 1-4 under
 the `generic` prompt; the session-aware fuzzy snap and the LLM step are fully wired and gated as
