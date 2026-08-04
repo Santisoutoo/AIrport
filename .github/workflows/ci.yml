@@ -52,10 +52,6 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
-    # Advisory until the repo-wide `ruff check --fix` + `ruff format` pass
-    # lands — see issue #48. Flip this off in that same commit so the job
-    # starts blocking.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -68,10 +64,16 @@ jobs:
       - name: Install ruff
         run: pip install "ruff>=0.14,<0.15"
 
+      # Advisory until the repo-wide `ruff check --fix` + `ruff format` pass
+      # lands — see issue #48. Violations still show up as annotations on the
+      # diff; they just don't fail the build yet. Drop both
+      # continue-on-error lines in that same commit to start blocking.
       - name: Lint
+        continue-on-error: true
         run: ruff check --output-format=github .
 
       - name: Format check
+        continue-on-error: true
         run: ruff format --check .
 
   frontend:
