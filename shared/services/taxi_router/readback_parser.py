@@ -72,11 +72,18 @@ def extract_taxiway_tokens(
     taxi_route_text: Optional[str],
     fallback_text: Optional[str] = None,
     known_tokens: Optional[Iterable[str]] = None,
+    dedup: bool = True,
 ) -> list[str]:
     """Return the pilot's taxi sequence as an ordered list of canonical tokens.
 
     Prefers `taxi_route_text` when non-empty; otherwise scans `fallback_text`.
     When `known_tokens` is provided, tokens not in that set are filtered out.
+
+    With `dedup=True` (default) every repeated token is dropped, keeping the
+    historical behaviour. Strict-routing callers (issue #69) pass
+    `dedup=False`: only *consecutive* duplicates are collapsed (phonetic
+    repetition like "alpha alpha"), so a clearance that legitimately revisits
+    a taxiway ("via A, B, A") keeps its full sequence.
     """
     source = taxi_route_text if taxi_route_text and taxi_route_text.strip() else fallback_text
     if not source:
@@ -102,9 +109,13 @@ def extract_taxiway_tokens(
             continue
         if known_upper is not None and t not in known_upper:
             continue
-        if t in seen:
+        if dedup:
+            if t in seen:
+                continue
+            seen.add(t)
+        elif out and out[-1] == t:
+            # Collapse only consecutive repeats ("alpha alpha" stutter)
             continue
-        seen.add(t)
         out.append(t)
     return out
 

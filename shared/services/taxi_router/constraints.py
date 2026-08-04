@@ -1,5 +1,10 @@
 """Merge controller-issued via-points with the pilot's colación (readback).
 
+NOTE (issue #69): this merge no longer feeds routing. dispatch_taxi_plan
+routes strictly on the controller's spoken sequence and only compares the
+readback against it for mismatch logging. The function is kept for readback
+evaluation tooling.
+
 The pilot's sequence is authoritative for order (ICAO rule: the pilot must
 repeat the clearance). Any taxiway in the controller list that the pilot
 did NOT read back is spliced in at the position that keeps progression

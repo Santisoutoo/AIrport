@@ -2,8 +2,8 @@
 
 Most tests are parametrised over the airport(s) configured in conftest.py
 (currently LEBL) so that the structural invariants are verified on a real,
-large graph. Airport-specific tests (the xfail documenting the
-`find_nearest_node` defect) stay attached to the single `lebl_graph` fixture.
+large graph. Airport-specific tests stay attached to the single `lebl_graph`
+fixture.
 """
 import math
 
@@ -147,14 +147,8 @@ def test_find_nearest_node_restrict_to_main_cc(airport):
     assert found in main_cc
 
 
-# ---- Airport-specific: documented defect (single airport is enough) --------
+# ---- Airport-specific (single airport is enough) ----------------------------
 
-@pytest.mark.xfail(
-    reason="graph.py:174 has a precedence bug: "
-    "`return nearest_node, min_distance if nearest_node else (None, None)` "
-    "returns a nested tuple (None, (None, None)) when no match. "
-    "Bug documented for memoria 5.3.3."
-)
 def test_find_nearest_node_returns_clean_none_when_out_of_range(lebl_graph):
     found, dist = lebl_graph.find_nearest_node(0.0, 0.0, max_distance=1000.0)
     assert found is None

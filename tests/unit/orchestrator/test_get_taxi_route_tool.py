@@ -33,12 +33,15 @@ def _stub_router(monkeypatch, *, destination, via, graph_tokens=None, raise_grap
     def _fake_extract_destination(text):
         return destination
 
-    def _fake_extract_taxiway_tokens(*, taxi_route_text, fallback_text, known_tokens):
+    def _fake_extract_taxiway_tokens(
+        *, taxi_route_text, fallback_text, known_tokens, dedup=True,
+    ):
         # Echo the via list -- known_tokens is asserted via call recording
         _fake_extract_taxiway_tokens.last_call = {
             "taxi_route_text": taxi_route_text,
             "fallback_text": fallback_text,
             "known_tokens": known_tokens,
+            "dedup": dedup,
         }
         return list(via)
 
