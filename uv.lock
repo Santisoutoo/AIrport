@@ -171,7 +171,6 @@ test = [
 weather = [
     { name = "httpx" },
     { name = "psycopg2-binary" },
-    { name = "requests" },
     { name = "sqlalchemy" },
 ]
 
@@ -228,7 +227,6 @@ requires-dist = [
     { name = "redis", marker = "extra == 'controller-hmi'", specifier = ">=5.0,<7" },
     { name = "redis", marker = "extra == 'orchestrator'", specifier = ">=5.0,<7" },
     { name = "requests", marker = "extra == 'controller-hmi'", specifier = ">=2.31,<3" },
-    { name = "requests", marker = "extra == 'weather'", specifier = ">=2.31,<3" },
     { name = "respx", marker = "extra == 'test'", specifier = ">=0.20" },
     { name = "sqlalchemy", specifier = ">=2.0,<3" },
     { name = "sqlalchemy", marker = "extra == 'flight-plan'", specifier = ">=2.0,<3" },

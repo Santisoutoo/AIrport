@@ -29,7 +29,7 @@ from . import config
 from .destination_parser import extract_destination
 from .errors import RouteNotFoundError, UnknownTaxiwayError
 from .hmi_chat import format_readback_rejected, publish_pilot_message
-from .pushback import plan_pushback_leg
+from .pushback import PushbackLeg, plan_pushback_leg
 from .readback_parser import extract_taxiway_tokens, parse_pushback_direction
 
 logger = logging.getLogger(__name__)
@@ -182,6 +182,8 @@ def dispatch_taxi_plan(
     )
     if error is not None:
         return error
+    # `_prepare_dispatch` returns a context whenever it returns no error.
+    ctx = cast(DispatchContext, ctx)
 
     # Phase 2 -- a pushback-only clearance never reaches the router.
     clearance = ctx.clearance
@@ -247,7 +249,7 @@ class DispatchContext:
     aircraft is, which graph to route on, what the controller cleared, and
     the timing/identity parameters the plan is stamped with."""
     stand: Stand
-    graph: object
+    graph: Any
     clearance: TaxiClearance
     registration: str
     callsign: str
@@ -257,7 +259,7 @@ class DispatchContext:
 
 
 def _prepare_dispatch(
-    redis_client,
+    redis_client: Any,
     clearance_data: dict,
     pilot_readback_text: str,
     *,
@@ -381,18 +383,18 @@ def _resolve_route(ctx: DispatchContext) -> dict:
     the controller only named a destination ("taxi to runway 24L")."""
     stand, clearance = ctx.stand, ctx.clearance
     if clearance.strict:
-        return ctx.graph.find_route_strict_from_position(
+        return cast(dict, ctx.graph.find_route_strict_from_position(
             start_lat=stand.lat, start_lon=stand.lon,
             sequence=clearance.controller_seq,
             destination_token=clearance.destination,
-        )
-    return ctx.graph.find_route_from_position(
+        ))
+    return cast(dict, ctx.graph.find_route_from_position(
         start_lat=stand.lat, start_lon=stand.lon,
         end_token=clearance.destination, via=[],
-    )
+    ))
 
 
-def _reject_route(redis_client, ctx: DispatchContext, route_result: dict) -> dict:
+def _reject_route(redis_client: Any, ctx: DispatchContext, route_result: dict) -> dict:
     """Log the routing failure and make the simulated pilot say unable."""
     clearance = ctx.clearance
     reason_detail = route_result.get("error", "route unavailable")
@@ -413,7 +415,7 @@ def _reject_route(redis_client, ctx: DispatchContext, route_result: dict) -> dic
 
 # -- Phase 4: leg assembly and publication ------------------------------------
 
-def _plan_pushback(ctx: DispatchContext, first_wp: Optional[dict] = None):
+def _plan_pushback(ctx: DispatchContext, first_wp: Optional[dict] = None) -> PushbackLeg:
     """Pushback leg aimed at `first_wp` when a taxi clearance follows, or a
     plain back-out when it doesn't. The distance is capped by the nearest
     apt.dat init/both node -- where X-Plane assumes the taxi network starts."""
@@ -445,12 +447,12 @@ def _build_plan(delay: float, legs: list[dict], *, strict: Optional[bool] = None
     return plan
 
 
-def _store_plan(redis_client, registration: str, plan: dict, ttl: int) -> None:
+def _store_plan(redis_client: Any, registration: str, plan: dict, ttl: int) -> None:
     key = config.MOVE_CMD_KEY.format(registration=registration)
     redis_client.set(key, json.dumps(plan), ex=ttl)
 
 
-def _dispatch_pushback_only(redis_client, ctx: DispatchContext) -> dict:
+def _dispatch_pushback_only(redis_client: Any, ctx: DispatchContext) -> dict:
     """Publish the single-leg plan for a "pushback approved" with no taxi."""
     pushback_leg = _plan_pushback(ctx)
     ttl = int(ctx.delay + _eta_s(pushback_leg.distance_m, pushback_leg.speed_kts) + 60.0)
@@ -464,7 +466,7 @@ def _dispatch_pushback_only(redis_client, ctx: DispatchContext) -> dict:
     return {"success": True, "plan_id": plan["plan_id"], "ttl_s": ttl, "legs": 1}
 
 
-def _dispatch_taxi_legs(redis_client, ctx: DispatchContext, route_result: dict) -> dict:
+def _dispatch_taxi_legs(redis_client: Any, ctx: DispatchContext, route_result: dict) -> dict:
     """Publish the taxi plan: an optional pushback leg followed by the
     waypoints leg, with a TTL covering the whole maneuver."""
     waypoints = route_result["waypoints"]
