@@ -1,6 +1,5 @@
 import os
 import random
-import string
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
@@ -9,6 +8,7 @@ import httpx
 
 from models.schemas import FlightPlanResponse
 from core.data import AIRCRAFT_DATA, PILOT_NAMES, AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX
+from core.registration import generate_registration
 
 logger = logging.getLogger(__name__)
 
@@ -90,11 +90,11 @@ class APIFlightPlanGenerator:
             airline = AIRLINE_DATA[airline_icao]
             callsign = self._generate_callsign(airline_icao)
             prefix = AIRLINE_REGISTRATION_PREFIX.get(airline["country"], "EC")
-            aircraft_reg = self._generate_registration(prefix)
+            aircraft_reg = generate_registration(prefix)
             flight_type = "S"
         else:
             callsign = ""
-            aircraft_reg = self._generate_registration("EC")
+            aircraft_reg = generate_registration("EC")
             flight_type = "G"
 
         # Calculate times
@@ -214,13 +214,6 @@ class APIFlightPlanGenerator:
             parts.append(last_exit_wp)
 
         return " ".join(parts) if parts else "DCT"
-
-    @staticmethod
-    def _generate_registration(prefix: str = "EC") -> str:
-        letters = "".join(random.choices(string.ascii_uppercase, k=3))
-        if prefix.endswith("-"):
-            return f"{prefix}{letters}"
-        return f"{prefix}-{letters}"
 
     @staticmethod
     def _select_airline(aircraft_type: str) -> str:

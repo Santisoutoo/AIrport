@@ -4,21 +4,10 @@ Pure functions, no I/O; unit-testable standalone. Inputs are the raw
 lists the `session_log` returns plus the clearance rows from Postgres.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Iterable, Optional
 
-
-def _fmt_ts(ts: float | str | None) -> str:
-    if ts is None:
-        return "--:--:--"
-    try:
-        if isinstance(ts, str):
-            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        else:
-            dt = datetime.fromtimestamp(float(ts), tz=timezone.utc)
-        return dt.strftime("%H:%M:%S")
-    except (ValueError, TypeError):
-        return "--:--:--"
+from utils import fmt_ts as _fmt_ts
 
 
 def _coerce_ts(ts) -> float:

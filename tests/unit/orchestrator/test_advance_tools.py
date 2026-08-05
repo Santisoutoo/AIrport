@@ -190,3 +190,50 @@ def test_readback_format_with_decimal_frequency():
     ctx = _ctx([{"registration": "EC-MIG", "callsign": "IBE3421"}])
     assert advance_to_gnd("EC-MIG", "121.9", ctx) == "121.9, IBE3421"
     assert advance_to_twr("EC-MIG", "118.330", ctx) == "118.330, IBE3421"
+
+
+# ---------------------------------------------------------------------------
+# ADK contract guard
+# ---------------------------------------------------------------------------
+#
+# The three tools share one implementation (agent/tools/phase_advance.py), but
+# the ADK derives each tool's JSON schema from the *wrapper's* name, signature
+# and docstring, and the system prompt calls them by name. The tests below fail
+# loudly if the shared implementation ever leaks into that public surface.
+
+
+@pytest.mark.parametrize(
+    "tool, expected_name",
+    [
+        (advance_to_gnd, "advance_to_gnd"),
+        (advance_to_twr, "advance_to_twr"),
+        (advance_to_gnd_arrival, "advance_to_gnd_arrival"),
+    ],
+)
+def test_tool_keeps_its_own_name_signature_and_description(tool, expected_name):
+    import inspect
+
+    assert tool.__name__ == expected_name
+    sig = inspect.signature(tool)
+    assert list(sig.parameters) == ["registration", "frequency", "tool_context"]
+    assert all(p.default is inspect.Parameter.empty for p in sig.parameters.values())
+    assert sig.return_annotation is str
+    # The docstring IS the tool description the LLM reads when choosing, so it
+    # must survive on the wrapper rather than moving to the shared helper.
+    assert tool.__doc__ is not None
+    assert "Args:" in tool.__doc__ and "Returns:" in tool.__doc__
+
+
+def test_the_three_tools_have_distinct_descriptions():
+    """A shared implementation must not collapse the three descriptions — the
+    LLM distinguishes departure GND, TWR and the arrival reverse handoff only
+    by this text."""
+    docs = {advance_to_gnd.__doc__, advance_to_twr.__doc__, advance_to_gnd_arrival.__doc__}
+    assert len(docs) == 3
+
+
+def test_agent_registers_the_three_tools_under_their_public_names():
+    from agent.agent import orch_agent
+
+    tool_names = {getattr(t, "__name__", None) for t in orch_agent.tools}
+    assert {"advance_to_gnd", "advance_to_twr", "advance_to_gnd_arrival"} <= tool_names
