@@ -6,17 +6,17 @@ from ..models.aircraft_state import AircraftState
 from .aircraft_state_store import AircraftStateStore
 
 _USER_DATAREFS = {
-    "latitude":           "sim/flightmodel/position/latitude",
-    "longitude":          "sim/flightmodel/position/longitude",
-    "altitude_msl":       "sim/flightmodel/position/elevation",
-    "heading":            "sim/flightmodel/position/true_psi",
-    "pitch":              "sim/flightmodel/position/true_theta",
-    "roll":               "sim/flightmodel/position/true_phi",
-    "ground_speed":       "sim/flightmodel/position/groundspeed",
+    "latitude": "sim/flightmodel/position/latitude",
+    "longitude": "sim/flightmodel/position/longitude",
+    "altitude_msl": "sim/flightmodel/position/elevation",
+    "heading": "sim/flightmodel/position/true_psi",
+    "pitch": "sim/flightmodel/position/true_theta",
+    "roll": "sim/flightmodel/position/true_phi",
+    "ground_speed": "sim/flightmodel/position/groundspeed",
     "indicated_airspeed": "sim/flightmodel/position/indicated_airspeed",
-    "vertical_speed":     "sim/flightmodel/position/vh_ind",
-    "altitude_agl":       "sim/flightmodel/position/y_agl",
-    "on_ground":          "sim/flightmodel/failures/onground_any",
+    "vertical_speed": "sim/flightmodel/position/vh_ind",
+    "altitude_agl": "sim/flightmodel/position/y_agl",
+    "on_ground": "sim/flightmodel/failures/onground_any",
 }
 
 
@@ -41,7 +41,6 @@ class AircraftTracker:
 
         # AI aircraft registry: registration -> {datarefs, metadata}
         self._ai_aircraft: dict[str, dict[str, Any]] = {}
-
 
     def set_session(self, session_id: str) -> None:
         self._session_id = session_id
@@ -80,12 +79,12 @@ class AircraftTracker:
             "aircraft_type": aircraft_type,
             "callsign": callsign,
             "datarefs": {
-                "latitude":  f"{prefix}_lat",
+                "latitude": f"{prefix}_lat",
                 "longitude": f"{prefix}_lon",
                 "altitude_msl": f"{prefix}_el",
-                "pitch":     f"{prefix}_the",
-                "heading":   f"{prefix}_psi",
-                "roll":      f"{prefix}_phi",
+                "pitch": f"{prefix}_the",
+                "heading": f"{prefix}_psi",
+                "roll": f"{prefix}_phi",
             },
             "dref_handles": {},
         }
@@ -225,8 +224,8 @@ class AircraftTracker:
                     roll=xp.getDataf(handles.get("roll", 0)),
                     ground_speed=gs,
                     indicated_airspeed=0.0,  # not available for multiplayer
-                    vertical_speed=0.0,      # not available for multiplayer
-                    on_ground=True,          # assume ground ops for now
+                    vertical_speed=0.0,  # not available for multiplayer
+                    on_ground=True,  # assume ground ops for now
                     squawk=0,
                     phase=self._determine_phase(on_ground=True, ground_speed=gs),
                 )

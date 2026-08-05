@@ -191,10 +191,10 @@ def test_audit_first_service_keyword_in_window_wins():
 
 def test_audit_aggregates_counts_across_transcripts():
     transcripts = [
-        _t("Tower 118.330"),       # good
-        _t("Ground 121.655"),      # good
-        _t("Delivery 121.900"),    # bad (default DEL is 121.805)
-        _t("just chatting"),       # no mention
+        _t("Tower 118.330"),  # good
+        _t("Ground 121.655"),  # good
+        _t("Delivery 121.900"),  # bad (default DEL is 121.805)
+        _t("just chatting"),  # no mention
     ]
     audit = audit_frequencies(transcripts)
     assert audit["mentions"] == 3
@@ -235,9 +235,7 @@ def test_render_audit_markdown_empty_when_no_findings():
 
 
 def test_render_audit_markdown_includes_verdict_marks():
-    audit = audit_frequencies(
-        [_t("Tower 118.330"), _t("Tower 118.500"), _t("contact 118.300")]
-    )
+    audit = audit_frequencies([_t("Tower 118.330"), _t("Tower 118.500"), _t("contact 118.300")])
     md = render_audit_markdown(audit)
     assert "Frequency accuracy" in md
     assert "✔" in md  # good

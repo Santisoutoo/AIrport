@@ -19,13 +19,10 @@ from __future__ import annotations
 import json
 import types
 
+import api.dispatch as dispatch_mod
 import httpx
 import pytest
 import respx
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
-import api.dispatch as dispatch_mod
 import runner as runner_mod
 import session_log as session_log_mod
 from agent.tools import forward as forward_mod
@@ -35,8 +32,10 @@ from api.dispatch import router as dispatch_router
 from core import event_bridge
 from db.connection import get_db
 from db.models import AircraftClearance
-from tests.fixtures.adk_runner import install_fake_runner
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
+from tests.fixtures.adk_runner import install_fake_runner
 
 pytestmark = pytest.mark.slow
 
@@ -126,9 +125,7 @@ def test_arrival_full_pipeline_app_to_twr_to_gnd(wire_pipeline, client, db_sessi
     assert row.runway_in_use == "17"
 
     # Simulate the arrival_planner registering the bridge so events get routed
-    event_bridge.register_arrival(
-        {"registration": "VLG1234", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "VLG1234", "callsign": "VLG1234", "runway": "17"})
 
     # -------------------------------------------------------------------
     # Step 2: mover emits request_landing -> TTS pushed
@@ -140,9 +137,7 @@ def test_arrival_full_pipeline_app_to_twr_to_gnd(wire_pipeline, client, db_sessi
     # Step 3: controller issues landing clearance -> TWR sub-agent
     # -------------------------------------------------------------------
     twr_call = respx.post("http://twr.test/agents/tower/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "VLG1234, cleared to land runway 17."}
-        )
+        return_value=httpx.Response(200, json={"reply": "VLG1234, cleared to land runway 17."})
     )
 
     def _step3_state(state):
@@ -176,12 +171,8 @@ def test_arrival_full_pipeline_app_to_twr_to_gnd(wire_pipeline, client, db_sessi
     # -------------------------------------------------------------------
     def _step5_state(state):
         # Pre-populate state.known_aircraft so the readback gets the callsign
-        state["known_aircraft"] = [
-            {"registration": "VLG1234", "callsign": "VLG1234"}
-        ]
-        advance_to_gnd_arrival(
-            "VLG1234", "121.9", types.SimpleNamespace(state=state)
-        )
+        state["known_aircraft"] = [{"registration": "VLG1234", "callsign": "VLG1234"}]
+        advance_to_gnd_arrival("VLG1234", "121.9", types.SimpleNamespace(state=state))
 
     fake_runner.script(state_updates=_step5_state, final_text="121.9, VLG1234")
     resp = client.post(
@@ -219,9 +210,7 @@ def test_arrival_full_pipeline_app_to_twr_to_gnd(wire_pipeline, client, db_sessi
     assert "121.9" in dispatch_tts[1]
 
 
-def test_arrival_register_is_independent_of_event_bridge_state(
-    wire_pipeline, client, db_session
-):
+def test_arrival_register_is_independent_of_event_bridge_state(wire_pipeline, client, db_session):
     """Registering an arrival in the DB does NOT auto-register it in the event bridge."""
     client.post(
         "/api/v1/orchestrator/arrivals/register",

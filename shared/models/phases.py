@@ -28,16 +28,20 @@ class Phase(str, Enum):
     TAXI_IN = "taxi_in"
 
 
-ARRIVAL_PHASES = frozenset({
-    Phase.APPROACH.value,
-    Phase.SHORT_FINAL.value,
-    Phase.LANDING_ROLL.value,
-    Phase.VACATING.value,
-    Phase.TAXI_IN.value,
-})
+ARRIVAL_PHASES = frozenset(
+    {
+        Phase.APPROACH.value,
+        Phase.SHORT_FINAL.value,
+        Phase.LANDING_ROLL.value,
+        Phase.VACATING.value,
+        Phase.TAXI_IN.value,
+    }
+)
 
-AIRBORNE_PHASES = frozenset({
-    Phase.AIRBORNE.value,
-    Phase.APPROACH.value,
-    Phase.SHORT_FINAL.value,
-})
+AIRBORNE_PHASES = frozenset(
+    {
+        Phase.AIRBORNE.value,
+        Phase.APPROACH.value,
+        Phase.SHORT_FINAL.value,
+    }
+)

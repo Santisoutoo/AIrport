@@ -14,7 +14,9 @@ def log_before(callback_context: CallbackContext) -> None:
         len(aircraft),
     )
     for a in aircraft:
-        logger.debug("[ORCH]   aircraft: %s dep=%s source=%s", a.get("registration"), a.get("dependency"), a.get("source"))
+        logger.debug(
+            "[ORCH]   aircraft: %s dep=%s source=%s", a.get("registration"), a.get("dependency"), a.get("source")
+        )
 
 
 def log_after(callback_context: CallbackContext) -> None:

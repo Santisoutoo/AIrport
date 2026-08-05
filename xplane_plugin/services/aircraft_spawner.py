@@ -1,4 +1,5 @@
 from XPPython3 import xp
+
 from .aircraft_obj_mapper import get_obj_path
 
 _FT_TO_M = 0.3048
@@ -8,8 +9,8 @@ class AircraftSpawner:
     """Loads .obj models and places them at stand positions or in the air."""
 
     def __init__(self):
-        self._instances = []   # (instance, obj)
-        self._registry = {}    # {instance, obj, latitude, longitude, true_hdg, aircraft_type}
+        self._instances = []  # (instance, obj)
+        self._registry = {}  # {instance, obj, latitude, longitude, true_hdg, aircraft_type}
         self._probe = None
 
     def spawn(self, assignments: list) -> int:

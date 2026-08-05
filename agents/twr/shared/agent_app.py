@@ -101,9 +101,7 @@ def create_app(
 
     # Pre-render the variable part of the two per-request log lines so the
     # emitted text is identical to the hand-written per-agent versions.
-    request_fmt = "[%s] ▶ request | session=%s | msg=%r" + "".join(
-        f" | {name}=%s" for name in config.context_fields
-    )
+    request_fmt = "[%s] ▶ request | session=%s | msg=%r" + "".join(f" | {name}=%s" for name in config.context_fields)
     done_fmt = f"[%s] ■ done | session=%s | reply=%r | {config.data_key}=%s | %d ms"
 
     @asynccontextmanager
@@ -120,22 +118,26 @@ def create_app(
         context = [getattr(req, name) for name in config.context_fields]
         log.info(
             request_fmt,
-            config.label, req.session_id, req.message[:80], *[bool(v) for v in context],
+            config.label,
+            req.session_id,
+            req.message[:80],
+            *[bool(v) for v in context],
         )
         t0 = asyncio.get_event_loop().time()
         loop = asyncio.get_event_loop()
         try:
-            result = await loop.run_in_executor(
-                executor, run_agent, req.session_id, req.message, *context
-            )
+            result = await loop.run_in_executor(executor, run_agent, req.session_id, req.message, *context)
         except Exception:
             log.exception("[%s] ✗ executor error | session=%s", config.label, req.session_id)
             raise
         elapsed_ms = int((asyncio.get_event_loop().time() - t0) * 1000)
         log.info(
             done_fmt,
-            config.label, req.session_id, result["reply"][:80],
-            bool(result.get(config.data_key)), elapsed_ms,
+            config.label,
+            req.session_id,
+            result["reply"][:80],
+            bool(result.get(config.data_key)),
+            elapsed_ms,
         )
         return RunResponse(
             session_id=req.session_id,

@@ -4,13 +4,13 @@ Validates find_route_via and find_route_from_position over the real LEBL
 graph (815 nodes, 234 stands, 6 runway ends), which exercises the routing
 engine on a large, complex airport layout.
 """
+
 import math
 
 import networkx as nx
-import pytest
-
 
 # ---- Helpers ---------------------------------------------------------------
+
 
 def _pick_route_pair(airport):
     """Pick a (start, end) coordinate pair that produces a valid route.
@@ -23,26 +23,26 @@ def _pick_route_pair(airport):
     for s in airport.raw_data["stands"]:
         for end_token in airport.expected_runway_ids:
             r = airport.graph.find_route_from_position(
-                s["latitude"], s["longitude"], end_token,
+                s["latitude"],
+                s["longitude"],
+                end_token,
             )
             if r.get("success"):
                 return s, end_token
-    raise RuntimeError(
-        f"[{airport.icao}] no (stand, runway) pair produces a connected route"
-    )
+    raise RuntimeError(f"[{airport.icao}] no (stand, runway) pair produces a connected route")
 
 
 # ---- Happy-path routes (parametrised) --------------------------------------
 
+
 def test_route_from_position_succeeds(airport):
     start, end = _pick_route_pair(airport)
     r = airport.graph.find_route_from_position(
-        start["latitude"], start["longitude"], end,
+        start["latitude"],
+        start["longitude"],
+        end,
     )
-    assert r["success"] is True, (
-        f"[{airport.icao}] route from {start['stand_id']!r} to {end!r}: "
-        f"{r.get('error')}"
-    )
+    assert r["success"] is True, f"[{airport.icao}] route from {start['stand_id']!r} to {end!r}: {r.get('error')}"
     assert len(r["path_node_ids"]) >= 2
     assert r["total_distance_m"] > 0
 
@@ -57,6 +57,7 @@ def test_trivial_path_start_equals_end(airport):
 
 
 # ---- Error paths (parametrised) --------------------------------------------
+
 
 def test_route_from_position_no_connected_node(airport):
     r = airport.graph.find_route_from_position(0.0, 0.0, "0")
@@ -79,15 +80,23 @@ def test_invalid_start_token(airport):
 
 # ---- Result shape (parametrised) -------------------------------------------
 
+
 def test_result_shape_keys(airport):
     start, end = _pick_route_pair(airport)
     r = airport.graph.find_route_from_position(
-        start["latitude"], start["longitude"], end,
+        start["latitude"],
+        start["longitude"],
+        end,
     )
     assert r["success"], f"[{airport.icao}] precondition failed: {r.get('error')}"
     for key in (
-        "success", "path_node_ids", "waypoints",
-        "taxiway_sequence", "total_distance_m", "start", "end",
+        "success",
+        "path_node_ids",
+        "waypoints",
+        "taxiway_sequence",
+        "total_distance_m",
+        "start",
+        "end",
     ):
         assert key in r, f"[{airport.icao}] missing key: {key}"
     for sub in ("node_id", "lat", "lon", "token"):
@@ -98,7 +107,9 @@ def test_result_shape_keys(airport):
 def test_waypoints_have_valid_coords(airport):
     start, end = _pick_route_pair(airport)
     r = airport.graph.find_route_from_position(
-        start["latitude"], start["longitude"], end,
+        start["latitude"],
+        start["longitude"],
+        end,
     )
     assert r["success"]
     for wp in r["waypoints"]:
@@ -110,60 +121,61 @@ def test_waypoints_have_valid_coords(airport):
 def test_taxiway_sequence_no_consecutive_duplicates(airport):
     start, end = _pick_route_pair(airport)
     r = airport.graph.find_route_from_position(
-        start["latitude"], start["longitude"], end,
+        start["latitude"],
+        start["longitude"],
+        end,
     )
     seq = r["taxiway_sequence"]
     for i in range(1, len(seq)):
-        assert seq[i] != seq[i - 1], (
-            f"[{airport.icao}] consecutive duplicate at index {i}: {seq}"
-        )
+        assert seq[i] != seq[i - 1], f"[{airport.icao}] consecutive duplicate at index {i}: {seq}"
 
 
 # ---- Structural invariants (parametrised) ----------------------------------
 
+
 def test_consecutive_path_nodes_are_connected(airport):
     start, end = _pick_route_pair(airport)
     r = airport.graph.find_route_from_position(
-        start["latitude"], start["longitude"], end,
+        start["latitude"],
+        start["longitude"],
+        end,
     )
     assert r["success"]
     path = r["path_node_ids"]
     for i in range(len(path) - 1):
         assert airport.graph.graph.has_edge(path[i], path[i + 1]), (
-            f"[{airport.icao}] path[{i}]={path[i]} -> "
-            f"path[{i+1}]={path[i+1]} is not an edge"
+            f"[{airport.icao}] path[{i}]={path[i]} -> path[{i + 1}]={path[i + 1]} is not an edge"
         )
 
 
 def test_total_distance_matches_edge_sum(airport):
     start, end = _pick_route_pair(airport)
     r = airport.graph.find_route_from_position(
-        start["latitude"], start["longitude"], end,
+        start["latitude"],
+        start["longitude"],
+        end,
     )
     assert r["success"]
     path = r["path_node_ids"]
-    expected = sum(
-        airport.graph.graph.edges[path[i], path[i + 1]]["weight"]
-        for i in range(len(path) - 1)
-    )
+    expected = sum(airport.graph.graph.edges[path[i], path[i + 1]]["weight"] for i in range(len(path) - 1))
     assert math.isclose(r["total_distance_m"], expected, abs_tol=0.1)
 
 
 def test_astar_matches_dijkstra_distance(airport):
     start, end = _pick_route_pair(airport)
     r = airport.graph.find_route_from_position(
-        start["latitude"], start["longitude"], end,
+        start["latitude"],
+        start["longitude"],
+        end,
     )
     assert r["success"]
     start_node = r["start"]["node_id"]
     end_node = r["end"]["node_id"]
-    dijkstra = nx.shortest_path_length(
-        airport.graph.graph, start_node, end_node, weight="weight"
-    )
+    dijkstra = nx.shortest_path_length(airport.graph.graph, start_node, end_node, weight="weight")
     # find_route_from_position adds the snap distance; we compare the pure
     # graph distance between the resolved endpoints.
     expected = sum(
-        airport.graph.graph.edges[r["path_node_ids"][i], r["path_node_ids"][i+1]]["weight"]
+        airport.graph.graph.edges[r["path_node_ids"][i], r["path_node_ids"][i + 1]]["weight"]
         for i in range(len(r["path_node_ids"]) - 1)
     )
     assert math.isclose(expected, dijkstra, abs_tol=0.5)
@@ -177,13 +189,17 @@ def test_heuristic_is_admissible(airport):
     for s in airport.raw_data["stands"]:
         for end_token in airport.expected_runway_ids:
             r = airport.graph.find_route_from_position(
-                s["latitude"], s["longitude"], end_token,
+                s["latitude"],
+                s["longitude"],
+                end_token,
             )
             if not r.get("success"):
                 continue
             straight = airport.graph._calculate_distance(
-                r["start"]["lat"], r["start"]["lon"],
-                r["end"]["lat"], r["end"]["lon"],
+                r["start"]["lat"],
+                r["start"]["lon"],
+                r["end"]["lat"],
+                r["end"]["lon"],
             )
             assert straight <= r["total_distance_m"] + 1e-6, (
                 f"[{airport.icao}] heuristic violated admissibility for stand "
@@ -197,13 +213,12 @@ def test_heuristic_is_admissible(airport):
 
 # ---- Route documenting the via backtracking behaviour ----------------------
 
+
 def test_route_with_via_passes_through_taxiway_node(lebl_graph):
     r = lebl_graph.find_route_via("Q", "06R", via=["S"])
     assert r["success"] is True
     s_nodes = set(lebl_graph._nodes_by_taxiway["S"])
-    assert any(n in s_nodes for n in r["path_node_ids"]), (
-        f"path did not pass through any S node ({sorted(s_nodes)})"
-    )
+    assert any(n in s_nodes for n in r["path_node_ids"]), f"path did not pass through any S node ({sorted(s_nodes)})"
 
 
 # ---- Unknown-via behaviour: lenient vs strict (issue #71) -------------------
@@ -212,6 +227,7 @@ def test_route_with_via_passes_through_taxiway_node(lebl_graph):
 # `via` is silently ignored. Controller clearances are now routed by the
 # strict API instead (issue #67), which must fail naming the token — the
 # former xfail documenting the silent drop is replaced by these two tests.
+
 
 def test_lenient_via_with_unknown_taxiway_still_routes(lebl_graph):
     r = lebl_graph.find_route_via("Q", "06R", via=["ZZ99"])

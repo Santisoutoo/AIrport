@@ -17,10 +17,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
-
 from agent.tools import taxi_route as taxi_route_mod
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -34,7 +31,11 @@ def _stub_router(monkeypatch, *, destination, via, graph_tokens=None, raise_grap
         return destination
 
     def _fake_extract_taxiway_tokens(
-        *, taxi_route_text, fallback_text, known_tokens, dedup=True,
+        *,
+        taxi_route_text,
+        fallback_text,
+        known_tokens,
+        dedup=True,
     ):
         # Echo the via list -- known_tokens is asserted via call recording
         _fake_extract_taxiway_tokens.last_call = {
@@ -46,9 +47,11 @@ def _stub_router(monkeypatch, *, destination, via, graph_tokens=None, raise_grap
         return list(via)
 
     if raise_graph:
+
         def _fake_load_graph():
             raise RuntimeError("graph load failed")
     else:
+
         def _fake_load_graph():
             class _G:
                 _nodes_by_taxiway = {t: object() for t in (graph_tokens or [])}
@@ -151,9 +154,7 @@ def test_graph_load_failure_does_not_block_routing(monkeypatch):
 
 def test_passes_known_tokens_when_graph_loads(monkeypatch):
     """When the graph loads, its taxiway keys are forwarded to the parser as known_tokens."""
-    parser = _stub_router(
-        monkeypatch, destination="E1", via=["T"], graph_tokens=["T", "Y", "Z"]
-    )
+    parser = _stub_router(monkeypatch, destination="E1", via=["T"], graph_tokens=["T", "Y", "Z"])
     _stub_compute(monkeypatch, response={"success": True})
 
     taxi_route_mod.get_taxi_route("EC-MIG", "taxi to E1 via T", _ctx())

@@ -21,9 +21,7 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 import respx
-
 from agent.tools import forward as forward_mod
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -33,15 +31,9 @@ from agent.tools import forward as forward_mod
 @pytest.fixture
 def configured_urls(monkeypatch):
     """Point forward.py at deterministic URLs for the test."""
-    monkeypatch.setitem(
-        forward_mod._ROUTES, "DEL", ("http://del.test", "/agents/delivery/run")
-    )
-    monkeypatch.setitem(
-        forward_mod._ROUTES, "GND", ("http://gnd.test", "/agents/ground/run")
-    )
-    monkeypatch.setitem(
-        forward_mod._ROUTES, "TWR", ("http://twr.test", "/agents/tower/run")
-    )
+    monkeypatch.setitem(forward_mod._ROUTES, "DEL", ("http://del.test", "/agents/delivery/run"))
+    monkeypatch.setitem(forward_mod._ROUTES, "GND", ("http://gnd.test", "/agents/ground/run"))
+    monkeypatch.setitem(forward_mod._ROUTES, "TWR", ("http://twr.test", "/agents/tower/run"))
     monkeypatch.setattr(forward_mod, "_FLIGHT_PLAN_URL", "http://fp.test")
     monkeypatch.setattr(forward_mod, "_WEATHER_URL", "http://wx.test")
     yield
@@ -84,9 +76,7 @@ def captured_taxi_dispatch(monkeypatch):
 
 
 def _ctx(session_id="sess-1", known_aircraft=None):
-    return SimpleNamespace(
-        state={"session_id": session_id, "known_aircraft": known_aircraft or []}
-    )
+    return SimpleNamespace(state={"session_id": session_id, "known_aircraft": known_aircraft or []})
 
 
 # ---------------------------------------------------------------------------
@@ -99,9 +89,7 @@ def test_forward_del_includes_flight_plan_and_atis_in_payload(configured_urls, c
     respx.get("http://fp.test/plans/EC-MIG").mock(
         return_value=httpx.Response(200, json={"departure_ICAO": "LEST", "callsign": "IBE"})
     )
-    respx.get("http://wx.test/atis/LEST").mock(
-        return_value=httpx.Response(200, json={"info": "ATIS-A"})
-    )
+    respx.get("http://wx.test/atis/LEST").mock(return_value=httpx.Response(200, json={"info": "ATIS-A"}))
     captured = respx.post("http://del.test/agents/delivery/run").mock(
         return_value=httpx.Response(200, json={"reply": "Cleared to LEPA"})
     )
@@ -121,9 +109,7 @@ def test_forward_del_includes_flight_plan_and_atis_in_payload(configured_urls, c
 
 @respx.mock
 def test_forward_del_atis_skipped_when_no_departure_icao(configured_urls, captured_log):
-    respx.get("http://fp.test/plans/EC-MIG").mock(
-        return_value=httpx.Response(200, json={"callsign": "IBE"})
-    )
+    respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(200, json={"callsign": "IBE"}))
     captured = respx.post("http://del.test/agents/delivery/run").mock(
         return_value=httpx.Response(200, json={"reply": "ok"})
     )
@@ -131,6 +117,7 @@ def test_forward_del_atis_skipped_when_no_departure_icao(configured_urls, captur
     forward_mod.forward_to_agent("DEL", "EC-MIG", "request startup", _ctx())
 
     import json
+
     payload = json.loads(captured.calls[0].request.read())
     assert payload["flight_plan"] == {"callsign": "IBE"}
     assert payload["atis"] is None  # ATIS request was skipped
@@ -147,6 +134,7 @@ def test_forward_del_handles_flight_plan_404(configured_urls, captured_log):
     forward_mod.forward_to_agent("DEL", "EC-MIG", "request startup", _ctx())
 
     import json
+
     payload = json.loads(captured.calls[0].request.read())
     assert payload["flight_plan"] is None
     assert payload["atis"] is None
@@ -175,11 +163,10 @@ def test_forward_gnd_includes_clearance_data_from_state(configured_urls, capture
         return_value=httpx.Response(200, json={"reply": "Push approved"})
     )
 
-    forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "request pushback", _ctx(known_aircraft=known)
-    )
+    forward_mod.forward_to_agent("GND", "EC-MIG", "request pushback", _ctx(known_aircraft=known))
 
     import json
+
     payload = json.loads(captured.calls[0].request.read())
     cd = payload["clearance_data"]
     assert cd["callsign"] == "IBE3421"
@@ -192,9 +179,7 @@ def test_forward_gnd_includes_clearance_data_from_state(configured_urls, capture
 
 
 @respx.mock
-def test_forward_gnd_merges_taxi_route_into_clearance_data(
-    configured_urls, captured_log
-):
+def test_forward_gnd_merges_taxi_route_into_clearance_data(configured_urls, captured_log):
     known = [{"registration": "EC-MIG", "dependency": "GND", "source": "db", "callsign": "IBE"}]
     taxi_route = {"success": True, "waypoints": [{"lat": 0, "lon": 0}]}
     captured = respx.post("http://gnd.test/agents/ground/run").mock(
@@ -210,6 +195,7 @@ def test_forward_gnd_merges_taxi_route_into_clearance_data(
     )
 
     import json
+
     payload = json.loads(captured.calls[0].request.read())
     assert payload["clearance_data"]["taxi_route"] == taxi_route
 
@@ -231,6 +217,7 @@ def test_forward_gnd_skips_taxi_route_when_unsuccessful(configured_urls, capture
     )
 
     import json
+
     payload = json.loads(captured.calls[0].request.read())
     assert "taxi_route" not in payload["clearance_data"]
 
@@ -274,9 +261,7 @@ def test_forward_http_error_returns_error_string(configured_urls, captured_log):
     known = [{"registration": "EC-MIG", "callsign": "IBE"}]
     respx.post("http://gnd.test/agents/ground/run").mock(return_value=httpx.Response(500))
 
-    reply = forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "anything", _ctx(known_aircraft=known)
-    )
+    reply = forward_mod.forward_to_agent("GND", "EC-MIG", "anything", _ctx(known_aircraft=known))
 
     assert reply.startswith("[ERROR]")
     assert "HTTP 500" in reply
@@ -287,9 +272,7 @@ def test_forward_request_error_returns_unreachable_string(configured_urls, captu
     known = [{"registration": "EC-MIG", "callsign": "IBE"}]
     respx.post("http://gnd.test/agents/ground/run").mock(side_effect=httpx.ConnectError("nope"))
 
-    reply = forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "anything", _ctx(known_aircraft=known)
-    )
+    reply = forward_mod.forward_to_agent("GND", "EC-MIG", "anything", _ctx(known_aircraft=known))
 
     assert "could not reach" in reply
     assert "GND" in reply
@@ -304,9 +287,7 @@ def test_forward_request_error_returns_unreachable_string(configured_urls, captu
 def test_forward_writes_state_keys(configured_urls, captured_log):
     respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(404))
     respx.post("http://del.test/agents/delivery/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "Cleared", "clearance_data": {"squawk": 1111}}
-        )
+        return_value=httpx.Response(200, json={"reply": "Cleared", "clearance_data": {"squawk": 1111}})
     )
     ctx = _ctx()
 
@@ -341,9 +322,7 @@ def test_forward_appends_agent_reply_to_session_log(configured_urls, captured_lo
 @respx.mock
 def test_forward_no_session_log_when_session_id_empty(configured_urls, captured_log):
     respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(404))
-    respx.post("http://del.test/agents/delivery/run").mock(
-        return_value=httpx.Response(200, json={"reply": "Cleared"})
-    )
+    respx.post("http://del.test/agents/delivery/run").mock(return_value=httpx.Response(200, json={"reply": "Cleared"}))
 
     forward_mod.forward_to_agent("DEL", "EC-MIG", "msg", _ctx(session_id=""))
 
@@ -370,9 +349,7 @@ def test_forward_gnd_triggers_dispatch_taxi_plan_when_pushback_approved(
         )
     )
 
-    forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "request pushback", _ctx(known_aircraft=known)
-    )
+    forward_mod.forward_to_agent("GND", "EC-MIG", "request pushback", _ctx(known_aircraft=known))
 
     assert len(captured_taxi_dispatch) == 1
     assert captured_taxi_dispatch[0]["kwargs"]["registration"] == "EC-MIG"
@@ -380,9 +357,7 @@ def test_forward_gnd_triggers_dispatch_taxi_plan_when_pushback_approved(
 
 
 @respx.mock
-def test_forward_gnd_triggers_dispatch_when_only_taxi_route_text(
-    configured_urls, captured_log, captured_taxi_dispatch
-):
+def test_forward_gnd_triggers_dispatch_when_only_taxi_route_text(configured_urls, captured_log, captured_taxi_dispatch):
     known = [{"registration": "EC-MIG", "callsign": "IBE"}]
     respx.post("http://gnd.test/agents/ground/run").mock(
         return_value=httpx.Response(
@@ -400,13 +375,9 @@ def test_forward_gnd_triggers_dispatch_when_only_taxi_route_text(
 
 
 @respx.mock
-def test_forward_gnd_does_not_trigger_dispatch_without_taxi_data(
-    configured_urls, captured_log, captured_taxi_dispatch
-):
+def test_forward_gnd_does_not_trigger_dispatch_without_taxi_data(configured_urls, captured_log, captured_taxi_dispatch):
     known = [{"registration": "EC-MIG", "callsign": "IBE"}]
-    respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(200, json={"reply": "OK"})
-    )
+    respx.post("http://gnd.test/agents/ground/run").mock(return_value=httpx.Response(200, json={"reply": "OK"}))
 
     forward_mod.forward_to_agent("GND", "EC-MIG", "ack", _ctx(known_aircraft=known))
 
@@ -414,9 +385,7 @@ def test_forward_gnd_does_not_trigger_dispatch_without_taxi_data(
 
 
 @respx.mock
-def test_forward_del_never_triggers_taxi_dispatch(
-    configured_urls, captured_log, captured_taxi_dispatch
-):
+def test_forward_del_never_triggers_taxi_dispatch(configured_urls, captured_log, captured_taxi_dispatch):
     """taxi dispatch is GND-only -- DEL must never trigger it."""
     respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(404))
     respx.post("http://del.test/agents/delivery/run").mock(
@@ -435,9 +404,7 @@ def test_forward_del_never_triggers_taxi_dispatch(
 
 
 @respx.mock
-def test_forward_dispatch_failure_is_swallowed(
-    configured_urls, captured_log, monkeypatch
-):
+def test_forward_dispatch_failure_is_swallowed(configured_urls, captured_log, monkeypatch):
     """If dispatch_taxi_plan crashes, the forward call must still return normally."""
     known = [{"registration": "EC-MIG", "callsign": "IBE"}]
     respx.post("http://gnd.test/agents/ground/run").mock(
@@ -456,8 +423,6 @@ def test_forward_dispatch_failure_is_swallowed(
     fake_router.dispatch_taxi_plan = MagicMock(side_effect=RuntimeError("boom"))
     monkeypatch.setitem(sys.modules, "shared.services.taxi_router", fake_router)
 
-    reply = forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "ready taxi", _ctx(known_aircraft=known)
-    )
+    reply = forward_mod.forward_to_agent("GND", "EC-MIG", "ready taxi", _ctx(known_aircraft=known))
 
     assert reply == "OK"  # graceful: dispatch failure doesn't propagate

@@ -28,10 +28,20 @@ from ...shared.models.phases import Phase
 from ...shared.services.aircraft_state_store import AircraftStateStore
 from ...shared.services.geo import (
     FT_TO_M,
+)
+from ...shared.services.geo import (
     KT_TO_MPS as _KT_TO_MPS,
+)
+from ...shared.services.geo import (
     advance as _advance,
+)
+from ...shared.services.geo import (
     bearing as _bearing,
+)
+from ...shared.services.geo import (
     haversine as _haversine,
+)
+from ...shared.services.geo import (
     shortest_angle as _shortest_angle,
 )
 
@@ -44,6 +54,7 @@ _LANDING_ROLL_STOP_KTS = 20.0
 
 
 # -- Plan state --------------------------------------------------------------
+
 
 @dataclass
 class _PlanState:
@@ -66,8 +77,8 @@ class _PlanState:
     on_ground: bool = True
 
     # State machine
-    phase: str = "waiting"         # waiting → pushback → taxi → approach → landing_roll → vacating → taxi_in → done
-    final_phase: str = "holding"   # phase used by _finalise on reached_end (parked for arrivals)
+    phase: str = "waiting"  # waiting → pushback → taxi → approach → landing_roll → vacating → taxi_in → done
+    final_phase: str = "holding"  # phase used by _finalise on reached_end (parked for arrivals)
     leg_index: int = 0
 
     # Pushback bookkeeping
@@ -88,6 +99,7 @@ class _PlanState:
 
 # -- Main class --------------------------------------------------------------
 
+
 class AircraftMover:
     """Drives spawned aircraft along multi-leg taxi plans."""
 
@@ -104,7 +116,9 @@ class AircraftMover:
     @staticmethod
     def _make_redis():
         import os
+
         import redis
+
         host = os.getenv("REDIS_HOST", "localhost")
         port = int(os.getenv("REDIS_PORT", 6379))
         db = int(os.getenv("REDIS_DB", 0))
@@ -262,19 +276,23 @@ class AircraftMover:
             return [leg for leg in payload["legs"] if leg.get("mode")]
         mode = payload.get("mode")
         if mode == "waypoints":
-            return [{
-                "mode": "waypoints",
-                "waypoints": payload.get("waypoints") or [],
-                "speed_kts": float(payload.get("speed_kts", 8.0)),
-                "stop_at_end": True,
-            }]
+            return [
+                {
+                    "mode": "waypoints",
+                    "waypoints": payload.get("waypoints") or [],
+                    "speed_kts": float(payload.get("speed_kts", 8.0)),
+                    "stop_at_end": True,
+                }
+            ]
         if mode == "straight":
-            return [{
-                "mode": "straight",
-                "heading": float(payload.get("heading", 0.0)),
-                "speed_kts": float(payload.get("speed_kts", 5.0)),
-                "duration_s": float(payload.get("duration_s", 10.0)),
-            }]
+            return [
+                {
+                    "mode": "straight",
+                    "heading": float(payload.get("heading", 0.0)),
+                    "speed_kts": float(payload.get("speed_kts", 5.0)),
+                    "duration_s": float(payload.get("duration_s", 10.0)),
+                }
+            ]
         return []
 
     # -- Frame loop --------------------------------------------------------
@@ -343,10 +361,7 @@ class AircraftMover:
             # waypoint executor and never re-derives routes.
             taxiway_sequence = leg.get("taxiway_sequence") or []
             if taxiway_sequence:
-                xp.log(
-                    f"AIrport Mover: taxi leg for {plan.registration} "
-                    f"authorized sequence: {taxiway_sequence}"
-                )
+                xp.log(f"AIrport Mover: taxi leg for {plan.registration} authorized sequence: {taxiway_sequence}")
             self._emit(plan.registration, "taxi_started")
         elif mode == "straight":
             plan.phase = Phase.TAXI_OUT.value
@@ -354,23 +369,17 @@ class AircraftMover:
         elif mode == "approach":
             plan.phase = Phase.APPROACH.value
             plan.on_ground = False
-            plan.altitude_msl_ft = float(
-                leg.get("initial_altitude_msl_ft", plan.altitude_msl_ft)
-            )
+            plan.altitude_msl_ft = float(leg.get("initial_altitude_msl_ft", plan.altitude_msl_ft))
             plan.ias_kts = float(leg.get("ias_kts", 160.0))
             plan.vertical_speed_fpm = float(leg.get("vs_fpm", -800.0))
             self._emit(plan.registration, "approach_started")
         elif mode == "landing_roll":
             plan.phase = Phase.LANDING_ROLL.value
             plan.on_ground = True
-            plan.altitude_msl_ft = float(
-                leg.get("runway_elev_msl_ft", plan.altitude_msl_ft)
-            )
+            plan.altitude_msl_ft = float(leg.get("runway_elev_msl_ft", plan.altitude_msl_ft))
             plan.altitude_agl_ft = 0.0
             plan.vertical_speed_fpm = 0.0
-            plan.ias_kts = float(
-                leg.get("touchdown_ias_kts", plan.ias_kts if plan.ias_kts > 0 else 140.0)
-            )
+            plan.ias_kts = float(leg.get("touchdown_ias_kts", plan.ias_kts if plan.ias_kts > 0 else 140.0))
             self._emit(plan.registration, "touchdown")
         elif mode == "vacate":
             plan.phase = Phase.VACATING.value
@@ -433,7 +442,12 @@ class AircraftMover:
             self._emit(plan.registration, "pushback_pivot_started")
 
     def _advance_pushback_pivot(
-        self, plan: _PlanState, leg: dict, dt: float, now: float, final_hdg: float,
+        self,
+        plan: _PlanState,
+        leg: dict,
+        dt: float,
+        now: float,
+        final_hdg: float,
     ) -> None:
         """Position fixed; rotate heading toward final_hdg at pivot_deg_per_s."""
         rate = float(leg.get("pivot_deg_per_s", 6.0))
@@ -621,7 +635,12 @@ class AircraftMover:
             xp.log(f"AIrport Mover: setPosition error for {plan.registration}: {exc}")
 
     def _maybe_publish_state(
-        self, plan: _PlanState, now: float, *, phase: str, gs: float,
+        self,
+        plan: _PlanState,
+        now: float,
+        *,
+        phase: str,
+        gs: float,
     ) -> None:
         if now - plan.last_state_publish < _STATE_FLUSH_INTERVAL_S:
             return
@@ -676,8 +695,10 @@ class AircraftMover:
                 plan.ias_kts = 0.0
                 self._apply_position(plan, gs=0.0, phase=final_phase)
                 self._maybe_publish_state(
-                    plan, time.time() + _STATE_FLUSH_INTERVAL_S,
-                    phase=final_phase, gs=0.0,
+                    plan,
+                    time.time() + _STATE_FLUSH_INTERVAL_S,
+                    phase=final_phase,
+                    gs=0.0,
                 )
             self._emit(registration, event)
         try:

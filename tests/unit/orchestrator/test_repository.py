@@ -8,11 +8,8 @@ from __future__ import annotations
 
 import time
 
-import pytest
-
 from db.models import AircraftClearance
 from db.repository import ClearanceRepository
-
 
 # ---------------------------------------------------------------------------
 # upsert()

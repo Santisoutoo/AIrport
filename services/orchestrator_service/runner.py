@@ -17,14 +17,13 @@ from typing import Any
 
 import httpx
 import redis as redis_lib
+from agent.agent import orch_agent
+from db.models import AircraftClearance
+from db.repository import ClearanceRepository
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
 from sqlalchemy.orm import Session
-
-from agent.agent import orch_agent
-from db.models import AircraftClearance
-from db.repository import ClearanceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -136,9 +135,7 @@ def _collect_from_flight_plans(aircraft: dict[str, dict[str, Any]]) -> None:
         logger.warning("[ORCH] flight_plan_service unavailable: %s", exc)
 
 
-def _merge_live_aircraft(
-    aircraft: dict[str, dict[str, Any]], reg: str, state_callsign: str | None
-) -> None:
+def _merge_live_aircraft(aircraft: dict[str, dict[str, Any]], reg: str, state_callsign: str | None) -> None:
     if reg not in aircraft:
         aircraft[reg] = {
             "registration": reg,
@@ -157,9 +154,7 @@ def _collect_from_redis(aircraft: dict[str, dict[str, Any]]) -> None:
     The callsign lives in the state hash, not in the set itself.
     """
     try:
-        r = redis_lib.Redis(
-            host=_REDIS_HOST, port=_REDIS_PORT, db=0, decode_responses=True
-        )
+        r = redis_lib.Redis(host=_REDIS_HOST, port=_REDIS_PORT, db=0, decode_responses=True)
         for reg in r.smembers("aircraft:active_set"):
             state_callsign = r.hget(f"aircraft:state:{reg}", "callsign") or None
             _merge_live_aircraft(aircraft, reg, state_callsign)
@@ -205,9 +200,7 @@ async def _drain_events(runner: Runner, session_id: str, message: str) -> str:
     ):
         logger.debug("[ORCH] event: %s", event)
         if event.is_final_response() and event.content and event.content.parts:
-            final_text = "".join(
-                p.text for p in event.content.parts if hasattr(p, "text")
-            )
+            final_text = "".join(p.text for p in event.content.parts if hasattr(p, "text"))
     return final_text
 
 
@@ -215,9 +208,7 @@ async def _read_agent_outcome(
     session_service: InMemorySessionService, session_id: str, final_text: str
 ) -> dict[str, Any]:
     """Everything the tools left behind in session state."""
-    session = await session_service.get_session(
-        app_name=_APP_NAME, user_id=_USER_ID, session_id=session_id
-    )
+    session = await session_service.get_session(app_name=_APP_NAME, user_id=_USER_ID, session_id=session_id)
     state = session.state or {}
     return {
         "reply": state.get("reply") or final_text,
@@ -234,9 +225,7 @@ async def _read_agent_outcome(
     }
 
 
-def _invoke_agent(
-    session_id: str, message: str, known_aircraft: list[dict[str, Any]]
-) -> dict[str, Any]:
+def _invoke_agent(session_id: str, message: str, known_aircraft: list[dict[str, Any]]) -> dict[str, Any]:
     """Run one ADK session start to finish and return what it left in state.
 
     Opens its own event loop: the caller is a sync function running in a
@@ -337,9 +326,7 @@ def _advance_dependency(
         logger.error(error_log, registration, exc)
 
 
-def _apply_dependency_advances(
-    db: Session, session_id: str, result: dict[str, Any]
-) -> None:
+def _apply_dependency_advances(db: Session, session_id: str, result: dict[str, Any]) -> None:
     """Apply whichever handoff the agent flagged, if any.
 
     Only an explicit release phrase gets here — the handoff tools set exactly
@@ -360,14 +347,10 @@ def _apply_dependency_advances(
         )
 
 
-def _callsign_for(
-    known_aircraft: list[dict[str, Any]], registration: str | None
-) -> str | None:
+def _callsign_for(known_aircraft: list[dict[str, Any]], registration: str | None) -> str | None:
     if not registration:
         return None
-    aircraft = next(
-        (a for a in known_aircraft if a.get("registration") == registration), None
-    )
+    aircraft = next((a for a in known_aircraft if a.get("registration") == registration), None)
     return aircraft.get("callsign") if aircraft else None
 
 

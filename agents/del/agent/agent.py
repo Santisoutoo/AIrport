@@ -1,8 +1,9 @@
 import os
+
 from google.adk.agents import Agent
 
 from agent.prompts.system import SYSTEM_PROMPT
-from shared.callbacks import log_before, log_after
+from shared.callbacks import log_after, log_before
 
 del_agent = Agent(
     name="DEL",

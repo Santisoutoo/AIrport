@@ -2,7 +2,6 @@ import re
 
 from XPPython3 import xp
 
-
 _AIRLINE_NAMES = {
     "RYR": "Ryanair",
     "VLG": "Vueling",
@@ -39,27 +38,55 @@ _AIRLINE_NAMES = {
 }
 
 _NATO = {
-    "A": "Alpha", "B": "Bravo", "C": "Charlie", "D": "Delta", "E": "Echo",
-    "F": "Foxtrot", "G": "Golf", "H": "Hotel", "I": "India", "J": "Juliet",
-    "K": "Kilo", "L": "Lima", "M": "Mike", "N": "November", "O": "Oscar",
-    "P": "Papa", "Q": "Quebec", "R": "Romeo", "S": "Sierra", "T": "Tango",
-    "U": "Uniform", "V": "Victor", "W": "Whiskey", "X": "X-ray", "Y": "Yankee",
+    "A": "Alpha",
+    "B": "Bravo",
+    "C": "Charlie",
+    "D": "Delta",
+    "E": "Echo",
+    "F": "Foxtrot",
+    "G": "Golf",
+    "H": "Hotel",
+    "I": "India",
+    "J": "Juliet",
+    "K": "Kilo",
+    "L": "Lima",
+    "M": "Mike",
+    "N": "November",
+    "O": "Oscar",
+    "P": "Papa",
+    "Q": "Quebec",
+    "R": "Romeo",
+    "S": "Sierra",
+    "T": "Tango",
+    "U": "Uniform",
+    "V": "Victor",
+    "W": "Whiskey",
+    "X": "X-ray",
+    "Y": "Yankee",
     "Z": "Zulu",
 }
 
 _DIGITS = {
-    "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
-    "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
+    "0": "zero",
+    "1": "one",
+    "2": "two",
+    "3": "three",
+    "4": "four",
+    "5": "five",
+    "6": "six",
+    "7": "seven",
+    "8": "eight",
+    "9": "nine",
 }
 
 _CALLSIGN_RE = re.compile(r"\b([A-Z]{3})\s*(\d{1,4}[A-Z]?)\b")
 
 _SPELL_RE = re.compile(
     r"\b(?:"
-    r"[A-Z\d]+(?:-[A-Z\d]+)+"      # hyphenated: EI-XZZ
-    r"|[A-Z]+\d[A-Z\d]*"           # letter then digit: B12, FL120
-    r"|\d+[A-Z][A-Z\d]*"           # digit then letter: 28R, 10L
-    r"|\d{2,}(?:\.\d+)?"           # pure digits / freq: 270, 118.5
+    r"[A-Z\d]+(?:-[A-Z\d]+)+"  # hyphenated: EI-XZZ
+    r"|[A-Z]+\d[A-Z\d]*"  # letter then digit: B12, FL120
+    r"|\d+[A-Z][A-Z\d]*"  # digit then letter: 28R, 10L
+    r"|\d{2,}(?:\.\d+)?"  # pure digits / freq: 270, 118.5
     r")\b"
 )
 

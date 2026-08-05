@@ -18,7 +18,6 @@ unless a test calls ``fake.fail_next("rpush")`` to make the next call raise.
 from __future__ import annotations
 
 import fnmatch
-import json
 from collections import defaultdict
 from typing import Any
 
@@ -175,12 +174,7 @@ class FakeRedis:
     def exists(self, *keys: str):
         n = 0
         for k in keys:
-            if (
-                k in self.kv
-                or k in self.hashes
-                or k in self.sets
-                or k in self.lists
-            ):
+            if k in self.kv or k in self.hashes or k in self.sets or k in self.lists:
                 n += 1
         return n
 

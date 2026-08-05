@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 class CloudLayer(BaseModel):
     """Cloud layer information"""
+
     coverage: str
     base_ft: int
 
@@ -60,6 +61,7 @@ class ATISResponse(BaseModel):
 
 class ATISRequest(BaseModel):
     """Request model for generating ATIS"""
+
     icao_code: str
     runway_in_use: Optional[str] = None
     approach_type: Optional[str] = None
@@ -99,9 +101,7 @@ class ATISOptions(BaseModel):
         include_tl: bool = Query(True, description="Include Transition Level in ATIS"),
         include_ta: bool = Query(True, description="Include Transition Altitude in ATIS"),
         remarks: Optional[str] = Query(None, description="ATC remarks (appended as RMK)"),
-        preview: bool = Query(
-            False, description="Preview mode: no DB save, letter not incremented"
-        ),
+        preview: bool = Query(False, description="Preview mode: no DB save, letter not incremented"),
     ) -> "ATISOptions":
         """FastAPI dependency: collect the query string into an ``ATISOptions``."""
         return cls(
@@ -118,6 +118,7 @@ class ATISOptions(BaseModel):
 
 class MetarResponse(BaseModel):
     """METAR data response"""
+
     icao_code: str
     raw_metar: str
     observation_time: datetime
@@ -135,6 +136,7 @@ class MetarResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response"""
+
     status: str
     service: str
     version: str

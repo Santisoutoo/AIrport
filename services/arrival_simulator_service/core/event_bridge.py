@@ -42,8 +42,7 @@ def _handle_event(reg: str, payload: dict) -> None:
     if event == "request_landing":
         dme = payload.get("dme_nm", "")
         text = (
-            f"Tower, {meta['callsign']}, {int(round(float(dme)))} miles final "
-            f"runway {meta['runway']}, request landing."
+            f"Tower, {meta['callsign']}, {int(round(float(dme)))} miles final runway {meta['runway']}, request landing."
         )
         _push_tts(text)
         logger.info("Pilot request published for %s: %s", reg, text)
@@ -58,6 +57,7 @@ def _handle_event(reg: str, payload: dict) -> None:
         # Notify scheduler so it can fill the freed slot on the next check.
         try:
             from .scheduler import get_scheduler
+
             get_scheduler().remove_arrival(reg)
         except Exception:  # noqa: BLE001
             pass

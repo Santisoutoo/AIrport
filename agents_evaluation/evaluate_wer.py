@@ -1,10 +1,11 @@
 import csv
 import os
 import sys
+from pathlib import Path
+
 import httpx
 from dotenv import load_dotenv
 from jiwer import wer
-from pathlib import Path
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -24,8 +25,7 @@ DEPARTMENTS = ["del", "gnd", "twr"]
 WER_OK_THRESHOLD = 0.10
 
 CSV_PATH = Path("resultados_wer.csv")
-CSV_FIELDNAMES = ["id", "dep", "wer", "ref", "hyp",
-                  "readback_expected", "agent_reply", "agent_phase"]
+CSV_FIELDNAMES = ["id", "dep", "wer", "ref", "hyp", "readback_expected", "agent_reply", "agent_phase"]
 
 _SEPARATOR = "=" * 60
 
@@ -83,6 +83,7 @@ def dispatch(message: str, session_id: str) -> dict:
 
 
 # ── Phase 1: WER ──────────────────────────────────────────────────────────────
+
 
 def _score_audio(dep: str, wav_file: Path, corpus: dict[str, dict]) -> dict | None:
     """Transcribe one audio file and score it against the corpus reference.
@@ -149,6 +150,7 @@ def run_wer_phase() -> list[dict]:
 
 # ── WER summary ───────────────────────────────────────────────────────────────
 
+
 def _mean_wer(rows: list[dict]) -> float:
     return sum(r["wer"] for r in rows) / len(rows)
 
@@ -170,6 +172,7 @@ def print_wer_summary(results: list[dict]) -> None:
 
 
 # ── Phase 2: DEL agent ────────────────────────────────────────────────────────
+
 
 def _print_agent_reply(row: dict, resp: dict) -> None:
     print(f"\n  [{row['id']}]")
@@ -233,6 +236,7 @@ def run_agent_phase(results: list[dict]) -> bool:
 
 
 # ── Reporting ─────────────────────────────────────────────────────────────────
+
 
 def export_csv(results: list[dict], csv_path: Path = CSV_PATH) -> None:
     """Write every result row to `csv_path`."""

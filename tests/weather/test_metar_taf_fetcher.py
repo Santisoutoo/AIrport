@@ -70,9 +70,7 @@ async def test_get_client_replaces_a_closed_client():
 
 @respx.mock
 async def test_get_metar_returns_decoded_json_and_uppercases_the_icao():
-    route = respx.get(METAR_URL).mock(
-        return_value=httpx.Response(200, json=[{"rawOb": "LEST 051200Z"}])
-    )
+    route = respx.get(METAR_URL).mock(return_value=httpx.Response(200, json=[{"rawOb": "LEST 051200Z"}]))
 
     data = await get_metar("lest")
 
@@ -105,9 +103,7 @@ async def test_get_metar_omits_hours_when_zero_or_none():
 
 @respx.mock
 async def test_get_metar_raw_format_returns_the_body_verbatim():
-    respx.get(METAR_URL).mock(
-        return_value=httpx.Response(200, text="LEST 051200Z 17010KT CAVOK 15/10 Q1013")
-    )
+    respx.get(METAR_URL).mock(return_value=httpx.Response(200, text="LEST 051200Z 17010KT CAVOK 15/10 Q1013"))
 
     data = await get_metar("LEST", output_format="raw")
 

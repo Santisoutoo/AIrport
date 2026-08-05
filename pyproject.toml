@@ -160,10 +160,12 @@ include = ["xplane_plugin*"]
 # ---------------------------------------------------------------------------
 # Ruff — deliberately lax first pass (issue #48).
 #
-# The goal is a signal, not a wall: the CI lint job is non-blocking and the
-# repo has NOT been reformatted yet. A repo-wide `ruff format` + `ruff check
-# --fix` lands as its own PR once the branches currently in flight are merged,
-# so the diff does not collide with them.
+# The goal is a signal, not a wall. The repo-wide `ruff format` + `ruff check
+# --fix` sweep that this config was written for has now landed, taking the
+# findings from 303 to 32, and the scoped ignores below take that to 6. The CI
+# lint job is still non-blocking: the last 6 findings are left deliberately
+# visible because fixing them means renaming variables rather than reformatting
+# them, and flipping the job to blocking is a follow-up.
 # ---------------------------------------------------------------------------
 [tool.ruff]
 target-version = "py311"
@@ -190,6 +192,17 @@ select = ["E", "W", "F", "I"]
 # pytest fixtures shadow their own names; conftest patches sys.path too.
 "tests/**" = ["E402", "F811"]
 "**/conftest.py" = ["E402"]
+# Same bootstrap-before-import pattern as the plugins: main.py loads the .env
+# into os.environ and routes.py pushes data/scripts onto sys.path, both of
+# which have to happen before the imports that depend on them.
+"services/controller_hmi_service/main.py" = ["E402"]
+"services/controller_hmi_service/api/routes.py" = ["E402"]
+# LLM prompt modules: every over-long line is natural-language text inside a
+# triple-quoted prompt. Wrapping it would change the prompt the model is sent,
+# so E501 is not actionable here.
+"agents/*/agent/prompts/*.py" = ["E501"]
+"services/orchestrator_service/agent/prompts.py" = ["E501"]
+"agents_evaluation/judge_responses.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["shared", "plugins", "xplane_plugin"]

@@ -17,6 +17,7 @@ Usage:
   python agents_evaluation/judge_agreement.py
   python agents_evaluation/judge_agreement.py --review path/to/agent_judge_review.csv
 """
+
 from __future__ import annotations
 
 import argparse
@@ -85,12 +86,9 @@ def summarise(rows: list[dict], scope: str) -> dict:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--review", default=str(REVIEW_CSV),
-                    help=f"Manual-review CSV (default {REVIEW_CSV}).")
-    ap.add_argument("--out", default=str(AGREEMENT_CSV),
-                    help=f"Output CSV (default {AGREEMENT_CSV}).")
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--review", default=str(REVIEW_CSV), help=f"Manual-review CSV (default {REVIEW_CSV}).")
+    ap.add_argument("--out", default=str(AGREEMENT_CSV), help=f"Output CSV (default {AGREEMENT_CSV}).")
     args = ap.parse_args()
 
     review_path = Path(args.review)
@@ -118,8 +116,7 @@ def main() -> int:
     print(f"{'Dep':<6} {'n':>4} {'agree':>6} {'agree%':>8} {'kappa':>7}")
     print("-" * 34)
     for r in results:
-        print(f"{r['dep']:<6} {r['n']:>4} {r['agree']:>6} "
-              f"{r['agree_pct']:>7.1f}% {r['cohen_kappa']:>7.3f}")
+        print(f"{r['dep']:<6} {r['n']:>4} {r['agree']:>6} {r['agree_pct']:>7.1f}% {r['cohen_kappa']:>7.3f}")
     return 0
 
 

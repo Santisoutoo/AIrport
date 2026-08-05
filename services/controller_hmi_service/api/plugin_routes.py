@@ -16,23 +16,24 @@ _ASR_REDIS_KEY = "airport:asr_config"
 
 # ---- DB migration (runs once at startup, idempotent) ----
 
+
 def _migrate():
     try:
         conn = get_db()
         cur = conn.cursor()
-        cur.execute(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_api_key TEXT NOT NULL DEFAULT ''"
-        )
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_api_key TEXT NOT NULL DEFAULT ''")
         conn.commit()
         cur.close()
         conn.close()
     except Exception:
         pass
 
+
 _migrate()
 
 
 # ---- Auth
+
 
 @router.post("/login")
 def login(req: AuthRequest):
@@ -87,6 +88,7 @@ def register(req: AuthRequest):
 
 # ---- Session
 
+
 @router.post("/session/start")
 def start_session(req: StartSessionRequest):
     if not 1 <= req.aircraft_count <= 50:
@@ -96,15 +98,18 @@ def start_session(req: StartSessionRequest):
     if not icao:
         return {"success": False, "message": "Airport not detected yet. Wait for X-Plane to connect."}
 
-    _r.hset("airport:session_request", mapping={
-        "type": req.session_type,
-        "weather": req.weather,
-        "aircraft_count": str(req.aircraft_count),
-        "complexity": req.complexity,
-        "icao": icao,
-        "status": "pending",
-        "session_id": "",
-    })
+    _r.hset(
+        "airport:session_request",
+        mapping={
+            "type": req.session_type,
+            "weather": req.weather,
+            "aircraft_count": str(req.aircraft_count),
+            "complexity": req.complexity,
+            "icao": icao,
+            "status": "pending",
+            "session_id": "",
+        },
+    )
     return {"success": True}
 
 
@@ -141,6 +146,7 @@ def session_status():
 
 
 # ---- User settings
+
 
 class ApiKeyRequest(BaseModel):
     api_key: str

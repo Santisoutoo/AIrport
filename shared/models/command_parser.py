@@ -1,6 +1,6 @@
-from typing import Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, List, Optional
 
 
 class Intent(Enum):
@@ -74,24 +74,40 @@ class ParsedCommand:
     def to_dict(self) -> dict[str, Any]:
         """Convierte a diccionario para JSON/MQTT"""
         result: dict[str, Any] = {
-            'intent': self.intent.value,
-            'callsign': self.callsign,
-            'confidence': self.confidence,
-            'raw_transcription': self.raw_transcription,
-            'language': self.language
+            "intent": self.intent.value,
+            "callsign": self.callsign,
+            "confidence": self.confidence,
+            "raw_transcription": self.raw_transcription,
+            "language": self.language,
         }
-        
+
         optional_fields = [
-            'destination', 'sid', 'runway', 'initial_climb', 'qnh', 'squawk',
-            'pushback_direction', 'holding_point', 'taxiway_route',
-            'traffic_type', 'reference_point', 'wind_direction', 'wind_speed',
-            'conditional_traffic', 'behind_traffic', 'after_departure_turn',
-            'after_departure_heading', 'flight_level', 'heading', 'speed', 'frequency'
+            "destination",
+            "sid",
+            "runway",
+            "initial_climb",
+            "qnh",
+            "squawk",
+            "pushback_direction",
+            "holding_point",
+            "taxiway_route",
+            "traffic_type",
+            "reference_point",
+            "wind_direction",
+            "wind_speed",
+            "conditional_traffic",
+            "behind_traffic",
+            "after_departure_turn",
+            "after_departure_heading",
+            "flight_level",
+            "heading",
+            "speed",
+            "frequency",
         ]
-        
+
         for field in optional_fields:
             value = getattr(self, field, None)
             if value is not None:
                 result[field] = value
-        
+
         return result

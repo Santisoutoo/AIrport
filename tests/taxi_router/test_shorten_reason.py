@@ -5,10 +5,11 @@ routing errors introduced by issue #67 — to the short phrase the simulated
 pilot speaks on `hmi:chat` ("<callsign>, unable, <reason>. Request
 alternative.").
 """
+
 from shared.services.taxi_router.router import _shorten_reason
 
-
 # ---- Strict-routing failures (issue #70) ------------------------------------
+
 
 def test_unknown_taxiway_names_the_token():
     got = _shorten_reason("unknown taxiway 'ZZ99'", [], [])
@@ -28,7 +29,8 @@ def test_no_path_to_first_taxiway():
 def test_destination_too_far_off_sequence():
     got = _shorten_reason(
         "destination too far from taxiway 'E' (1526m off the authorized sequence)",
-        [], [],
+        [],
+        [],
     )
     assert got == "the issued route does not reach the destination"
 
@@ -39,6 +41,7 @@ def test_destination_not_reachable_along_taxiway():
 
 
 # ---- Legacy lenient-routing failures ---------------------------------------
+
 
 def test_via_point_with_token():
     got = _shorten_reason("Could not resolve via point: 'Z'", ["Z"], [])
@@ -52,7 +55,9 @@ def test_generic_no_path():
 
 def test_off_movement_area():
     got = _shorten_reason(
-        "No connected node within 2000m of (0.000000, 0.000000)", [], [],
+        "No connected node within 2000m of (0.000000, 0.000000)",
+        [],
+        [],
     )
     assert got == "position off the movement area"
 

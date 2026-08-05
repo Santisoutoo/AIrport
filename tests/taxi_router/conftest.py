@@ -12,6 +12,7 @@ The graph data (`data/airport_data/LEBL/LEBL_graph.json`) is committed as a
 CI test fixture; it is generated from `LEBL.dat` via
 `python -m plugins.GND.data_parser LEBL`.
 """
+
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,6 +45,7 @@ class AirportFixture:
             graph (used for hint-disambiguation). None when no useful repeated
             name exists in this airport.
     """
+
     icao: str
     graph: AirportGraph
     raw_data: dict
@@ -65,7 +67,16 @@ def _load_airport(icao: str, json_path: Path, **meta) -> AirportFixture:
 
 _LEBL_META = dict(
     expected_taxiway_subset={
-        "B", "D", "E", "J", "K", "L", "M", "N", "Q", "S",
+        "B",
+        "D",
+        "E",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "Q",
+        "S",
     },
     expected_runway_ids={"02", "06L"},
     non_numeric_stand_substr="157A",
@@ -80,6 +91,7 @@ def airport(request):
 
 
 # ---- Airport-specific fixtures (single-airport tests) ----------------------
+
 
 @pytest.fixture(scope="session")
 def lebl_graph():

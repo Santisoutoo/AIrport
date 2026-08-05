@@ -19,14 +19,13 @@ def _load_env_file():
 
 _load_env_file()
 
+from api.chat import router as chat_router
+from api.plugin_routes import router as plugin_router
+from api.routes import router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
-from api.routes import router
-from api.plugin_routes import router as plugin_router
-from api.chat import router as chat_router
 
 PREFIX = "/api/v1/hmi"
 
@@ -64,10 +63,7 @@ _static_dir = Path(__file__).resolve().parent / "static"
 _asr_url = os.getenv("ASR_URL", "")
 _orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8007")
 (_static_dir / "config.js").write_text(
-    f"window.HMI_CONFIG = {{\n"
-    f'  ASR_URL: "{_asr_url}",\n'
-    f'  ORCHESTRATOR_URL: "{_orchestrator_url}"\n'
-    f"}};\n",
+    f'window.HMI_CONFIG = {{\n  ASR_URL: "{_asr_url}",\n  ORCHESTRATOR_URL: "{_orchestrator_url}"\n}};\n',
     encoding="utf-8",
 )
 
@@ -87,4 +83,5 @@ async def api_root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

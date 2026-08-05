@@ -3,13 +3,13 @@ import os
 from google.adk.agents import Agent
 
 from agent.prompts import SYSTEM_PROMPT
-from agent.tools.aircraft import get_known_aircraft
 from agent.tools.advance_to_gnd import advance_to_gnd
 from agent.tools.advance_to_gnd_arrival import advance_to_gnd_arrival
 from agent.tools.advance_twr import advance_to_twr
+from agent.tools.aircraft import get_known_aircraft
 from agent.tools.forward import forward_to_agent
 from agent.tools.taxi_route import get_taxi_route
-from shared.callbacks import log_before, log_after
+from shared.callbacks import log_after, log_before
 
 orch_agent = Agent(
     name="ORCH",

@@ -8,6 +8,7 @@ LEBL facts used (verified against the fixture): taxiways E-M and M-D
 intersect, runway 02 is reachable from taxiway D within the bounded exit
 hop; taxiways B and D do not touch.
 """
+
 import json
 
 import pytest
@@ -15,8 +16,8 @@ import pytest
 from shared.services.taxi_router import router as router_mod
 from shared.services.taxi_router.router import dispatch_taxi_plan
 
-
 # ---- Fakes ------------------------------------------------------------------
+
 
 class FakeRedis:
     """Minimal dict-backed stand-in for redis.Redis (decode_responses=True)."""
@@ -88,6 +89,7 @@ def _dispatch(fake_redis, *, controller, readback="", clearance=None):
 
 # ---- Strict happy path ------------------------------------------------------
 
+
 def test_strict_dispatch_writes_plan_with_controller_sequence(fake_redis, lebl_graph):
     result = _dispatch(
         fake_redis,
@@ -148,6 +150,7 @@ def test_readback_mismatch_is_logged(fake_redis, caplog):
 
 # ---- Strict rejection: no move_cmd, pilot says unable -----------------------
 
+
 def test_non_connected_sequence_rejected_no_move_cmd(fake_redis):
     result = _dispatch(
         fake_redis,
@@ -165,17 +168,20 @@ def test_non_connected_sequence_rejected_no_move_cmd(fake_redis):
 
 def test_corrected_clearance_dispatches_after_rejection(fake_redis):
     bad = _dispatch(
-        fake_redis, controller="TST123 taxi to runway 02 via bravo delta",
+        fake_redis,
+        controller="TST123 taxi to runway 02 via bravo delta",
     )
     assert bad["success"] is False
     good = _dispatch(
-        fake_redis, controller="TST123 taxi to runway 02 via echo mike delta",
+        fake_redis,
+        controller="TST123 taxi to runway 02 via echo mike delta",
     )
     assert good["success"] is True, good.get("error")
     assert MOVE_CMD_KEY in fake_redis.kv
 
 
 # ---- Pushback-only and destination-only paths -------------------------------
+
 
 def test_pushback_only_dispatches_single_leg(fake_redis):
     result = _dispatch(
@@ -194,11 +200,14 @@ def test_pushback_plus_taxi_starts_at_entry_waypoint(fake_redis, lebl_graph):
     # synthetic centerline-join waypoint ("entry"), which is also what the
     # pushback leg aims the aircraft towards.
     import math
+
     edges = lebl_graph._edges_by_taxiway["E"]
     u, v = next(
-        (u, v) for u, v in sorted(edges)
+        (u, v)
+        for u, v in sorted(edges)
         if (v, u) in edges
-        and u in lebl_graph._main_cc and v in lebl_graph._main_cc
+        and u in lebl_graph._main_cc
+        and v in lebl_graph._main_cc
         and lebl_graph.graph.edges[u, v]["weight"] >= 60.0
     )
     nu, nv = lebl_graph.graph.nodes[u], lebl_graph.graph.nodes[v]
@@ -211,7 +220,9 @@ def test_pushback_plus_taxi_starts_at_entry_waypoint(fake_redis, lebl_graph):
     off_lat = mid_lat + 30.0 * ex / norm / m_per_deg
     off_lon = mid_lon - 30.0 * ey / norm / (m_per_deg * math.cos(math.radians(mid_lat)))
     fake_redis.hashes[f"aircraft:state:{REG}"] = {
-        "latitude": str(off_lat), "longitude": str(off_lon), "heading": "90.0",
+        "latitude": str(off_lat),
+        "longitude": str(off_lon),
+        "heading": "90.0",
     }
     result = _dispatch(
         fake_redis,
@@ -247,7 +258,9 @@ def test_no_clearance_at_all_fails(fake_redis):
 def test_no_live_position_fails(lebl_graph):
     r = FakeRedis()  # no aircraft:state hash
     result = dispatch_taxi_plan(
-        {}, "", registration=REG,
+        {},
+        "",
+        registration=REG,
         controller_instruction="taxi to runway 02 via echo",
         redis_client=r,
     )

@@ -25,9 +25,7 @@ if str(_ORCH) not in sys.path:
     sys.path.insert(0, str(_ORCH))
 
 import pytest
-
 from debrief_builder import build_timeline
-
 
 # 2026-04-22 13:33:20 UTC — fixed so the rendered HH:MM:SS is deterministic.
 # (Note: the T0 in test_debrief_builder.py is a different, rounder epoch whose
@@ -51,9 +49,7 @@ def _lines(**kwargs) -> list[str]:
 
 
 def test_epoch_float_renders_as_utc_hhmmss():
-    assert _lines(transcripts=[{"ts": T0, "text": "hello"}]) == [
-        f'[{T0_HHMMSS}] CTRL: "hello"'
-    ]
+    assert _lines(transcripts=[{"ts": T0, "text": "hello"}]) == [f'[{T0_HHMMSS}] CTRL: "hello"']
 
 
 def test_iso_8601_timestamp_is_coerced_then_rendered_as_utc():
@@ -89,9 +85,7 @@ def test_numeric_string_timestamp_is_accepted_as_epoch():
     """``_coerce_ts`` falls through to ISO parsing for strings, and
     ``fromisoformat`` rejects a bare number — so "1776800000.0" is NOT read as
     an epoch; it degrades to 0.0."""
-    assert _lines(transcripts=[{"ts": str(T0), "text": "x"}]) == [
-        '[00:00:00] CTRL: "x"'
-    ]
+    assert _lines(transcripts=[{"ts": str(T0), "text": "x"}]) == ['[00:00:00] CTRL: "x"']
 
 
 # ---------------------------------------------------------------------------
@@ -113,9 +107,7 @@ def test_transcript_text_is_stripped_but_inner_spacing_kept():
 def test_transcript_quotes_are_not_escaped():
     """Embedded double quotes are passed through verbatim — the LLM prompt is
     plain text, not JSON, so no escaping happens."""
-    assert _lines(transcripts=[{"ts": T0, "text": 'say "again"'}]) == [
-        f'[{T0_HHMMSS}] CTRL: "say "again""'
-    ]
+    assert _lines(transcripts=[{"ts": T0, "text": 'say "again"'}]) == [f'[{T0_HHMMSS}] CTRL: "say "again""']
 
 
 # ---------------------------------------------------------------------------
@@ -138,17 +130,13 @@ def test_pilot_line_full_shape():
 
 
 def test_pilot_line_falls_back_to_registration_when_callsign_missing():
-    assert _lines(
-        agent_replies=[
-            {"ts": T0, "dep": "DEL", "registration": "EC-IYV", "reply": "roger"}
-        ]
-    ) == [f'[{T0_HHMMSS}] PILOT (DEL, EC-IYV/EC-IYV): "roger"']
+    assert _lines(agent_replies=[{"ts": T0, "dep": "DEL", "registration": "EC-IYV", "reply": "roger"}]) == [
+        f'[{T0_HHMMSS}] PILOT (DEL, EC-IYV/EC-IYV): "roger"'
+    ]
 
 
 def test_pilot_line_uses_dashes_when_registration_and_dep_missing():
-    assert _lines(agent_replies=[{"ts": T0, "reply": "roger"}]) == [
-        f'[{T0_HHMMSS}] PILOT (-, -/-): "roger"'
-    ]
+    assert _lines(agent_replies=[{"ts": T0, "reply": "roger"}]) == [f'[{T0_HHMMSS}] PILOT (-, -/-): "roger"']
 
 
 @pytest.mark.parametrize("reply", ["", "   ", None])
@@ -159,9 +147,9 @@ def test_agent_replies_without_usable_reply_produce_no_line(reply):
 def test_error_replies_are_kept_in_the_timeline():
     """`forward_to_agent` stores "[ERROR] ..." strings as replies when a Cloud
     Run agent is down. They are NOT filtered out — the instructor sees them."""
-    assert _lines(
-        agent_replies=[{"ts": T0, "dep": "GND", "reply": "[ERROR] could not reach GND agent"}]
-    ) == [f'[{T0_HHMMSS}] PILOT (GND, -/-): "[ERROR] could not reach GND agent"']
+    assert _lines(agent_replies=[{"ts": T0, "dep": "GND", "reply": "[ERROR] could not reach GND agent"}]) == [
+        f'[{T0_HHMMSS}] PILOT (GND, -/-): "[ERROR] could not reach GND agent"'
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -212,15 +200,15 @@ def test_event_extra_drops_empty_and_non_scalar_values():
 
 
 def test_event_extra_that_is_not_a_dict_is_ignored_silently():
-    assert _lines(
-        events=[{"ts": T0, "registration": "EC-VBT", "event": "x", "extra": "some string"}]
-    ) == [f"[{T0_HHMMSS}] EVENT (EC-VBT): x"]
+    assert _lines(events=[{"ts": T0, "registration": "EC-VBT", "event": "x", "extra": "some string"}]) == [
+        f"[{T0_HHMMSS}] EVENT (EC-VBT): x"
+    ]
 
 
 def test_event_extra_with_only_dropped_values_leaves_no_trailing_space():
-    assert _lines(
-        events=[{"ts": T0, "registration": "EC-VBT", "event": "x", "extra": {"a": None}}]
-    ) == [f"[{T0_HHMMSS}] EVENT (EC-VBT): x"]
+    assert _lines(events=[{"ts": T0, "registration": "EC-VBT", "event": "x", "extra": {"a": None}}]) == [
+        f"[{T0_HHMMSS}] EVENT (EC-VBT): x"
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -273,11 +261,9 @@ def test_clearance_drops_none_empty_and_zero_valued_fields():
 
 
 def test_clearance_falls_back_to_cleared_at_when_updated_at_is_absent():
-    assert _lines(
-        clearances=[
-            {"cleared_at": T0, "aircraft_registration": "EC-IYV", "dependency": "DEL"}
-        ]
-    ) == [f"[{T0_HHMMSS}] CLEARANCE (EC-IYV, DEL):"]
+    assert _lines(clearances=[{"cleared_at": T0, "aircraft_registration": "EC-IYV", "dependency": "DEL"}]) == [
+        f"[{T0_HHMMSS}] CLEARANCE (EC-IYV, DEL):"
+    ]
 
 
 def test_clearance_falsy_updated_at_falls_through_to_cleared_at():
@@ -296,9 +282,7 @@ def test_clearance_falsy_updated_at_falls_through_to_cleared_at():
 
 
 def test_clearance_defaults_registration_and_dependency_to_dashes():
-    assert _lines(clearances=[{"updated_at": T0}]) == [
-        f"[{T0_HHMMSS}] CLEARANCE (-, -):"
-    ]
+    assert _lines(clearances=[{"updated_at": T0}]) == [f"[{T0_HHMMSS}] CLEARANCE (-, -):"]
 
 
 # ---------------------------------------------------------------------------
@@ -332,21 +316,29 @@ def test_full_departure_session_renders_in_chronological_order():
             {"ts": T0 + 30, "text": "Iberia 3421 contact ground on 121.9"},
         ],
         agent_replies=[
-            {"ts": T0 + 8, "dep": "DEL", "registration": "EC-IYV", "callsign": "IBE3421",
-             "reply": "Cleared to Palma, VAR1A departure, squawk 2000, IBE3421"},
-            {"ts": T0 + 33, "dep": "GND", "registration": "EC-IYV", "callsign": "IBE3421",
-             "reply": "121.9, IBE3421"},
+            {
+                "ts": T0 + 8,
+                "dep": "DEL",
+                "registration": "EC-IYV",
+                "callsign": "IBE3421",
+                "reply": "Cleared to Palma, VAR1A departure, squawk 2000, IBE3421",
+            },
+            {"ts": T0 + 33, "dep": "GND", "registration": "EC-IYV", "callsign": "IBE3421", "reply": "121.9, IBE3421"},
         ],
         events=[{"ts": T0 + 60, "registration": "EC-IYV", "event": "pushback_started"}],
         clearances=[
-            {"updated_at": T0 + 10, "aircraft_registration": "EC-IYV", "dependency": "GND",
-             "squawk": 2000, "runway_in_use": "06R"}
+            {
+                "updated_at": T0 + 10,
+                "aircraft_registration": "EC-IYV",
+                "dependency": "GND",
+                "squawk": 2000,
+                "runway_in_use": "06R",
+            }
         ],
     )
     assert text.splitlines() == [
         f'[{T0_HHMMSS}] CTRL: "Iberia 3421 request IFR clearance to Palma"',
-        '[13:33:28] PILOT (DEL, EC-IYV/IBE3421): "Cleared to Palma, VAR1A departure, '
-        'squawk 2000, IBE3421"',
+        '[13:33:28] PILOT (DEL, EC-IYV/IBE3421): "Cleared to Palma, VAR1A departure, squawk 2000, IBE3421"',
         "[13:33:30] CLEARANCE (EC-IYV, GND): squawk=2000 runway_in_use=06R",
         '[13:33:50] CTRL: "Iberia 3421 contact ground on 121.9"',
         '[13:33:53] PILOT (GND, EC-IYV/IBE3421): "121.9, IBE3421"',

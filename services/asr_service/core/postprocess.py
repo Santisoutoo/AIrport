@@ -18,6 +18,7 @@ Pipeline (see postprocess_transcription):
      "via A B") are normalised last, so they cannot interfere with the SID
      pattern above (which still needs the spelled-out letter word).
 """
+
 import re
 
 from .corrections import correct_callsigns
@@ -28,17 +29,46 @@ from .phonetics import normalize_phonetic
 # ---------------------------------------------------------------------------
 
 PHONETIC_DIGIT: dict[str, int] = {
-    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
-    "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "niner": 9,
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "niner": 9,
 }
 DIGIT_WORDS_RE = r"(?:zero|one|two|three|four|five|six|seven|eight|nine|niner)"
 
 PHONETIC_LETTER: dict[str, str] = {
-    "alpha": "A", "bravo": "B", "charlie": "C", "delta": "D", "echo": "E",
-    "foxtrot": "F", "golf": "G", "hotel": "H", "india": "I", "juliet": "J",
-    "kilo": "K", "lima": "L", "mike": "M", "november": "N", "oscar": "O",
-    "papa": "P", "quebec": "Q", "romeo": "R", "sierra": "S", "tango": "T",
-    "uniform": "U", "victor": "V", "whiskey": "W", "xray": "X", "yankee": "Y",
+    "alpha": "A",
+    "bravo": "B",
+    "charlie": "C",
+    "delta": "D",
+    "echo": "E",
+    "foxtrot": "F",
+    "golf": "G",
+    "hotel": "H",
+    "india": "I",
+    "juliet": "J",
+    "kilo": "K",
+    "lima": "L",
+    "mike": "M",
+    "november": "N",
+    "oscar": "O",
+    "papa": "P",
+    "quebec": "Q",
+    "romeo": "R",
+    "sierra": "S",
+    "tango": "T",
+    "uniform": "U",
+    "victor": "V",
+    "whiskey": "W",
+    "xray": "X",
+    "yankee": "Y",
     "zulu": "Z",
 }
 LETTER_WORDS_RE = (
@@ -73,17 +103,70 @@ AIRLINE_ICAO: dict[str, str] = {
 # The span finder can otherwise latch onto a phonetic SID/number tail preceding
 # a plain ATC word (e.g. "... one GOLF departure"), which would corrupt the
 # text. Real radiotelephony airline names never appear in this set.
-_NON_AIRLINE_WORDS: frozenset[str] = frozenset({
-    "departure", "arrival", "approach", "ground", "tower", "delivery",
-    "control", "radar", "information", "traffic", "apron", "runway",
-    "squawk", "contact", "report", "readback", "correct", "cleared",
-    "clear", "holding", "hold", "point", "taxi", "wait", "degrees",
-    "knots", "heading", "climb", "descend", "descent", "maintain",
-    "expect", "ready", "wind", "feet", "thousand", "level", "flight",
-    "left", "right", "center", "centre", "north", "south", "east", "west",
-    "pushback", "push", "start", "line", "when", "the", "via", "and",
-    "to", "on", "for", "with", "at", "of",
-})
+_NON_AIRLINE_WORDS: frozenset[str] = frozenset(
+    {
+        "departure",
+        "arrival",
+        "approach",
+        "ground",
+        "tower",
+        "delivery",
+        "control",
+        "radar",
+        "information",
+        "traffic",
+        "apron",
+        "runway",
+        "squawk",
+        "contact",
+        "report",
+        "readback",
+        "correct",
+        "cleared",
+        "clear",
+        "holding",
+        "hold",
+        "point",
+        "taxi",
+        "wait",
+        "degrees",
+        "knots",
+        "heading",
+        "climb",
+        "descend",
+        "descent",
+        "maintain",
+        "expect",
+        "ready",
+        "wind",
+        "feet",
+        "thousand",
+        "level",
+        "flight",
+        "left",
+        "right",
+        "center",
+        "centre",
+        "north",
+        "south",
+        "east",
+        "west",
+        "pushback",
+        "push",
+        "start",
+        "line",
+        "when",
+        "the",
+        "via",
+        "and",
+        "to",
+        "on",
+        "for",
+        "with",
+        "at",
+        "of",
+    }
+)
 
 FUZZY_THRESHOLD = 80.0
 
@@ -119,14 +202,13 @@ def _best_fuzzy_match(candidate: str, options: list[str]) -> tuple[str | None, f
 # 1. Number normalisation (context-aware only)
 # ---------------------------------------------------------------------------
 
+
 def _phonetic_words_to_digits(words: list[str]) -> str:
     return "".join(str(PHONETIC_DIGIT[w.lower()]) for w in words)
 
 
-_SQUAWK_RE = re.compile(
-    rf"\bsquawk\s+((?:{DIGIT_WORDS_RE}\s+){{3}}{DIGIT_WORDS_RE})\b", re.IGNORECASE)
-_QNH_RE = re.compile(
-    rf"\bQNH\s+((?:{DIGIT_WORDS_RE}\s+){{3}}{DIGIT_WORDS_RE})\b", re.IGNORECASE)
+_SQUAWK_RE = re.compile(rf"\bsquawk\s+((?:{DIGIT_WORDS_RE}\s+){{3}}{DIGIT_WORDS_RE})\b", re.IGNORECASE)
+_QNH_RE = re.compile(rf"\bQNH\s+((?:{DIGIT_WORDS_RE}\s+){{3}}{DIGIT_WORDS_RE})\b", re.IGNORECASE)
 _RUNWAY_RE = re.compile(
     rf"\brunway\s+({DIGIT_WORDS_RE})\s+({DIGIT_WORDS_RE})(?:\s+(left|right|center|centre))?\b",
     re.IGNORECASE,
@@ -136,8 +218,7 @@ _THOUSAND_RE = re.compile(
     rf"((?:{DIGIT_WORDS_RE}\s+)*{DIGIT_WORDS_RE})\s+thousand\b",
     re.IGNORECASE,
 )
-_FLIGHT_LEVEL_RE = re.compile(
-    rf"\bflight level\s+((?:{DIGIT_WORDS_RE}\s+){{2}}{DIGIT_WORDS_RE})\b", re.IGNORECASE)
+_FLIGHT_LEVEL_RE = re.compile(rf"\bflight level\s+((?:{DIGIT_WORDS_RE}\s+){{2}}{DIGIT_WORDS_RE})\b", re.IGNORECASE)
 # Radio frequency: three integer digits, "decimal"/"point", then 1-3 decimals
 # ("one two one decimal six five five" -> "121.655").
 _FREQ_RE = re.compile(
@@ -312,7 +393,8 @@ def _compact_callsign(airline: str, code: str) -> tuple[str, bool]:
 
 
 def _apply_callsign_compaction(
-    text: str, session_callsigns: list[str],
+    text: str,
+    session_callsigns: list[str],
 ) -> tuple[str, str | None, float, bool]:
     """Compact every callsign span into ICAO form and optionally snap to session.
 
@@ -399,8 +481,8 @@ def _apply_sid_fuzzy(text: str, session_sids: list[str]) -> tuple[str, str | Non
             target, score = _best_fuzzy_match(candidate, session_sids)
             if target and score >= FUZZY_THRESHOLD:
                 chosen = target
-        via_word = text[m.start():m.start() + 3]  # preserve "via"/"Via" casing
-        text = f"{text[:m.start()]}{via_word} {chosen} departure{text[m.end():]}"
+        via_word = text[m.start() : m.start() + 3]  # preserve "via"/"Via" casing
+        text = f"{text[: m.start()]}{via_word} {chosen} departure{text[m.end() :]}"
         return text, candidate, score
 
     m = _SID_TOKEN_RE.search(text)
@@ -410,7 +492,7 @@ def _apply_sid_fuzzy(text: str, session_sids: list[str]) -> tuple[str, str | Non
         if session_sids:
             target, score = _best_fuzzy_match(candidate, session_sids)
             if target and score >= FUZZY_THRESHOLD:
-                text = text[:m.start()] + target + text[m.end():]
+                text = text[: m.start()] + target + text[m.end() :]
         return text, candidate, score
 
     return text, None, 0.0
@@ -419,6 +501,7 @@ def _apply_sid_fuzzy(text: str, session_sids: list[str]) -> tuple[str, str | Non
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
+
 
 def postprocess_transcription(
     text: str,
@@ -437,11 +520,9 @@ def postprocess_transcription(
     after_number_norm = normalize_numbers(text)
 
     corrected = correct_callsigns(after_number_norm)
-    after_callsign_fix, cs_icao, cs_score, cs_unknown_airline = _apply_callsign_compaction(
-        corrected, session_callsigns)
+    after_callsign_fix, cs_icao, cs_score, cs_unknown_airline = _apply_callsign_compaction(corrected, session_callsigns)
 
-    after_sid_fix, sid_candidate, sid_score = _apply_sid_fuzzy(
-        after_callsign_fix, session_sids)
+    after_sid_fix, sid_candidate, sid_score = _apply_sid_fuzzy(after_callsign_fix, session_sids)
 
     # Isolated phonetic letters (taxiways/stands) — applied last so it cannot
     # consume the spelled-out letters the SID pattern above still needs.

@@ -5,6 +5,7 @@ Most tests are parametrised over the airport(s) configured in conftest.py
 large graph. Airport-specific tests stay attached to the single `lebl_graph`
 fixture.
 """
+
 import math
 
 import networkx as nx
@@ -12,8 +13,8 @@ import pytest
 
 from plugins.GND.graph import AirportGraph
 
-
 # ---- Construction entry points ---------------------------------------------
+
 
 @pytest.mark.parametrize("json_path_fixture", ["lebl_json_path"])
 def test_build_from_json_file_path(request, json_path_fixture):
@@ -36,10 +37,11 @@ def test_init_requires_source():
 
 # ---- Node / edge counts (parametrised) -------------------------------------
 
+
 def test_node_count_matches_json(airport):
-    assert (
-        airport.graph.graph.number_of_nodes() == len(airport.raw_data["nodes"])
-    ), f"[{airport.icao}] node count mismatch"
+    assert airport.graph.graph.number_of_nodes() == len(airport.raw_data["nodes"]), (
+        f"[{airport.icao}] node count mismatch"
+    )
 
 
 def test_edge_count_doubles_twoway(airport):
@@ -59,12 +61,12 @@ def test_edge_count_doubles_twoway(airport):
             seen.add((t, s))
     expected = len(seen)
     assert airport.graph.graph.number_of_edges() == expected, (
-        f"[{airport.icao}] expected {expected} directed edges, got "
-        f"{airport.graph.graph.number_of_edges()}"
+        f"[{airport.icao}] expected {expected} directed edges, got {airport.graph.graph.number_of_edges()}"
     )
 
 
 # ---- Haversine weights -----------------------------------------------------
+
 
 def test_calculate_distance_one_degree_latitude(airport):
     # 1 degree of latitude ~= R * pi/180 ~= 111194.93 m. Identity check --
@@ -82,36 +84,29 @@ def test_edge_weights_positive_and_finite(airport):
     for u, v, data in airport.graph.graph.edges(data=True):
         w = data.get("weight")
         assert w is not None, f"[{airport.icao}] edge {u}->{v} has no weight"
-        assert 0 < w < 1e6, (
-            f"[{airport.icao}] edge {u}->{v} weight out of range: {w}"
-        )
+        assert 0 < w < 1e6, f"[{airport.icao}] edge {u}->{v} weight out of range: {w}"
 
 
 # ---- Secondary indices -----------------------------------------------------
 
+
 def test_taxiway_index_contains_expected_subset(airport):
     keys = set(airport.graph._nodes_by_taxiway.keys())
     missing = airport.expected_taxiway_subset - keys
-    assert not missing, (
-        f"[{airport.icao}] missing taxiway index entries: {sorted(missing)}"
-    )
+    assert not missing, f"[{airport.icao}] missing taxiway index entries: {sorted(missing)}"
 
 
 def test_runway_index_has_expected_designators(airport):
     keys = set(airport.graph._runways_by_id.keys())
     missing = airport.expected_runway_ids - keys
-    assert not missing, (
-        f"[{airport.icao}] missing runway index entries: {sorted(missing)}"
-    )
+    assert not missing, f"[{airport.icao}] missing runway index entries: {sorted(missing)}"
     for rwy in airport.expected_runway_ids:
         lat, lon = airport.graph._runways_by_id[rwy]
         assert -90 <= lat <= 90 and -180 <= lon <= 180
 
 
 def test_stand_index_non_empty(airport):
-    assert len(airport.graph._stands_by_id) > 0, (
-        f"[{airport.icao}] no stands indexed"
-    )
+    assert len(airport.graph._stands_by_id) > 0, f"[{airport.icao}] no stands indexed"
 
 
 def test_main_connected_component_is_largest(airport):
@@ -124,6 +119,7 @@ def test_main_connected_component_is_largest(airport):
 
 
 # ---- find_nearest_node -----------------------------------------------------
+
 
 def test_find_nearest_node_on_known_coord(airport):
     # Pick any node in the main CC and snap to its own coordinates -> should
@@ -141,13 +137,16 @@ def test_find_nearest_node_restrict_to_main_cc(airport):
     lons = [airport.graph.graph.nodes[n]["lon"] for n in main_cc]
     cx, cy = sum(lats) / len(lats), sum(lons) / len(lons)
     found, _ = airport.graph.find_nearest_node(
-        cx, cy, restrict_to_main_cc=True,
+        cx,
+        cy,
+        restrict_to_main_cc=True,
     )
     assert found is not None
     assert found in main_cc
 
 
 # ---- Airport-specific (single airport is enough) ----------------------------
+
 
 def test_find_nearest_node_returns_clean_none_when_out_of_range(lebl_graph):
     found, dist = lebl_graph.find_nearest_node(0.0, 0.0, max_distance=1000.0)

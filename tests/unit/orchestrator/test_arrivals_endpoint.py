@@ -9,12 +9,11 @@ correctly when the controller releases it to ground.
 from __future__ import annotations
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
 from api.arrivals import router as arrivals_router
 from db.connection import get_db
 from db.models import AircraftClearance
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -80,11 +79,7 @@ def test_register_arrival_idempotent_on_repeat_call(client, db_session):
         "/api/v1/orchestrator/arrivals/register",
         json={"aircraft_registration": "EC-X", "runway_in_use": "35"},
     )
-    rows = (
-        db_session.query(AircraftClearance)
-        .filter_by(aircraft_registration="EC-X")
-        .all()
-    )
+    rows = db_session.query(AircraftClearance).filter_by(aircraft_registration="EC-X").all()
     assert len(rows) == 1
     assert rows[0].runway_in_use == "35"
 

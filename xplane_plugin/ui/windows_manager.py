@@ -2,7 +2,7 @@ import json
 import os
 import traceback
 import webbrowser
-from typing import Optional, Any
+from typing import Any, Optional
 
 # El plugin corre en el host (no en Docker) — forzar Redis a localhost
 os.environ["REDIS_HOST"] = "localhost"
@@ -35,12 +35,9 @@ class WindowManager:
 
     def register_plugin(self) -> tuple[str, str, str]:
         """Registra el comando de menu y arranca los flight loops."""
-        self.cmd = xp.createCommand(
-            'xppython3/airport/openUI',
-            'Open AIrport Interface'
-        )
+        self.cmd = xp.createCommand("xppython3/airport/openUI", "Open AIrport Interface")
         xp.registerCommandHandler(self.cmd, self._commandHandler, 1, self.cmdRef)
-        xp.appendMenuItemWithCommand(xp.findPluginsMenu(), 'AIrport', self.cmd)
+        xp.appendMenuItemWithCommand(xp.findPluginsMenu(), "AIrport", self.cmd)
 
         # Limpiar estado Redis al arrancar para que el HMI redirija a /setup
         self._reset_redis()
@@ -53,11 +50,12 @@ class WindowManager:
         self.cmd_loop_id = xp.createFlightLoop(self._poll_redis, phase=1)
         xp.scheduleFlightLoop(self.cmd_loop_id, interval=2.0)
 
-        return 'PI_AIrport_v1.0', 'com.airport.atc', 'AIrport ATC Simulator'
+        return "PI_AIrport_v1.0", "com.airport.atc", "AIrport ATC Simulator"
 
     def _reset_redis(self):
         try:
             import redis
+
             r = redis.from_url("redis://localhost:6379", decode_responses=True)
             r.delete("airport:session_request")
         except Exception as e:
@@ -89,6 +87,7 @@ class WindowManager:
     def _poll_redis(self, sinceLast, elapsedTime, counter, refCon):
         try:
             import redis
+
             r = redis.from_url("redis://localhost:6379", decode_responses=True)
             data = r.hgetall("airport:session_request")
             status = data.get("status", "")
@@ -100,6 +99,7 @@ class WindowManager:
                 r.delete("airport:session_request")
             # Drain TTS queue — speak all pending agent replies
             from ..communication import speak
+
             while True:
                 raw = r.lpop("tts:queue")
                 if raw is None:
@@ -116,14 +116,14 @@ class WindowManager:
 
     def _execute_start_from_redis(self, r, data: dict):
         """Ejecuta el inicio de sesion leyendo los parametros de Redis."""
-        from ..services.aircraft_spawner import AircraftSpawner
-        from ..services.aircraft_mover import AircraftMover, set_mover
-        from ..services.flight_plan_service import FlightPlanService
-        from ...shared.services.aircraft_tracker import AircraftTracker
+        from ...shared.models.aircraft_state import AircraftState
         from ...shared.services.aircraft_state_store import AircraftStateStore
+        from ...shared.services.aircraft_tracker import AircraftTracker
         from ...shared.services.airport_data_store import AirportDataStore
         from ...shared.services.stand_assigner import StandAssigner
-        from ...shared.models.aircraft_state import AircraftState
+        from ..services.aircraft_mover import AircraftMover, set_mover
+        from ..services.aircraft_spawner import AircraftSpawner
+        from ..services.flight_plan_service import FlightPlanService
 
         icao = data.get("icao", "")
         aircraft_count = int(data.get("aircraft_count", 5))
@@ -131,6 +131,7 @@ class WindowManager:
         # Limpiar estado de arrivals del ciclo anterior antes de iniciar la sesión.
         try:
             import requests as _req
+
             _req.delete("http://localhost:8005/api/v1/hmi/strips/arrivals", timeout=2)
             _req.post("http://localhost:8008/api/v1/arrivals/restart", timeout=5)
         except Exception:
@@ -220,10 +221,13 @@ class WindowManager:
             xp.log(f"AIrport: Session {session_id} started — tracker at 2Hz, mover active")
 
             # Confirmar al HMI que la sesion esta activa
-            r.hset("airport:session_request", mapping={
-                "status": "active",
-                "session_id": session_id,
-            })
+            r.hset(
+                "airport:session_request",
+                mapping={
+                    "status": "active",
+                    "session_id": session_id,
+                },
+            )
 
         except Exception as e:
             xp.log(f"AIrport: Session start error: {e}")
@@ -237,6 +241,7 @@ class WindowManager:
             self._mover = None
             try:
                 from ..services.aircraft_mover import set_mover
+
                 set_mover(None)
             except Exception:
                 pass

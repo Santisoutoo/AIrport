@@ -13,11 +13,11 @@ import logging
 import os
 from typing import Optional
 
+from frequency_audit import render_audit_for_prompt, render_audit_markdown
 from google import genai
 from google.genai import types
 
 from agent.debrief_prompt import DEBRIEF_SYSTEM_PROMPT
-from frequency_audit import render_audit_for_prompt, render_audit_markdown
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +59,7 @@ _DEBRIEF_SCHEMA: dict = {
         "improvements": {"type": "ARRAY", "items": {"type": "STRING"}},
         "instructor_summary": {"type": "STRING"},
     },
-    "required": ["overall_score", "categories", "strengths",
-                 "improvements", "instructor_summary"],
+    "required": ["overall_score", "categories", "strengths", "improvements", "instructor_summary"],
 }
 
 
@@ -144,10 +143,10 @@ def render_markdown(debrief: dict, freq_audit: Optional[dict] = None) -> str:
         for ex in examples:
             ts = ex.get("ts", "--:--:--")
             verdict = (ex.get("verdict") or "").upper()
-            quote = (ex.get("quote") or "").strip().replace('\n', ' ')
+            quote = (ex.get("quote") or "").strip().replace("\n", " ")
             note = (ex.get("note") or "").strip()
             mark = "✔" if verdict == "GOOD" else "✘" if verdict == "BAD" else "·"
-            lines.append(f"- {mark} **{ts}** — \"{quote}\"  \n  {note}")
+            lines.append(f'- {mark} **{ts}** — "{quote}"  \n  {note}')
         lines.append("")
 
     strengths = debrief.get("strengths") or []

@@ -39,8 +39,8 @@ def db_session(db_engine) -> Session:
     """Yield a SQLAlchemy session with the AircraftClearance table created."""
     # Imported lazily so the JSONB patch in tests/conftest.py is already in
     # effect (must run before ``db.models`` is imported the first time).
-    from db.connection import Base
     from db import models  # noqa: F401 - registers the table on Base.metadata
+    from db.connection import Base
 
     Base.metadata.create_all(bind=db_engine)
     SessionLocal = sessionmaker(bind=db_engine, autocommit=False, autoflush=False)

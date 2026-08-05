@@ -1,13 +1,15 @@
 import os
 from contextlib import asynccontextmanager
 
+from api.routes import router
+from core.database.connection import Base, engine
+
+# Imported for its side effect: registers ATISModel on Base.metadata so the
+# create_all() below actually creates the table. Do not remove.
+from core.database.models import ATISModel  # noqa: F401
+from core.metar_taf_fetcher import close_client
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from api.routes import router
-from core.database.connection import engine, Base
-from core.database.models import ATISModel
-from core.metar_taf_fetcher import close_client
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -57,10 +59,11 @@ async def root():
             "metar": "/api/v1/weather/metar/{icao_code}",
             "taf": "/api/v1/weather/taf/{icao_code}",
             "airports": "/api/v1/weather/airports",
-        }
+        },
     }
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

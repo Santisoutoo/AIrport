@@ -81,9 +81,7 @@ class AgentRunnerConfig:
     """Header line that opens the context section."""
 
 
-def build_agent_context(
-    message: str, config: AgentRunnerConfig, values: dict[str, Any]
-) -> str:
+def build_agent_context(message: str, config: AgentRunnerConfig, values: dict[str, Any]) -> str:
     """Append the non-empty context blocks to ``message``.
 
     Returns ``message`` untouched when the orchestrator attached no context.
@@ -126,9 +124,7 @@ def build_run_agent(
                 app_name=config.app_name, user_id=_USER_ID, session_id=session_id
             )
             if not existing:
-                await session_service.create_session(
-                    app_name=config.app_name, user_id=_USER_ID, session_id=session_id
-                )
+                await session_service.create_session(app_name=config.app_name, user_id=_USER_ID, session_id=session_id)
             reply_parts = []
             async for event in adk_runner.run_async(
                 user_id=_USER_ID,

@@ -139,9 +139,7 @@ def test_zero_gusts_are_reported_as_none(generator):
 
 
 def test_raw_9999_wins_over_the_numeric_visibility(generator):
-    parsed = parse(
-        generator, rawOb="LEST 051200Z 17010KT 9999 BKN025 15/10 Q1013", visib="3"
-    )
+    parsed = parse(generator, rawOb="LEST 051200Z 17010KT 9999 BKN025 15/10 Q1013", visib="3")
 
     assert parsed["visibility_m"] == 9999
 

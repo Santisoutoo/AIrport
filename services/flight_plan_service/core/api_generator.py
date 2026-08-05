@@ -1,13 +1,13 @@
+import logging
 import os
 import random
-import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
 import httpx
-
 from models.schemas import FlightPlanResponse
-from core.data import AIRCRAFT_DATA, PILOT_NAMES, AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX
+
+from core.data import AIRCRAFT_DATA, AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX, PILOT_NAMES
 from core.registration import generate_registration
 
 logger = logging.getLogger(__name__)
@@ -46,9 +46,7 @@ class APIFlightPlanGenerator:
         if destination:
             destination = destination.upper()
             if destination not in ALLOWED_DESTINATIONS:
-                raise ValueError(
-                    f"Destination not found for this airport {ALLOWED_DESTINATIONS}, got '{destination}'"
-                )
+                raise ValueError(f"Destination not found for this airport {ALLOWED_DESTINATIONS}, got '{destination}'")
         else:
             destination = random.choice(ALLOWED_DESTINATIONS)
 
@@ -105,9 +103,7 @@ class APIFlightPlanGenerator:
         random_minutes = random.randint(10, 120)
         departure_time = now + timedelta(minutes=random_minutes)
         departure_time = departure_time.replace(second=0, microsecond=0)
-        departure_time = departure_time.replace(
-            minute=(departure_time.minute // 5) * 5
-        )
+        departure_time = departure_time.replace(minute=(departure_time.minute // 5) * 5)
         dep_time_int = int(departure_time.strftime("%H%M"))
 
         endurance_minutes = eet_minutes + 45
@@ -218,10 +214,7 @@ class APIFlightPlanGenerator:
     @staticmethod
     def _select_airline(aircraft_type: str) -> str:
         """Select a random airline that operates the given aircraft type"""
-        compatible = [
-            icao for icao, data in AIRLINE_DATA.items()
-            if aircraft_type in data["aircraft_types"]
-        ]
+        compatible = [icao for icao, data in AIRLINE_DATA.items() if aircraft_type in data["aircraft_types"]]
         return random.choice(compatible)
 
     @staticmethod

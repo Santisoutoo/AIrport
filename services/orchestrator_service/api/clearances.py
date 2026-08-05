@@ -1,11 +1,10 @@
 from typing import Optional
 
+from db.connection import get_db
+from db.repository import ClearanceRepository
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-
-from db.connection import get_db
-from db.repository import ClearanceRepository
 
 router = APIRouter(prefix="/clearances", tags=["clearances"])
 
@@ -77,9 +76,7 @@ async def get_clearance(registration: str, db: Session = Depends(get_db)):
 
 
 @router.patch("/{registration}/dependency")
-async def update_dependency(
-    registration: str, body: DependencyUpdate, db: Session = Depends(get_db)
-):
+async def update_dependency(registration: str, body: DependencyUpdate, db: Session = Depends(get_db)):
     """Update which controller currently owns the aircraft (DEL → GND → TWR)."""
     valid = {"DEL", "GND", "TWR"}
     if body.dependency not in valid:

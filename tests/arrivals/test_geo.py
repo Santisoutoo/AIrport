@@ -1,14 +1,12 @@
 """Sanity tests for the shared geodesy helpers."""
 
-import math
-
 from shared.services.geo import (
+    NM_TO_M,
     advance,
     bearing,
     haversine,
     project_on_localizer,
     shortest_angle,
-    NM_TO_M,
 )
 
 

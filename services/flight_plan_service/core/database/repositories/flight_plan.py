@@ -1,7 +1,7 @@
+from models.schemas import FlightPlanResponse
 from sqlalchemy.orm import Session
 
 from core.database.models import FlightPlanModel
-from models.schemas import FlightPlanResponse
 
 
 class FlightPlanRepository:
@@ -43,15 +43,13 @@ class FlightPlanRepository:
 
     def get_by_registration(self, registration: str) -> FlightPlanModel | None:
         """Get flight plan by aircraft registration"""
-        return self.db.query(FlightPlanModel).filter(
-            FlightPlanModel.aircraft_registration == registration.upper()
-        ).first()
+        return (
+            self.db.query(FlightPlanModel).filter(FlightPlanModel.aircraft_registration == registration.upper()).first()
+        )
 
     def get_all(self) -> list[FlightPlanModel]:
         """Get all flight plans"""
-        return self.db.query(FlightPlanModel).order_by(
-            FlightPlanModel.created_at.desc()
-        ).all()
+        return self.db.query(FlightPlanModel).order_by(FlightPlanModel.created_at.desc()).all()
 
     def count(self) -> int:
         """Get total count of flight plans"""

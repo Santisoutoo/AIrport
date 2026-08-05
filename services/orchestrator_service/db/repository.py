@@ -7,7 +7,6 @@ from db.models import AircraftClearance
 
 
 class ClearanceRepository:
-
     def __init__(self, db: Session):
         self._db = db
 
@@ -25,9 +24,7 @@ class ClearanceRepository:
         dependency: str = "DEL",
     ) -> AircraftClearance:
         record = (
-            self._db.query(AircraftClearance)
-            .filter(AircraftClearance.aircraft_registration == registration)
-            .first()
+            self._db.query(AircraftClearance).filter(AircraftClearance.aircraft_registration == registration).first()
         )
         if record is None:
             record = AircraftClearance(aircraft_registration=registration)
@@ -50,11 +47,7 @@ class ClearanceRepository:
         return record
 
     def get(self, registration: str) -> Optional[AircraftClearance]:
-        return (
-            self._db.query(AircraftClearance)
-            .filter(AircraftClearance.aircraft_registration == registration)
-            .first()
-        )
+        return self._db.query(AircraftClearance).filter(AircraftClearance.aircraft_registration == registration).first()
 
     def update_dependency(self, registration: str, dependency: str) -> bool:
         updated = (

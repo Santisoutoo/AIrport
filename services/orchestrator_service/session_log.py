@@ -13,7 +13,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Optional
+from typing import Optional
 
 import redis as redis_lib
 
@@ -58,10 +58,13 @@ def _push(key: str, payload: dict) -> None:
 def append_transcript(session_id: str, text: str) -> None:
     if not session_id or not text:
         return
-    _push(_TRANSCRIPTS_KEY.format(sid=session_id), {
-        "ts": time.time(),
-        "text": text,
-    })
+    _push(
+        _TRANSCRIPTS_KEY.format(sid=session_id),
+        {
+            "ts": time.time(),
+            "text": text,
+        },
+    )
 
 
 def append_agent_reply(
@@ -74,14 +77,17 @@ def append_agent_reply(
 ) -> None:
     if not session_id:
         return
-    _push(_AGENT_REPLIES_KEY.format(sid=session_id), {
-        "ts": time.time(),
-        "dep": dep,
-        "registration": registration,
-        "callsign": callsign,
-        "reply": reply,
-        "taxi_data": taxi_data,
-    })
+    _push(
+        _AGENT_REPLIES_KEY.format(sid=session_id),
+        {
+            "ts": time.time(),
+            "dep": dep,
+            "registration": registration,
+            "callsign": callsign,
+            "reply": reply,
+            "taxi_data": taxi_data,
+        },
+    )
 
 
 def append_event(
@@ -92,12 +98,15 @@ def append_event(
 ) -> None:
     if not session_id or not event:
         return
-    _push(_EVENTS_KEY.format(sid=session_id), {
-        "ts": time.time(),
-        "registration": registration,
-        "event": event,
-        "extra": extra or {},
-    })
+    _push(
+        _EVENTS_KEY.format(sid=session_id),
+        {
+            "ts": time.time(),
+            "registration": registration,
+            "event": event,
+            "extra": extra or {},
+        },
+    )
 
 
 def get_active_session_id() -> Optional[str]:

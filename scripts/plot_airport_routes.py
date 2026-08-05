@@ -12,13 +12,13 @@ to the controller sequence. Routes without vias keep the lenient path.
 
 Outputs the PNG into the chapter-5 figure directory of the thesis.
 """
+
 import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 
 from plugins.GND.graph import AirportGraph
-
 
 FIG_DIR = Path(
     r"c:/Users/santi/Documents/documentos_tfg/memoria/"
@@ -34,9 +34,9 @@ ROUTES = {
         # The strict via sequences are realistic controller clearances: the
         # aircraft joins the first named taxiway perpendicularly (straight
         # centerline join) and never leaves the authorized sequence.
-        ("Stand 11 -> RWY 35 (directa)",  "#2e7d32", (42.89347487, -8.41920889), "35", None),
-        ("Stand 11 -> RWY 35 via D3 R",   "#c62828", (42.89347487, -8.41920889), "35", ["D3", "R"]),
-        ("Stand 19 -> RWY 17 via T",      "#1565c0", (42.89546741, -8.41854799), "17", ["T"]),
+        ("Stand 11 -> RWY 35 (directa)", "#2e7d32", (42.89347487, -8.41920889), "35", None),
+        ("Stand 11 -> RWY 35 via D3 R", "#c62828", (42.89347487, -8.41920889), "35", ["D3", "R"]),
+        ("Stand 19 -> RWY 17 via T", "#1565c0", (42.89546741, -8.41854799), "17", ["T"]),
     ],
     "LEIB": [
         # Stand 07 (north gate) and stand 19A (middle gate) toward RWY 06,
@@ -72,24 +72,35 @@ def plot_airport(icao: str, strict: bool = False):
     for u, v in g.graph.edges():
         n1, n2 = g.graph.nodes[u], g.graph.nodes[v]
         ax.plot(
-            [n1["lon"], n2["lon"]], [n1["lat"], n2["lat"]],
-            color="#cccccc", linewidth=0.5, zorder=1,
+            [n1["lon"], n2["lon"]],
+            [n1["lat"], n2["lat"]],
+            color="#cccccc",
+            linewidth=0.5,
+            zorder=1,
         )
 
     # Stands
     for s in g.data.get("stands", []):
         ax.plot(
-            s["longitude"], s["latitude"],
-            "s", color="#888888", markersize=2.0, zorder=2,
+            s["longitude"],
+            s["latitude"],
+            "s",
+            color="#888888",
+            markersize=2.0,
+            zorder=2,
         )
 
     # Runway thresholds
     for rwy_id, (lat, lon) in g._runways_by_id.items():
         ax.plot(lon, lat, "^", color="#1f4e79", markersize=8, zorder=4)
         ax.annotate(
-            rwy_id, (lon, lat),
-            xytext=(6, 6), textcoords="offset points",
-            fontsize=9, color="#1f4e79", fontweight="bold",
+            rwy_id,
+            (lon, lat),
+            xytext=(6, 6),
+            textcoords="offset points",
+            fontsize=9,
+            color="#1f4e79",
+            fontweight="bold",
         )
 
     # Routes
@@ -99,7 +110,10 @@ def plot_airport(icao: str, strict: bool = False):
             label = f"{label} [strict]"
             if isinstance(start, tuple):
                 r = g.find_route_strict_from_position(
-                    start[0], start[1], via, end_token,
+                    start[0],
+                    start[1],
+                    via,
+                    end_token,
                 )
             else:
                 r = g.find_route_strict(start, via, end_token)
@@ -117,15 +131,17 @@ def plot_airport(icao: str, strict: bool = False):
                 wps = r.get("waypoints")
                 if wps:
                     ax.plot(
-                        [start[1], wps[0]["lon"]], [start[0], wps[0]["lat"]],
-                        color=color, linewidth=1.4, linestyle="--", zorder=3,
+                        [start[1], wps[0]["lon"]],
+                        [start[0], wps[0]["lat"]],
+                        color=color,
+                        linewidth=1.4,
+                        linestyle="--",
+                        zorder=3,
                     )
 
     ax.set_xlabel("Longitud (grados)")
     ax.set_ylabel("Latitud (grados)")
-    ax.set_title(
-        f"Aerodromo {icao}: grafo de rodaje y rutas de prueba"
-    )
+    ax.set_title(f"Aerodromo {icao}: grafo de rodaje y rutas de prueba")
     ax.legend(loc="best", fontsize=9, framealpha=0.92)
     ax.set_aspect("equal", adjustable="datalim")
     ax.grid(True, linestyle=":", color="#dddddd", linewidth=0.5)
@@ -139,8 +155,10 @@ def plot_airport(icao: str, strict: bool = False):
     print(f"[{icao}] Saved: {out}")
     for label, r in results:
         if r.get("success"):
-            print(f"  {label}: nodes={len(r['path_node_ids'])} "
-                  f"dist={r['total_distance_m']}m taxiways={r['taxiway_sequence']}")
+            print(
+                f"  {label}: nodes={len(r['path_node_ids'])} "
+                f"dist={r['total_distance_m']}m taxiways={r['taxiway_sequence']}"
+            )
         else:
             print(f"  {label}: FAILED - {r.get('error')}")
 

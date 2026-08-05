@@ -1,9 +1,8 @@
 """REST endpoints to control the arrival scheduler."""
 
+from core.scheduler import get_scheduler
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-
-from core.scheduler import get_scheduler
 
 router = APIRouter()
 

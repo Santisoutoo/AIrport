@@ -18,11 +18,9 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-
 from agent.tools.advance_to_gnd import advance_to_gnd
 from agent.tools.advance_to_gnd_arrival import advance_to_gnd_arrival
 from agent.tools.advance_twr import advance_to_twr
-
 
 # (callable, state_advance_key, expected_dependency)
 ADVANCE_TOOLS = [
@@ -81,9 +79,7 @@ def test_advance_uses_registration_when_callsign_null(tool, advance_key, expecte
 
 
 @pytest.mark.parametrize("tool, advance_key, expected_dep", ADVANCE_TOOLS)
-def test_advance_unknown_registration_uses_registration_as_callsign(
-    tool, advance_key, expected_dep
-):
+def test_advance_unknown_registration_uses_registration_as_callsign(tool, advance_key, expected_dep):
     """Registration not present in known_aircraft -- readback uses registration."""
     ctx = _ctx([{"registration": "EC-AAA", "callsign": "IBE111"}])
 

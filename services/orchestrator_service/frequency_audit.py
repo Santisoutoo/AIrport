@@ -24,9 +24,9 @@ from utils import fmt_ts as _fmt_ts
 # inline so this module stays dependency-free and unit-testable in isolation.
 _DEFAULT_FREQS_MHZ: dict[str, float] = {
     "ATIS": 121.980,
-    "DEL":  121.805,
-    "GND":  121.655,
-    "TWR":  118.330,
+    "DEL": 121.805,
+    "GND": 121.655,
+    "TWR": 118.330,
 }
 
 # Tolerance for matching said vs expected frequency (5 kHz absorbs the
@@ -37,21 +37,37 @@ _FREQ_TOLERANCE_MHZ = 0.005
 _KEYWORD_WINDOW = 60
 
 _SERVICE_KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
-    ("TWR",  ("tower", "twr", "torre")),
-    ("GND",  ("ground", "gnd", "tierra", "rodaje")),
-    ("APP",  ("approach", "app", "aproximacion", "aproximación")),
-    ("DEP",  ("departure", "dep", "salida")),
-    ("DEL",  ("delivery", "clearance", "entrega", "autorizacion", "autorización")),
+    ("TWR", ("tower", "twr", "torre")),
+    ("GND", ("ground", "gnd", "tierra", "rodaje")),
+    ("APP", ("approach", "app", "aproximacion", "aproximación")),
+    ("DEP", ("departure", "dep", "salida")),
+    ("DEL", ("delivery", "clearance", "entrega", "autorizacion", "autorización")),
     ("ATIS", ("atis", "information", "informacion", "información")),
 ]
 
 # Spelled digits → numeric. Includes ICAO "niner" plus EN and ES base words.
 _SPELLED_DIGITS: dict[str, str] = {
-    "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
-    "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
+    "zero": "0",
+    "one": "1",
+    "two": "2",
+    "three": "3",
+    "four": "4",
+    "five": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
     "niner": "9",
-    "cero": "0", "uno": "1", "dos": "2", "tres": "3", "cuatro": "4",
-    "cinco": "5", "seis": "6", "siete": "7", "ocho": "8", "nueve": "9",
+    "cero": "0",
+    "uno": "1",
+    "dos": "2",
+    "tres": "3",
+    "cuatro": "4",
+    "cinco": "5",
+    "seis": "6",
+    "siete": "7",
+    "ocho": "8",
+    "nueve": "9",
 }
 _DECIMAL_TOKENS = ("decimal", "point", "punto", "coma")
 
@@ -66,15 +82,14 @@ def _normalise_spelled_numbers(text: str) -> str:
     "one one eight decimal three" → "1 1 8 . 3" → "118.3"
     "uno uno ocho coma tres"      → "1 1 8 . 3" → "118.3"
     """
+
     def _sub(match: re.Match) -> str:
         word = match.group(0).lower()
         if word in _SPELLED_DIGITS:
             return _SPELLED_DIGITS[word]
         return "."  # decimal marker
 
-    pattern = r"\b(" + "|".join(
-        list(_SPELLED_DIGITS.keys()) + list(_DECIMAL_TOKENS)
-    ) + r")\b"
+    pattern = r"\b(" + "|".join(list(_SPELLED_DIGITS.keys()) + list(_DECIMAL_TOKENS)) + r")\b"
     replaced = re.sub(pattern, _sub, text, flags=re.IGNORECASE)
     # Collapse "1 1 8 . 3" → "118.3" without touching unrelated whitespace.
     return _DIGIT_DOT_RUN_RE.sub("", replaced)
@@ -190,15 +205,17 @@ def audit_frequencies(
                 verdict = "bad"
                 incorrect += 1
 
-            findings.append({
-                "ts": ts,
-                "hhmmss": _fmt_ts(ts),
-                "quote": text,
-                "said_freq": said,
-                "expected_freq": expected,
-                "service": service,
-                "verdict": verdict,
-            })
+            findings.append(
+                {
+                    "ts": ts,
+                    "hhmmss": _fmt_ts(ts),
+                    "quote": text,
+                    "said_freq": said,
+                    "expected_freq": expected,
+                    "service": service,
+                    "verdict": verdict,
+                }
+            )
 
     return {
         "mentions": len(findings),

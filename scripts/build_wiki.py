@@ -19,6 +19,7 @@ Usage:
     python scripts/build_wiki.py --src openwiki --out wiki \
         --repo Santisoutoo/AIrport --ref main
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,9 +43,10 @@ EXPLICIT_PAGE_NAMES = {
 # Sidebar layout: (section title, ordered page names). Service-* pages are
 # appended to "Modules"; any page not covered lands at the end of "Internals".
 SIDEBAR_SECTIONS = [
-    ("Getting Started", ["Home", "Quickstart", "Installation",
-                         "Cloud-Agents-Deployment", "X-Plane-Plugin-Setup",
-                         "Configuration"]),
+    (
+        "Getting Started",
+        ["Home", "Quickstart", "Installation", "Cloud-Agents-Deployment", "X-Plane-Plugin-Setup", "Configuration"],
+    ),
     ("Help", ["Troubleshooting", "FAQ"]),
     ("Modules", ["System-Overview", "Agents", "Shared", "X-Plane"]),
     ("Internals", ["Architecture", "Data-and-Testing", "Wiki-Maintenance"]),
@@ -81,8 +83,7 @@ def discover_pages(src: str) -> dict[str, str]:
     return pages
 
 
-def rewrite_link(target: str, file_rel: str, src: str, pages: dict[str, str],
-                 repo: str, ref: str) -> str:
+def rewrite_link(target: str, file_rel: str, src: str, pages: dict[str, str], repo: str, ref: str) -> str:
     """Rewrite one link target for the wiki context."""
     if target.startswith(("http://", "https://", "mailto:", "#")):
         return target
@@ -97,7 +98,7 @@ def rewrite_link(target: str, file_rel: str, src: str, pages: dict[str, str],
 
     src_prefix = src.replace(os.sep, "/").rstrip("/") + "/"
     if resolved.startswith(src_prefix) and resolved.endswith(".md"):
-        inner = resolved[len(src_prefix):]
+        inner = resolved[len(src_prefix) :]
         if inner in pages:
             return pages[inner]  # wiki page link; drop code-line anchors
     # Otherwise: a repo file or directory -> absolute GitHub URL.
@@ -108,8 +109,7 @@ def rewrite_link(target: str, file_rel: str, src: str, pages: dict[str, str],
     return url
 
 
-def transform(text: str, file_rel: str, src: str, pages: dict[str, str],
-              repo: str, ref: str) -> str:
+def transform(text: str, file_rel: str, src: str, pages: dict[str, str], repo: str, ref: str) -> str:
     def _sub(m: re.Match) -> str:
         bang, label, target = m.group(1), m.group(2), m.group(3)
         new_target = rewrite_link(target, file_rel, src, pages, repo, ref)

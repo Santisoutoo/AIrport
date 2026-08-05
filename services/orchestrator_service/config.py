@@ -6,9 +6,7 @@ class Config:
     FLIGHT_PLAN_SERVICE_URL: str = os.getenv(
         "FLIGHT_PLAN_SERVICE_URL", "http://flight_plan_service:8003/api/v1/flight-plan"
     )
-    WEATHER_SERVICE_URL: str = os.getenv(
-        "WEATHER_SERVICE_URL", "http://weather_service:8004/api/v1/weather"
-    )
+    WEATHER_SERVICE_URL: str = os.getenv("WEATHER_SERVICE_URL", "http://weather_service:8004/api/v1/weather")
 
     # PostgreSQL
     POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "postgres")

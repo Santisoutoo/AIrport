@@ -6,13 +6,13 @@ _WIDTH_ORDER = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5}
 
 # Map ICAO aircraft type codes to apt.dat categories and width codes
 _AIRCRAFT_CLASSIFICATION = {
-    "C172": {"apt_category": "props",      "icao_width_code": "A"},
-    "PA28": {"apt_category": "props",      "icao_width_code": "A"},
-    "E190": {"apt_category": "jets",       "icao_width_code": "C"},
-    "B737": {"apt_category": "jets",       "icao_width_code": "C"},
-    "B738": {"apt_category": "jets",       "icao_width_code": "C"},
-    "A320": {"apt_category": "jets",       "icao_width_code": "C"},
-    "A321": {"apt_category": "jets",       "icao_width_code": "C"},
+    "C172": {"apt_category": "props", "icao_width_code": "A"},
+    "PA28": {"apt_category": "props", "icao_width_code": "A"},
+    "E190": {"apt_category": "jets", "icao_width_code": "C"},
+    "B737": {"apt_category": "jets", "icao_width_code": "C"},
+    "B738": {"apt_category": "jets", "icao_width_code": "C"},
+    "A320": {"apt_category": "jets", "icao_width_code": "C"},
+    "A321": {"apt_category": "jets", "icao_width_code": "C"},
 }
 
 _AIRLINE_OPERATION_TYPES = {"airline", "cargo"}
@@ -39,15 +39,17 @@ class StandAssigner:
 
             available.remove(stand)
 
-            assignments.append({
-                "aircraft_registration": fp["aircraft_registration"],
-                "aircraft_type": aircraft_type,
-                "callsign": fp.get("callsign", fp["aircraft_registration"]),
-                "stand_id": stand["stand_id"],
-                "latitude": stand["latitude"],
-                "longitude": stand["longitude"],
-                "true_hdg": stand["true_hdg"],
-            })
+            assignments.append(
+                {
+                    "aircraft_registration": fp["aircraft_registration"],
+                    "aircraft_type": aircraft_type,
+                    "callsign": fp.get("callsign", fp["aircraft_registration"]),
+                    "stand_id": stand["stand_id"],
+                    "latitude": stand["latitude"],
+                    "longitude": stand["longitude"],
+                    "true_hdg": stand["true_hdg"],
+                }
+            )
 
         return assignments
 

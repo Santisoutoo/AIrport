@@ -23,12 +23,48 @@ _ASSIGNED_SET = "arrivals:assigned"
 
 # Built-in pool used when no DB plans with destination=LEST exist.
 _SYNTHETIC_POOL = [
-    {"aircraft_registration": "EC-ARR1", "callsign": "IBE3001", "aircraft_type": "A320", "departure_ICAO": "LEMD", "destination_ICAO": "LEST"},
-    {"aircraft_registration": "EC-ARR2", "callsign": "VLG4502", "aircraft_type": "A321", "departure_ICAO": "LEBL", "destination_ICAO": "LEST"},
-    {"aircraft_registration": "EI-ARR3", "callsign": "RYR7810", "aircraft_type": "B738", "departure_ICAO": "EGSS", "destination_ICAO": "LEST"},
-    {"aircraft_registration": "EC-ARR4", "callsign": "IBE3045", "aircraft_type": "A320", "departure_ICAO": "LPPT", "destination_ICAO": "LEST"},
-    {"aircraft_registration": "EC-ARR5", "callsign": "VLG4610", "aircraft_type": "A321", "departure_ICAO": "LEVC", "destination_ICAO": "LEST"},
-    {"aircraft_registration": "EI-ARR6", "callsign": "RYR5521", "aircraft_type": "B738", "departure_ICAO": "EIDW", "destination_ICAO": "LEST"},
+    {
+        "aircraft_registration": "EC-ARR1",
+        "callsign": "IBE3001",
+        "aircraft_type": "A320",
+        "departure_ICAO": "LEMD",
+        "destination_ICAO": "LEST",
+    },
+    {
+        "aircraft_registration": "EC-ARR2",
+        "callsign": "VLG4502",
+        "aircraft_type": "A321",
+        "departure_ICAO": "LEBL",
+        "destination_ICAO": "LEST",
+    },
+    {
+        "aircraft_registration": "EI-ARR3",
+        "callsign": "RYR7810",
+        "aircraft_type": "B738",
+        "departure_ICAO": "EGSS",
+        "destination_ICAO": "LEST",
+    },
+    {
+        "aircraft_registration": "EC-ARR4",
+        "callsign": "IBE3045",
+        "aircraft_type": "A320",
+        "departure_ICAO": "LPPT",
+        "destination_ICAO": "LEST",
+    },
+    {
+        "aircraft_registration": "EC-ARR5",
+        "callsign": "VLG4610",
+        "aircraft_type": "A321",
+        "departure_ICAO": "LEVC",
+        "destination_ICAO": "LEST",
+    },
+    {
+        "aircraft_registration": "EI-ARR6",
+        "callsign": "RYR5521",
+        "aircraft_type": "B738",
+        "departure_ICAO": "EIDW",
+        "destination_ICAO": "LEST",
+    },
 ]
 _synthetic_cycle = itertools.cycle(_SYNTHETIC_POOL)
 

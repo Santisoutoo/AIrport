@@ -3,14 +3,14 @@ import os
 import time
 
 import httpx
-from fastapi import APIRouter, Depends, UploadFile, File
+from core.config import AVAILABLE_MODELS, get_settings
+from core.llm_postprocess import llm_map_entities
+from core.postprocess import FUZZY_THRESHOLD, postprocess_transcription
+from fastapi import APIRouter, Depends, File, UploadFile
+from prompts.whisper_context import ATC_PROMPT
 
 from . import transcribe_service
 from .schemas import TranscribeOptions
-from core.config import get_settings, AVAILABLE_MODELS
-from core.postprocess import postprocess_transcription, FUZZY_THRESHOLD
-from core.llm_postprocess import llm_map_entities
-from prompts.whisper_context import ATC_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,9 @@ def get_config():
 
 
 def _build_initial_prompt(
-    context_mode: str, session_callsigns: list[str], session_sids: list[str],
+    context_mode: str,
+    session_callsigns: list[str],
+    session_sids: list[str],
 ) -> str | None:
     """Build the Whisper initial_prompt for the given context mode.
 
@@ -76,18 +78,22 @@ async def transcribe(
     # use_initial_prompt=False keeps overriding everything (backward compatible
     # with the pre-existing flag); otherwise the prompt follows context_mode.
     initial_prompt = (
-        _build_initial_prompt(options.context_mode, callsigns_list, sids_list)
-        if options.use_initial_prompt else None
+        _build_initial_prompt(options.context_mode, callsigns_list, sids_list) if options.use_initial_prompt else None
     )
 
     logger.info(
         "[ASR] transcribe: %d bytes, file=%s, ct=%s, corrections=%s, context_mode=%s",
-        len(audio_bytes), filename, content_type,
-        options.apply_corrections, options.context_mode,
+        len(audio_bytes),
+        filename,
+        content_type,
+        options.apply_corrections,
+        options.context_mode,
     )
 
     raw_text, duration_s = await transcribe_service.transcribe_raw(
-        audio_bytes, filename, initial_prompt=initial_prompt,
+        audio_bytes,
+        filename,
+        initial_prompt=initial_prompt,
     )
 
     cfg = get_settings()
@@ -136,7 +142,10 @@ async def transcribe(
     ):
         t0 = time.perf_counter()
         llm_text, applied = llm_map_entities(
-            final_text, callsigns_list, sids_list, cfg.llm_model,
+            final_text,
+            callsigns_list,
+            sids_list,
+            cfg.llm_model,
         )
         llm_latency_s = time.perf_counter() - t0
         if applied and llm_text and llm_text != final_text:
@@ -167,11 +176,13 @@ async def transcribe(
                 )
                 dispatch_resp.raise_for_status()
                 dispatch_data = dispatch_resp.json()
-                response.update({
-                    "reply": dispatch_data.get("reply", ""),
-                    "agent": dispatch_data.get("agent", ""),
-                    "aircraft_registration": dispatch_data.get("aircraft_registration"),
-                })
+                response.update(
+                    {
+                        "reply": dispatch_data.get("reply", ""),
+                        "agent": dispatch_data.get("agent", ""),
+                        "aircraft_registration": dispatch_data.get("aircraft_registration"),
+                    }
+                )
         except Exception as exc:
             logger.warning("[ASR] dispatch failed: %s — returning transcription only", exc)
 

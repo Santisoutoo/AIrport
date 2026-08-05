@@ -34,6 +34,7 @@ CLI:
   --rejudge CSV        re-run only the judge phase from a previous full CSV (no agent calls)
   --selftest           2 hardcoded judge calls (expected PASS + expected FAIL); no agent calls
 """
+
 from __future__ import annotations
 
 import argparse
@@ -49,11 +50,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from benchmark_agents import STRUCTURED_KEY, SUFFIX, load_env_urls, parse_corpus
-from validate_agents import call_agent_with_retry
-
 from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
+from validate_agents import call_agent_with_retry
 
 CORPUS_DIR = Path("agents_evaluation/corpus_wer")
 OUT_DIR = Path("agents_evaluation/output")
@@ -74,29 +74,57 @@ _RETRY_CODES = {429, 500, 502, 503, 504}
 
 # Short context handed to the judge so "required readback items" is unambiguous.
 DEP_CONTEXT = {
-    "DEL": ("Clearance Delivery. The controller issues an IFR departure clearance "
-            "(destination/SID, initial climb, squawk, QNH, runway) or a "
-            "frequency-change instruction the pilot must acknowledge."),
-    "GND": ("Ground. The controller issues pushback and taxi instructions (taxi "
-            "route, holding point, runway) or a pushback approval the pilot "
-            "acknowledges."),
-    "TWR": ("Tower. The controller issues line-up / take-off / landing clearances "
-            "(runway, wind, clearance type) or an instruction the pilot "
-            "acknowledges."),
+    "DEL": (
+        "Clearance Delivery. The controller issues an IFR departure clearance "
+        "(destination/SID, initial climb, squawk, QNH, runway) or a "
+        "frequency-change instruction the pilot must acknowledge."
+    ),
+    "GND": (
+        "Ground. The controller issues pushback and taxi instructions (taxi "
+        "route, holding point, runway) or a pushback approval the pilot "
+        "acknowledges."
+    ),
+    "TWR": (
+        "Tower. The controller issues line-up / take-off / landing clearances "
+        "(runway, wind, clearance type) or an instruction the pilot "
+        "acknowledges."
+    ),
 }
 
 FULL_FIELDS = [
-    "dep", "entry_id", "session_id", "atc_text", "expected_readback",
-    "agent_reply", "structured_data", "status", "agent_latency_s",
-    "judge_latency_s", "values_correct", "completeness", "no_hallucination",
-    "phraseology_score", "overall", "justification", "error",
+    "dep",
+    "entry_id",
+    "session_id",
+    "atc_text",
+    "expected_readback",
+    "agent_reply",
+    "structured_data",
+    "status",
+    "agent_latency_s",
+    "judge_latency_s",
+    "values_correct",
+    "completeness",
+    "no_hallucination",
+    "phraseology_score",
+    "overall",
+    "justification",
+    "error",
 ]
 
 REVIEW_FIELDS = [
-    "dep", "entry_id", "atc_text", "expected_readback", "agent_reply",
-    "judge_values_correct", "judge_completeness", "judge_no_hallucination",
-    "judge_phraseology_score", "judge_overall", "judge_justification",
-    "human_verdict", "human_notes",
+    "dep",
+    "entry_id",
+    "atc_text",
+    "expected_readback",
+    "agent_reply",
+    "judge_values_correct",
+    "judge_completeness",
+    "judge_no_hallucination",
+    "judge_phraseology_score",
+    "judge_overall",
+    "judge_justification",
+    "human_verdict",
+    "human_notes",
 ]
 
 
@@ -124,15 +152,14 @@ def load_dotenv_into_environ(path: Path = Path(".env")) -> None:
 _JUDGE_SCHEMA: dict = {
     "type": "OBJECT",
     "properties": {
-        "values_correct":    {"type": "STRING", "enum": ["PASS", "FAIL", "N/A"]},
-        "completeness":      {"type": "STRING", "enum": ["PASS", "FAIL", "N/A"]},
-        "no_hallucination":  {"type": "STRING", "enum": ["PASS", "FAIL"]},
-        "phraseology_score": {"type": "INTEGER"},   # 1-5
-        "overall":           {"type": "STRING", "enum": ["PASS", "FAIL"]},
-        "justification":     {"type": "STRING"},    # one line, Spanish
+        "values_correct": {"type": "STRING", "enum": ["PASS", "FAIL", "N/A"]},
+        "completeness": {"type": "STRING", "enum": ["PASS", "FAIL", "N/A"]},
+        "no_hallucination": {"type": "STRING", "enum": ["PASS", "FAIL"]},
+        "phraseology_score": {"type": "INTEGER"},  # 1-5
+        "overall": {"type": "STRING", "enum": ["PASS", "FAIL"]},
+        "justification": {"type": "STRING"},  # one line, Spanish
     },
-    "required": ["values_correct", "completeness", "no_hallucination",
-                 "phraseology_score", "overall", "justification"],
+    "required": ["values_correct", "completeness", "no_hallucination", "phraseology_score", "overall", "justification"],
 }
 
 JUDGE_SYSTEM_PROMPT = """You are an expert ICAO radiotelephony examiner. You are grading an AI ATC-agent that plays the PILOT role. Judge ONLY the agent's spoken readback ("agent_reply") against the controller transmission ("atc_transmission"). "expected_readback" is ONE valid reference readback: it is an example, not the only correct wording. Do NOT penalise a different phrasing that is still correct.
@@ -160,8 +187,7 @@ def _get_judge_client() -> genai.Client:
     return _client
 
 
-def _build_judge_prompt(dep: str, atc_text: str, expected_readback: str,
-                        agent_reply: str, structured_json: str) -> str:
+def _build_judge_prompt(dep: str, atc_text: str, expected_readback: str, agent_reply: str, structured_json: str) -> str:
     return (
         f"DEPENDENCY: {dep}. {DEP_CONTEXT.get(dep, '')}\n\n"
         f"atc_transmission:\n{atc_text}\n\n"
@@ -173,9 +199,9 @@ def _build_judge_prompt(dep: str, atc_text: str, expected_readback: str,
     )
 
 
-def judge_reply(dep: str, atc_text: str, expected_readback: str,
-                agent_reply: str, structured_json: str,
-                judge_model: str) -> tuple[dict, float, str]:
+def judge_reply(
+    dep: str, atc_text: str, expected_readback: str, agent_reply: str, structured_json: str, judge_model: str
+) -> tuple[dict, float, str]:
     """Return (verdict_dict, judge_latency_s, error). error == '' on success."""
     client = _get_judge_client()
     config = types.GenerateContentConfig(
@@ -184,16 +210,14 @@ def judge_reply(dep: str, atc_text: str, expected_readback: str,
         response_schema=_JUDGE_SCHEMA,
         temperature=0.0,
     )
-    prompt = _build_judge_prompt(dep, atc_text, expected_readback,
-                                 agent_reply, structured_json)
+    prompt = _build_judge_prompt(dep, atc_text, expected_readback, agent_reply, structured_json)
 
     last_exc: Exception | None = None
     for attempt in range(MAX_JUDGE_ATTEMPTS):
         retryable = False
         try:
             t0 = time.perf_counter()
-            resp = client.models.generate_content(
-                model=judge_model, contents=prompt, config=config)
+            resp = client.models.generate_content(model=judge_model, contents=prompt, config=config)
             elapsed = round(time.perf_counter() - t0, 3)
             verdict = json.loads(resp.text or "{}")
             return verdict, elapsed, ""
@@ -217,26 +241,44 @@ def judge_reply(dep: str, atc_text: str, expected_readback: str,
 # --------------------------------------------------------------------------- #
 # Per-entry row assembly
 # --------------------------------------------------------------------------- #
-def build_full_row(dep: str, entry_id: str, session_id: str, atc_text: str,
-                   expected_readback: str, agent_reply: str, structured_json: str,
-                   status: int, agent_latency_s, agent_error: str,
-                   judge_model: str) -> dict:
+def build_full_row(
+    dep: str,
+    entry_id: str,
+    session_id: str,
+    atc_text: str,
+    expected_readback: str,
+    agent_reply: str,
+    structured_json: str,
+    status: int,
+    agent_latency_s,
+    agent_error: str,
+    judge_model: str,
+) -> dict:
     row = {
-        "dep": dep, "entry_id": entry_id, "session_id": session_id,
-        "atc_text": atc_text, "expected_readback": expected_readback,
-        "agent_reply": agent_reply, "structured_data": structured_json,
-        "status": status, "agent_latency_s": agent_latency_s,
-        "judge_latency_s": "", "values_correct": "", "completeness": "",
-        "no_hallucination": "", "phraseology_score": "", "overall": "",
-        "justification": "", "error": agent_error or "",
+        "dep": dep,
+        "entry_id": entry_id,
+        "session_id": session_id,
+        "atc_text": atc_text,
+        "expected_readback": expected_readback,
+        "agent_reply": agent_reply,
+        "structured_data": structured_json,
+        "status": status,
+        "agent_latency_s": agent_latency_s,
+        "judge_latency_s": "",
+        "values_correct": "",
+        "completeness": "",
+        "no_hallucination": "",
+        "phraseology_score": "",
+        "overall": "",
+        "justification": "",
+        "error": agent_error or "",
     }
     if agent_error or status != 200 or not agent_reply:
         if not row["error"]:
             row["error"] = f"agent_no_reply (status={status})"
         return row
 
-    verdict, jlat, jerr = judge_reply(
-        dep, atc_text, expected_readback, agent_reply, structured_json, judge_model)
+    verdict, jlat, jerr = judge_reply(dep, atc_text, expected_readback, agent_reply, structured_json, judge_model)
     row["judge_latency_s"] = jlat
     if jerr:
         row["error"] = jerr
@@ -250,8 +292,7 @@ def build_full_row(dep: str, entry_id: str, session_id: str, atc_text: str,
     return row
 
 
-def run_dependency(dep: str, base_url: str, entries: list, judge_model: str,
-                   timeout_s: int) -> list[dict]:
+def run_dependency(dep: str, base_url: str, entries: list, judge_model: str, timeout_s: int) -> list[dict]:
     if not base_url:
         print(f"[{dep}] skip - no endpoint configured", flush=True)
         return []
@@ -262,24 +303,34 @@ def run_dependency(dep: str, base_url: str, entries: list, judge_model: str,
     rows: list[dict] = []
     for i, (entry_id, atc_text, pilot_text) in enumerate(entries, 1):
         session_id = f"judge-{dep.lower()}-{entry_id}-{uuid.uuid4().hex[:6]}"
-        status, lat, resp, err = call_agent_with_retry(
-            full_url, session_id, atc_text, timeout_s)
+        status, lat, resp, err = call_agent_with_retry(full_url, session_id, atc_text, timeout_s)
         agent_reply = (resp or {}).get("reply", "") if isinstance(resp, dict) else ""
         block = resp.get(struct_key) if isinstance(resp, dict) else None
         structured_json = json.dumps(block, ensure_ascii=False)
-        row = build_full_row(dep, entry_id, session_id, atc_text, pilot_text,
-                             agent_reply, structured_json, status, round(lat, 3),
-                             err, judge_model)
+        row = build_full_row(
+            dep,
+            entry_id,
+            session_id,
+            atc_text,
+            pilot_text,
+            agent_reply,
+            structured_json,
+            status,
+            round(lat, 3),
+            err,
+            judge_model,
+        )
         rows.append(row)
         mark = row["overall"] or ("ERR" if row["error"] else "?")
-        print(f"[{dep}] [{i:3d}/{len(entries)}] {entry_id} agent={status} "
-              f"judge={mark:4} (a={row['agent_latency_s']}s j={row['judge_latency_s']}s)",
-              flush=True)
+        print(
+            f"[{dep}] [{i:3d}/{len(entries)}] {entry_id} agent={status} "
+            f"judge={mark:4} (a={row['agent_latency_s']}s j={row['judge_latency_s']}s)",
+            flush=True,
+        )
     return rows
 
 
-def run_full(deps: list[str], limit: int, judge_model: str,
-             timeout_s: int) -> list[dict]:
+def run_full(deps: list[str], limit: int, judge_model: str, timeout_s: int) -> list[dict]:
     urls = load_env_urls()
     print("Endpoints:")
     for dep in deps:
@@ -297,9 +348,7 @@ def run_full(deps: list[str], limit: int, judge_model: str,
     all_rows: list[dict] = []
     with ThreadPoolExecutor(max_workers=3) as ex:
         futs = {
-            ex.submit(run_dependency, dep, urls.get(dep, ""), corpus[dep],
-                      judge_model, timeout_s): dep
-            for dep in deps
+            ex.submit(run_dependency, dep, urls.get(dep, ""), corpus[dep], judge_model, timeout_s): dep for dep in deps
         }
         for fut in as_completed(futs):
             dep = futs[fut]
@@ -331,19 +380,27 @@ def rejudge_dependency(dep: str, in_rows: list[dict], judge_model: str) -> list[
         # A row with no agent reply was an agent failure; keep it as an error.
         agent_error = "" if agent_reply else (r.get("error") or f"agent_no_reply (status={status})")
         row = build_full_row(
-            dep, r.get("entry_id", ""), r.get("session_id", ""),
-            r.get("atc_text", ""), r.get("expected_readback", ""), agent_reply,
-            r.get("structured_data", "null"), status,
-            r.get("agent_latency_s", ""), agent_error, judge_model)
+            dep,
+            r.get("entry_id", ""),
+            r.get("session_id", ""),
+            r.get("atc_text", ""),
+            r.get("expected_readback", ""),
+            agent_reply,
+            r.get("structured_data", "null"),
+            status,
+            r.get("agent_latency_s", ""),
+            agent_error,
+            judge_model,
+        )
         out.append(row)
         mark = row["overall"] or ("ERR" if row["error"] else "?")
-        print(f"[{dep}] [{i:3d}/{len(in_rows)}] {row['entry_id']} judge={mark} "
-              f"(j={row['judge_latency_s']}s)", flush=True)
+        print(
+            f"[{dep}] [{i:3d}/{len(in_rows)}] {row['entry_id']} judge={mark} (j={row['judge_latency_s']}s)", flush=True
+        )
     return out
 
 
-def run_rejudge(csv_path: Path, deps: list[str], limit: int,
-                judge_model: str) -> list[dict]:
+def run_rejudge(csv_path: Path, deps: list[str], limit: int, judge_model: str) -> list[dict]:
     print(f"Re-judging from {csv_path} (judge model: {judge_model})")
     rows_in = _read_full_csv(csv_path)
     by_dep: dict[str, list[dict]] = {d: [] for d in deps}
@@ -357,10 +414,7 @@ def run_rejudge(csv_path: Path, deps: list[str], limit: int,
 
     all_rows: list[dict] = []
     with ThreadPoolExecutor(max_workers=3) as ex:
-        futs = {
-            ex.submit(rejudge_dependency, dep, by_dep[dep], judge_model): dep
-            for dep in deps if by_dep[dep]
-        }
+        futs = {ex.submit(rejudge_dependency, dep, by_dep[dep], judge_model): dep for dep in deps if by_dep[dep]}
         for fut in as_completed(futs):
             dep = futs[fut]
             try:
@@ -403,20 +457,23 @@ def write_review(rows: list[dict]) -> None:
         w = csv.DictWriter(f, fieldnames=REVIEW_FIELDS, extrasaction="ignore")
         w.writeheader()
         for r in ordered:
-            w.writerow({
-                "dep": r["dep"], "entry_id": r["entry_id"],
-                "atc_text": r["atc_text"],
-                "expected_readback": r["expected_readback"],
-                "agent_reply": r["agent_reply"],
-                "judge_values_correct": r["values_correct"],
-                "judge_completeness": r["completeness"],
-                "judge_no_hallucination": r["no_hallucination"],
-                "judge_phraseology_score": r["phraseology_score"],
-                "judge_overall": r["overall"] or ("ERROR" if r["error"] else ""),
-                "judge_justification": r["justification"] or r["error"],
-                "human_verdict": "",
-                "human_notes": "",
-            })
+            w.writerow(
+                {
+                    "dep": r["dep"],
+                    "entry_id": r["entry_id"],
+                    "atc_text": r["atc_text"],
+                    "expected_readback": r["expected_readback"],
+                    "agent_reply": r["agent_reply"],
+                    "judge_values_correct": r["values_correct"],
+                    "judge_completeness": r["completeness"],
+                    "judge_no_hallucination": r["no_hallucination"],
+                    "judge_phraseology_score": r["phraseology_score"],
+                    "judge_overall": r["overall"] or ("ERROR" if r["error"] else ""),
+                    "judge_justification": r["justification"] or r["error"],
+                    "human_verdict": "",
+                    "human_notes": "",
+                }
+            )
     print(f"Wrote: {REVIEW_CSV}")
 
 
@@ -466,13 +523,17 @@ def summary_table(rows: list[dict]) -> list[dict]:
         lats = [_to_float(r["agent_latency_s"]) for r in sub if r["status"] in (200, "200")]
         lats = [x for x in lats if x is not None and x > 0]
         mean, p50, p95 = _latency_stats(lats)
-        out.append({
-            "dep": scope, "n": n, "n_pass": n_pass,
-            "pass_rate_pct": round(100.0 * n_pass / n, 1) if n else 0.0,
-            "latency_mean_s": round(mean, 2),
-            "latency_p50_s": round(p50, 2),
-            "latency_p95_s": round(p95, 2),
-        })
+        out.append(
+            {
+                "dep": scope,
+                "n": n,
+                "n_pass": n_pass,
+                "pass_rate_pct": round(100.0 * n_pass / n, 1) if n else 0.0,
+                "latency_mean_s": round(mean, 2),
+                "latency_p50_s": round(p50, 2),
+                "latency_p95_s": round(p95, 2),
+            }
+        )
     return out
 
 
@@ -486,18 +547,19 @@ def dimensions_table(rows: list[dict]) -> list[dict]:
         vc_pct, _ = _pass_pct(sub, "values_correct")
         cp_pct, _ = _pass_pct(sub, "completeness")
         nh_pct, _ = _pass_pct(sub, "no_hallucination")
-        scores = [int(r["phraseology_score"]) for r in sub
-                  if str(r["phraseology_score"]).lstrip("-").isdigit()]
+        scores = [int(r["phraseology_score"]) for r in sub if str(r["phraseology_score"]).lstrip("-").isdigit()]
         phr_mean = statistics.mean(scores) if scores else 0.0
         phr_p5 = 100.0 * sum(1 for s in scores if s >= 4) / len(scores) if scores else 0.0
-        out.append({
-            "dep": scope,
-            "values_correct_pass_pct": round(vc_pct, 1),
-            "completeness_pass_pct": round(cp_pct, 1),
-            "no_hallucination_pass_pct": round(nh_pct, 1),
-            "phraseology_mean": round(phr_mean, 2),
-            "phraseology_p5_pct": round(phr_p5, 1),
-        })
+        out.append(
+            {
+                "dep": scope,
+                "values_correct_pass_pct": round(vc_pct, 1),
+                "completeness_pass_pct": round(cp_pct, 1),
+                "no_hallucination_pass_pct": round(nh_pct, 1),
+                "phraseology_mean": round(phr_mean, 2),
+                "phraseology_p5_pct": round(phr_p5, 1),
+            }
+        )
     return out
 
 
@@ -518,12 +580,15 @@ def _failed_dimensions(row: dict) -> str:
 def failures_table(rows: list[dict]) -> list[dict]:
     out = []
     for r in sorted((r for r in rows if r["overall"] == "FAIL"), key=_order_key):
-        out.append({
-            "dep": r["dep"], "entry_id": r["entry_id"],
-            "failed_dimensions": _failed_dimensions(r),
-            "phraseology_score": r["phraseology_score"],
-            "justification": r["justification"],
-        })
+        out.append(
+            {
+                "dep": r["dep"],
+                "entry_id": r["entry_id"],
+                "failed_dimensions": _failed_dimensions(r),
+                "phraseology_score": r["phraseology_score"],
+                "justification": r["justification"],
+            }
+        )
     return out
 
 
@@ -540,15 +605,26 @@ def write_tables(rows: list[dict]) -> tuple[list, list, list]:
     summary = summary_table(rows)
     dims = dimensions_table(rows)
     fails = failures_table(rows)
-    _write_table(TABLE_SUMMARY_CSV, summary,
-                 ["dep", "n", "n_pass", "pass_rate_pct",
-                  "latency_mean_s", "latency_p50_s", "latency_p95_s"])
-    _write_table(TABLE_DIMENSIONS_CSV, dims,
-                 ["dep", "values_correct_pass_pct", "completeness_pass_pct",
-                  "no_hallucination_pass_pct", "phraseology_mean", "phraseology_p5_pct"])
-    _write_table(TABLE_FAILURES_CSV, fails,
-                 ["dep", "entry_id", "failed_dimensions", "phraseology_score",
-                  "justification"])
+    _write_table(
+        TABLE_SUMMARY_CSV,
+        summary,
+        ["dep", "n", "n_pass", "pass_rate_pct", "latency_mean_s", "latency_p50_s", "latency_p95_s"],
+    )
+    _write_table(
+        TABLE_DIMENSIONS_CSV,
+        dims,
+        [
+            "dep",
+            "values_correct_pass_pct",
+            "completeness_pass_pct",
+            "no_hallucination_pass_pct",
+            "phraseology_mean",
+            "phraseology_p5_pct",
+        ],
+    )
+    _write_table(
+        TABLE_FAILURES_CSV, fails, ["dep", "entry_id", "failed_dimensions", "phraseology_score", "justification"]
+    )
     return summary, dims, fails
 
 
@@ -559,28 +635,29 @@ def print_tables(rows: list[dict], summary: list, dims: list, fails: list) -> No
     print("=" * 78)
 
     print("\n[1] Pass rate + generation latency")
-    print(f"{'Dep':<6} {'n':>4} {'n_pass':>7} {'pass%':>7} "
-          f"{'mean(s)':>8} {'p50(s)':>8} {'p95(s)':>8}")
+    print(f"{'Dep':<6} {'n':>4} {'n_pass':>7} {'pass%':>7} {'mean(s)':>8} {'p50(s)':>8} {'p95(s)':>8}")
     print("-" * 52)
     for s in summary:
-        print(f"{s['dep']:<6} {s['n']:>4} {s['n_pass']:>7} {s['pass_rate_pct']:>6.1f}% "
-              f"{s['latency_mean_s']:>8.2f} {s['latency_p50_s']:>8.2f} {s['latency_p95_s']:>8.2f}")
+        print(
+            f"{s['dep']:<6} {s['n']:>4} {s['n_pass']:>7} {s['pass_rate_pct']:>6.1f}% "
+            f"{s['latency_mean_s']:>8.2f} {s['latency_p50_s']:>8.2f} {s['latency_p95_s']:>8.2f}"
+        )
 
     print("\n[2] Per-dimension pass rates (N/A excluded)")
-    print(f"{'Dep':<6} {'values%':>8} {'complete%':>10} {'no-halluc%':>11} "
-          f"{'phr_mean':>9} {'phr>=4%':>8}")
+    print(f"{'Dep':<6} {'values%':>8} {'complete%':>10} {'no-halluc%':>11} {'phr_mean':>9} {'phr>=4%':>8}")
     print("-" * 56)
     for d in dims:
-        print(f"{d['dep']:<6} {d['values_correct_pass_pct']:>7.1f}% "
-              f"{d['completeness_pass_pct']:>9.1f}% {d['no_hallucination_pass_pct']:>10.1f}% "
-              f"{d['phraseology_mean']:>9.2f} {d['phraseology_p5_pct']:>7.1f}%")
+        print(
+            f"{d['dep']:<6} {d['values_correct_pass_pct']:>7.1f}% "
+            f"{d['completeness_pass_pct']:>9.1f}% {d['no_hallucination_pass_pct']:>10.1f}% "
+            f"{d['phraseology_mean']:>9.2f} {d['phraseology_p5_pct']:>7.1f}%"
+        )
 
     print(f"\n[3] Failures catalogue ({len(fails)} entries)")
     if not fails:
         print("  (none)")
     for fr in fails[:40]:
-        print(f"  {fr['dep']} {fr['entry_id']:<9} [{fr['failed_dimensions'] or '-'}] "
-              f"{fr['justification']}")
+        print(f"  {fr['dep']} {fr['entry_id']:<9} [{fr['failed_dimensions'] or '-'}] {fr['justification']}")
     if len(fails) > 40:
         print(f"  ... and {len(fails) - 40} more (see {TABLE_FAILURES_CSV})")
 
@@ -595,31 +672,41 @@ def write_all(rows: list[dict]) -> None:
 # --------------------------------------------------------------------------- #
 # Self-test: 2 judge calls, no agent calls
 # --------------------------------------------------------------------------- #
-_SELFTEST_ATC = ("Ryanair four seven three, cleared to Dublin via the BELEN one GOLF "
-                 "departure, initial climb five thousand feet, squawk two three four one, "
-                 "QNH one zero one three, runway three two left.")
-_SELFTEST_EXPECTED = ("Cleared to Dublin via BELEN one GOLF, initial climb five thousand, "
-                      "squawk two three four one, QNH one zero one three, runway three two "
-                      "left, Ryanair four seven three.")
-_SELFTEST_STRUCT = ('{"squawk": 2341, "initial_altitude": 5000, '
-                    '"instrumental_departure": "BELEN1G", "runway_in_use": "32L", '
-                    '"altimeter": 1013, "destination_icao": "EIDW"}')
+_SELFTEST_ATC = (
+    "Ryanair four seven three, cleared to Dublin via the BELEN one GOLF "
+    "departure, initial climb five thousand feet, squawk two three four one, "
+    "QNH one zero one three, runway three two left."
+)
+_SELFTEST_EXPECTED = (
+    "Cleared to Dublin via BELEN one GOLF, initial climb five thousand, "
+    "squawk two three four one, QNH one zero one three, runway three two "
+    "left, Ryanair four seven three."
+)
+_SELFTEST_STRUCT = (
+    '{"squawk": 2341, "initial_altitude": 5000, '
+    '"instrumental_departure": "BELEN1G", "runway_in_use": "32L", '
+    '"altimeter": 1013, "destination_icao": "EIDW"}'
+)
 
 
 def selftest(judge_model: str) -> int:
     print(f"Self-test (judge model: {judge_model}) - 2 calls, no agents.\n")
     cases = [
         ("correct readback", _SELFTEST_EXPECTED, "PASS", None),
-        ("corrupted squawk+runway",
-         "Cleared to Dublin via BELEN one GOLF, initial climb five thousand, "
-         "squawk nine nine nine nine, QNH one zero one three, runway two seven right, "
-         "Ryanair four seven three.",
-         "FAIL", "values_correct"),
+        (
+            "corrupted squawk+runway",
+            "Cleared to Dublin via BELEN one GOLF, initial climb five thousand, "
+            "squawk nine nine nine nine, QNH one zero one three, runway two seven right, "
+            "Ryanair four seven three.",
+            "FAIL",
+            "values_correct",
+        ),
     ]
     ok = True
     for label, reply, want_overall, want_fail_dim in cases:
         verdict, jlat, jerr = judge_reply(
-            "DEL", _SELFTEST_ATC, _SELFTEST_EXPECTED, reply, _SELFTEST_STRUCT, judge_model)
+            "DEL", _SELFTEST_ATC, _SELFTEST_EXPECTED, reply, _SELFTEST_STRUCT, judge_model
+        )
         if jerr:
             print(f"  [{label}] JUDGE ERROR: {jerr}")
             ok = False
@@ -627,17 +714,21 @@ def selftest(judge_model: str) -> int:
         got_overall = verdict.get("overall")
         got_vc = verdict.get("values_correct")
         print(f"  [{label}] ({jlat}s)")
-        print(f"      overall={got_overall} values_correct={got_vc} "
-              f"completeness={verdict.get('completeness')} "
-              f"no_hallucination={verdict.get('no_hallucination')} "
-              f"phraseology={verdict.get('phraseology_score')}")
+        print(
+            f"      overall={got_overall} values_correct={got_vc} "
+            f"completeness={verdict.get('completeness')} "
+            f"no_hallucination={verdict.get('no_hallucination')} "
+            f"phraseology={verdict.get('phraseology_score')}"
+        )
         print(f"      justificacion: {verdict.get('justification')}")
         exp_ok = got_overall == want_overall
         if want_fail_dim:
             exp_ok = exp_ok and verdict.get(want_fail_dim) == "FAIL"
-        print(f"      -> expected overall={want_overall}"
-              f"{f', {want_fail_dim}=FAIL' if want_fail_dim else ''}: "
-              f"{'OK' if exp_ok else 'UNEXPECTED'}\n")
+        print(
+            f"      -> expected overall={want_overall}"
+            f"{f', {want_fail_dim}=FAIL' if want_fail_dim else ''}: "
+            f"{'OK' if exp_ok else 'UNEXPECTED'}\n"
+        )
         ok = ok and exp_ok
     print("SELF-TEST:", "PASS" if ok else "FAIL (unexpected verdicts, review rubric)")
     return 0 if ok else 1
@@ -650,26 +741,29 @@ def _parse_deps(spec: str) -> list[str]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--limit", type=int, default=0,
-                    help="Only the first N entries per dependency (0 = all).")
-    ap.add_argument("--deps", default="del,gnd,twr",
-                    help="Comma-separated subset of del,gnd,twr.")
-    ap.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL,
-                    help=f"Judge model (default {DEFAULT_JUDGE_MODEL}).")
-    ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_S,
-                    help=f"Per-agent-request timeout in seconds (default {DEFAULT_TIMEOUT_S}).")
-    ap.add_argument("--rejudge", metavar="CSV", default="",
-                    help="Re-run only the judge phase from a previous full CSV.")
-    ap.add_argument("--selftest", action="store_true",
-                    help="2 hardcoded judge calls (expected PASS + FAIL); no agent calls.")
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--limit", type=int, default=0, help="Only the first N entries per dependency (0 = all).")
+    ap.add_argument("--deps", default="del,gnd,twr", help="Comma-separated subset of del,gnd,twr.")
+    ap.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL, help=f"Judge model (default {DEFAULT_JUDGE_MODEL}).")
+    ap.add_argument(
+        "--timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT_S,
+        help=f"Per-agent-request timeout in seconds (default {DEFAULT_TIMEOUT_S}).",
+    )
+    ap.add_argument(
+        "--rejudge", metavar="CSV", default="", help="Re-run only the judge phase from a previous full CSV."
+    )
+    ap.add_argument(
+        "--selftest", action="store_true", help="2 hardcoded judge calls (expected PASS + FAIL); no agent calls."
+    )
     args = ap.parse_args()
 
     # Spanish justifications contain accented characters; keep a cp1252 console
     # from raising UnicodeEncodeError when printing the failures catalogue.
     try:
         import sys
+
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:  # noqa: BLE001
         pass

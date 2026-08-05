@@ -1,12 +1,12 @@
-import uuid
 import logging
+import uuid
 
 import httpx
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
+from router import agent_name_to_url
 
 from config import config
-from router import agent_name_to_url
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,7 +43,6 @@ async def process(
     filename = audio.filename or "audio.webm"
 
     async with httpx.AsyncClient(timeout=60.0) as client:
-
         # 2. Transcribe
         try:
             transcription_resp = await client.post(

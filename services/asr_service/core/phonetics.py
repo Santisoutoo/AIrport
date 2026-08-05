@@ -1,7 +1,8 @@
 import re
 
 PHONETIC_MAP: dict[str, str] = {
-    "alpha": "A", "alfa": "A",
+    "alpha": "A",
+    "alfa": "A",
     "bravo": "B",
     "charlie": "C",
     "delta": "D",
@@ -24,13 +25,14 @@ PHONETIC_MAP: dict[str, str] = {
     "uniform": "U",
     "victor": "V",
     "whiskey": "W",
-    "x-ray": "X", "xray": "X",
+    "x-ray": "X",
+    "xray": "X",
     "yankee": "Y",
     "zulu": "Z",
 }
 
 _PATTERN = re.compile(
-    r'\b(' + '|'.join(re.escape(k) for k in PHONETIC_MAP) + r')\b',
+    r"\b(" + "|".join(re.escape(k) for k in PHONETIC_MAP) + r")\b",
     re.IGNORECASE,
 )
 

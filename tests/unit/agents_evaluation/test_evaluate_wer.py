@@ -21,9 +21,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-_SCRIPT = (
-    Path(__file__).resolve().parents[3] / "agents_evaluation" / "evaluate_wer.py"
-)
+_SCRIPT = Path(__file__).resolve().parents[3] / "agents_evaluation" / "evaluate_wer.py"
 _MOD_NAME = "evaluate_wer_under_test"
 
 
@@ -110,8 +108,8 @@ def test_main_reports_wer_per_audio_and_summary(corpus, monkeypatch, capsys):
     (corpus / "a.wav").write_bytes(b"")
     (corpus / "b.wav").write_bytes(b"")
     transcriptions = {
-        "a": "ryanair four seven three cleared to madrid",   # exact -> WER 0.0
-        "b": "something else",                               # differs -> WER 0.5
+        "a": "ryanair four seven three cleared to madrid",  # exact -> WER 0.0
+        "b": "something else",  # differs -> WER 0.5
     }
     monkeypatch.setattr(ev, "transcribe", lambda p: transcriptions[p.stem])
 

@@ -5,6 +5,7 @@ through a segment, with the along-track parameter t unclamped so callers can
 prolong the segment ("prolongar la linea") when the foot falls beyond an
 endpoint.
 """
+
 import math
 
 import pytest
@@ -29,7 +30,12 @@ def test_foot_inside_segment():
     # Point above the midpoint, 30 m north of the segment.
     p_lat, p_lon = _offset(LAT_A, LON_A, 30.0, 100.0)
     f_lat, f_lon, perp, t = project_point_to_segment(
-        p_lat, p_lon, LAT_A, LON_A, lat_b, lon_b,
+        p_lat,
+        p_lon,
+        LAT_A,
+        LON_A,
+        lat_b,
+        lon_b,
     )
     assert t == pytest.approx(0.5, abs=0.01)
     assert perp == pytest.approx(30.0, abs=0.5)
@@ -43,7 +49,12 @@ def test_foot_beyond_endpoint_b_is_not_clamped():
     # 50 m past B along the track, 10 m off the line.
     p_lat, p_lon = _offset(LAT_A, LON_A, 10.0, 150.0)
     _f_lat, _f_lon, perp, t = project_point_to_segment(
-        p_lat, p_lon, LAT_A, LON_A, lat_b, lon_b,
+        p_lat,
+        p_lon,
+        LAT_A,
+        LON_A,
+        lat_b,
+        lon_b,
     )
     assert t == pytest.approx(1.5, abs=0.01)
     assert perp == pytest.approx(10.0, abs=0.5)
@@ -53,7 +64,12 @@ def test_foot_before_endpoint_a_is_negative_t():
     lat_b, lon_b = _offset(LAT_A, LON_A, 0.0, 100.0)
     p_lat, p_lon = _offset(LAT_A, LON_A, -10.0, -50.0)
     _f_lat, _f_lon, perp, t = project_point_to_segment(
-        p_lat, p_lon, LAT_A, LON_A, lat_b, lon_b,
+        p_lat,
+        p_lon,
+        LAT_A,
+        LON_A,
+        lat_b,
+        lon_b,
     )
     assert t == pytest.approx(-0.5, abs=0.01)
     assert perp == pytest.approx(10.0, abs=0.5)
@@ -62,7 +78,12 @@ def test_foot_before_endpoint_a_is_negative_t():
 def test_degenerate_zero_length_segment_returns_a():
     p_lat, p_lon = _offset(LAT_A, LON_A, 30.0, 40.0)
     f_lat, f_lon, perp, t = project_point_to_segment(
-        p_lat, p_lon, LAT_A, LON_A, LAT_A, LON_A,
+        p_lat,
+        p_lon,
+        LAT_A,
+        LON_A,
+        LAT_A,
+        LON_A,
     )
     assert (f_lat, f_lon) == (LAT_A, LON_A)
     assert perp == pytest.approx(50.0, abs=0.5)

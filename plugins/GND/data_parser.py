@@ -35,34 +35,35 @@ from xplane_airports.AptDat import RowCode
 # in the apt.dat 1200 spec the same row code is also used for DEP; we surface
 # it as DEP because that's what the controller actually says on the radio.
 _COM_CHANNEL_MAP = {
-    int(RowCode.CHANNEL_AWOS):     "ATIS",    # 1050
-    int(RowCode.CHANNEL_CTAF):     "UNICOM",  # 1051
-    int(RowCode.CHANNEL_DELIVERY): "DEL",     # 1052
-    int(RowCode.CHANNEL_GROUND):   "GND",     # 1053
-    int(RowCode.CHANNEL_TOWER):    "TWR",     # 1054
-    int(RowCode.CHANNEL_APPROACH): "APP",     # 1055
-    int(RowCode.CHANNEL_CENTER):   "DEP",     # 1056
+    int(RowCode.CHANNEL_AWOS): "ATIS",  # 1050
+    int(RowCode.CHANNEL_CTAF): "UNICOM",  # 1051
+    int(RowCode.CHANNEL_DELIVERY): "DEL",  # 1052
+    int(RowCode.CHANNEL_GROUND): "GND",  # 1053
+    int(RowCode.CHANNEL_TOWER): "TWR",  # 1054
+    int(RowCode.CHANNEL_APPROACH): "APP",  # 1055
+    int(RowCode.CHANNEL_CENTER): "DEP",  # 1056
 }
 _COM_LEGACY_MAP = {
-    int(RowCode.FREQUENCY_AWOS):     "ATIS",    # 50
-    int(RowCode.FREQUENCY_CTAF):     "UNICOM",  # 51
-    int(RowCode.FREQUENCY_DELIVERY): "DEL",     # 52
-    int(RowCode.FREQUENCY_GROUND):   "GND",     # 53
-    int(RowCode.FREQUENCY_TOWER):    "TWR",     # 54
-    int(RowCode.FREQUENCY_APPROACH): "APP",     # 55
-    int(RowCode.FREQUENCY_CENTER):   "DEP",     # 56
+    int(RowCode.FREQUENCY_AWOS): "ATIS",  # 50
+    int(RowCode.FREQUENCY_CTAF): "UNICOM",  # 51
+    int(RowCode.FREQUENCY_DELIVERY): "DEL",  # 52
+    int(RowCode.FREQUENCY_GROUND): "GND",  # 53
+    int(RowCode.FREQUENCY_TOWER): "TWR",  # 54
+    int(RowCode.FREQUENCY_APPROACH): "APP",  # 55
+    int(RowCode.FREQUENCY_CENTER): "DEP",  # 56
 }
 
 
 class AptDatParser:
     """Parser for X-Plane .dat airport files to extract taxi routes and stands"""
+
     def __init__(self, file_path: str):
         self.file_path = file_path
         self.raw_data = self._load_file()
 
     def _load_file(self) -> List[str]:
         """Load .dat file from a given path"""
-        with open(self.file_path, 'r', encoding='utf-8') as f:
+        with open(self.file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
         return lines
 
@@ -79,11 +80,11 @@ class AptDatParser:
                     try:
                         nodes.append(
                             TaxiNode(
-                            lat=float(parts[1]),
-                            lon=float(parts[2]),
-                            usage=parts[3],  
-                            node_id=parts[4],
-                            name=' '.join(parts[5:]) if len(parts) > 5 else f"node_{parts[3]}"
+                                lat=float(parts[1]),
+                                lon=float(parts[2]),
+                                usage=parts[3],
+                                node_id=parts[4],
+                                name=" ".join(parts[5:]) if len(parts) > 5 else f"node_{parts[3]}",
                             )
                         )
 
@@ -104,14 +105,13 @@ class AptDatParser:
             if code == RowCode.TAXI_ROUTE_EDGE:  # 1202
                 if len(parts) >= 5:
                     try:
-
                         edges.append(
                             TaxiEdge(
-                            start_node_id=int(parts[1]),
-                            end_node_id=int(parts[2]),
-                            direction=parts[3],
-                            atc_restriction=parts[4] ,
-                            taxiway_id=parts[5] if len(parts) >= 6 else "",   
+                                start_node_id=int(parts[1]),
+                                end_node_id=int(parts[2]),
+                                direction=parts[3],
+                                atc_restriction=parts[4],
+                                taxiway_id=parts[5] if len(parts) >= 6 else "",
                             )
                         )
 
@@ -151,16 +151,18 @@ class AptDatParser:
                             except (ValueError, IndexError):
                                 pass
 
-                        stands.append(Stand(
-                            latitude=float(parts[1]),
-                            longitude=float(parts[2]),
-                            true_hdg=float(parts[3]),
-                            stand_type=parts[4],
-                            allowed_aircraft_types=str(parts[5]),
-                            stand_id=" ".join(parts[6:]),
-                            icao_width_code=icao_width_code,
-                            operation_type=operation_type,
-                        ))
+                        stands.append(
+                            Stand(
+                                latitude=float(parts[1]),
+                                longitude=float(parts[2]),
+                                true_hdg=float(parts[3]),
+                                stand_type=parts[4],
+                                allowed_aircraft_types=str(parts[5]),
+                                stand_id=" ".join(parts[6:]),
+                                icao_width_code=icao_width_code,
+                                operation_type=operation_type,
+                            )
+                        )
 
                     except (ValueError, IndexError) as e:
                         print(f"Error parsing stand line: {lines[i].strip()} - {e}")
@@ -178,14 +180,16 @@ class AptDatParser:
             if code == RowCode.LAND_RUNWAY:  # 100
                 if len(parts) >= 20:
                     try:
-                        runways.append(Runway(
-                            runway_1_id=parts[8],
-                            lat=float(parts[9]),
-                            lon=float(parts[10]),
-                            runway_2_id=parts[17],
-                            lat_2=float(parts[18]),
-                            lon_2=float(parts[19]),
-                        ))
+                        runways.append(
+                            Runway(
+                                runway_1_id=parts[8],
+                                lat=float(parts[9]),
+                                lon=float(parts[10]),
+                                runway_2_id=parts[17],
+                                lat_2=float(parts[18]),
+                                lon_2=float(parts[19]),
+                            )
+                        )
                     except (ValueError, IndexError) as e:
                         print(f"Error parsing runway line: {line.strip()} - {e}")
                         continue
@@ -206,13 +210,8 @@ class AptDatParser:
             if code == RowCode.FLOW_PATTERN:  # 1101
                 if len(parts) >= 3:
                     try:
-                        traffic_patterns.append(
-                            TrafficPattern(
-                                runway_id=parts[1],
-                                side=parts[2]
-                            )
-                        )
-                    except(ValueError, IndexError) as e:
+                        traffic_patterns.append(TrafficPattern(runway_id=parts[1], side=parts[2]))
+                    except (ValueError, IndexError) as e:
                         print(f"Error parsing runway line: {line.strip()} - {e}")
                         continue
 
@@ -240,29 +239,33 @@ class AptDatParser:
             if code in _COM_CHANNEL_MAP:
                 try:
                     freq_khz = int(parts[1])
-                    modern.append(ComFrequency(
-                        service=_COM_CHANNEL_MAP[code],
-                        frequency_mhz=freq_khz / 1000.0,
-                        name=" ".join(parts[2:]) if len(parts) > 2 else _COM_CHANNEL_MAP[code],
-                    ))
+                    modern.append(
+                        ComFrequency(
+                            service=_COM_CHANNEL_MAP[code],
+                            frequency_mhz=freq_khz / 1000.0,
+                            name=" ".join(parts[2:]) if len(parts) > 2 else _COM_CHANNEL_MAP[code],
+                        )
+                    )
                 except (ValueError, IndexError) as e:
                     print(f"Error parsing COM frequency line: {line.strip()} - {e}")
                 continue
 
             if code in _COM_LEGACY_MAP:
                 try:
-                    legacy.append(ComFrequency(
-                        service=_COM_LEGACY_MAP[code],
-                        frequency_mhz=int(parts[1]) / 100.0,
-                        name=" ".join(parts[2:]) if len(parts) > 2 else _COM_LEGACY_MAP[code],
-                    ))
+                    legacy.append(
+                        ComFrequency(
+                            service=_COM_LEGACY_MAP[code],
+                            frequency_mhz=int(parts[1]) / 100.0,
+                            name=" ".join(parts[2:]) if len(parts) > 2 else _COM_LEGACY_MAP[code],
+                        )
+                    )
                 except (ValueError, IndexError) as e:
                     print(f"Error parsing legacy COM frequency line: {line.strip()} - {e}")
 
         return modern if modern else legacy
 
     def parse_airport_info(self) -> List[AirportInfo]:
-        """"CODE: 1 and 1302"""
+        """ "CODE: 1 and 1302"""
 
         airport_info = []
         for line in self.raw_data:
@@ -271,19 +274,14 @@ class AptDatParser:
             code = int(parts[0])
 
             # Check if this line contains airport header or metadata
-            if code == RowCode.AIRPORT_HEADER or \
-               code == RowCode.METADATA:  # 1 or 1302
-
+            if code == RowCode.AIRPORT_HEADER or code == RowCode.METADATA:  # 1 or 1302
                 try:
-                    airport_info.append(
-                        AirportInfo(
-                            metdata=parts
-                        )
-                    )
+                    airport_info.append(AirportInfo(metdata=parts))
                 except (ValueError, IndexError) as e:
-                    print(f'Error parsing runway line: {line.strip()} - {e}')
+                    print(f"Error parsing runway line: {line.strip()} - {e}")
 
         return airport_info
+
 
 def parse_airport(file_path: str) -> dict:
     """
@@ -306,7 +304,6 @@ def parse_airport(file_path: str) -> dict:
 
 
 if __name__ == "__main__":
-
     import json
     from pathlib import Path
 
@@ -322,18 +319,19 @@ if __name__ == "__main__":
         print(f"Found {len(items)} {section}")
 
     # Save to JSON file
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(airport_data, indent=2, fp=f)
     print(f"\nData saved to {OUTPUT_FILE}")
 
     # Store in Redis for microservices access
     try:
         import sys
+
         sys.path.insert(0, str(BASE_DIR / "shared"))
         from services.airport_data_store import AirportDataStore
 
         store = AirportDataStore()
         store.store(ICAO, airport_data)
-        print(f"Data stored in Redis under airport:current:*")
+        print("Data stored in Redis under airport:current:*")
     except Exception as e:
         print(f"Redis storage skipped: {e}")

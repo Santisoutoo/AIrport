@@ -77,8 +77,7 @@ def build_timeline(
         reg = c.get("aircraft_registration") or "-"
         dep = c.get("dependency") or "-"
         summary_parts = []
-        for field in ("squawk", "initial_altitude", "instrumental_departure",
-                       "runway_in_use", "destination_icao"):
+        for field in ("squawk", "initial_altitude", "instrumental_departure", "runway_in_use", "destination_icao"):
             val = c.get(field)
             if val not in (None, "", 0):
                 summary_parts.append(f"{field}={val}")
@@ -135,10 +134,7 @@ def summarise_stats(
         reg = r.get("registration")
         if reg:
             aircraft_set.add(reg)
-    ts_values = [
-        _coerce_ts(t.get("ts")) for t in transcripts
-        if _coerce_ts(t.get("ts")) > 0
-    ]
+    ts_values = [_coerce_ts(t.get("ts")) for t in transcripts if _coerce_ts(t.get("ts")) > 0]
     duration_s: Optional[float] = None
     if len(ts_values) >= 2:
         duration_s = max(ts_values) - min(ts_values)

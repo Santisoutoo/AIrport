@@ -1,6 +1,7 @@
 import os
+
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Database configuration from environment variables
 DB_HOST = os.getenv("POSTGRES_HOST")
@@ -17,6 +18,7 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base class for models
 Base = declarative_base()
+
 
 def get_db():
     """

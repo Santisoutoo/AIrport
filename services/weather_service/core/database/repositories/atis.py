@@ -1,8 +1,8 @@
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
 from core.database.models import ATISModel
 from models.schemas import ATISResponse, CloudLayer
+from sqlalchemy.orm import Session
 
 
 class ATISRepository:
@@ -48,29 +48,38 @@ class ATISRepository:
 
     def get_latest_by_icao(self, icao_code: str) -> ATISModel | None:
         """Get the most recent ATIS for an airport"""
-        return self.db.query(ATISModel).filter(
-            ATISModel.icao_code == icao_code.upper()
-        ).order_by(ATISModel.created_at.desc()).first()
+        return (
+            self.db.query(ATISModel)
+            .filter(ATISModel.icao_code == icao_code.upper())
+            .order_by(ATISModel.created_at.desc())
+            .first()
+        )
 
     def get_by_icao_and_letter(self, icao_code: str, letter: str) -> ATISModel | None:
         """Get ATIS by airport and letter identifier"""
-        return self.db.query(ATISModel).filter(
-            ATISModel.icao_code == icao_code.upper(),
-            ATISModel.atis_letter == letter.upper()
-        ).order_by(ATISModel.created_at.desc()).first()
+        return (
+            self.db.query(ATISModel)
+            .filter(ATISModel.icao_code == icao_code.upper(), ATISModel.atis_letter == letter.upper())
+            .order_by(ATISModel.created_at.desc())
+            .first()
+        )
 
     def get_all_by_icao(self, icao_code: str, limit: int = 10) -> list[ATISModel]:
         """Get all ATIS records for an airport"""
-        return self.db.query(ATISModel).filter(
-            ATISModel.icao_code == icao_code.upper()
-        ).order_by(ATISModel.created_at.desc()).limit(limit).all()
+        return (
+            self.db.query(ATISModel)
+            .filter(ATISModel.icao_code == icao_code.upper())
+            .order_by(ATISModel.created_at.desc())
+            .limit(limit)
+            .all()
+        )
 
     def get_recent(self, hours: int = 24) -> list[ATISModel]:
         """Get all ATIS records from the last N hours"""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
-        return self.db.query(ATISModel).filter(
-            ATISModel.created_at >= cutoff
-        ).order_by(ATISModel.created_at.desc()).all()
+        return (
+            self.db.query(ATISModel).filter(ATISModel.created_at >= cutoff).order_by(ATISModel.created_at.desc()).all()
+        )
 
     def count(self) -> int:
         """Get total count of ATIS records"""
@@ -78,30 +87,20 @@ class ATISRepository:
 
     def count_by_icao(self, icao_code: str) -> int:
         """Get count of ATIS records for an airport"""
-        return self.db.query(ATISModel).filter(
-            ATISModel.icao_code == icao_code.upper()
-        ).count()
+        return self.db.query(ATISModel).filter(ATISModel.icao_code == icao_code.upper()).count()
 
     def delete_by_icao(self, icao_code: str) -> int:
         """Delete all ATIS records for an airport"""
-        count = self.db.query(ATISModel).filter(
-            ATISModel.icao_code == icao_code.upper()
-        ).count()
-        self.db.query(ATISModel).filter(
-            ATISModel.icao_code == icao_code.upper()
-        ).delete()
+        count = self.db.query(ATISModel).filter(ATISModel.icao_code == icao_code.upper()).count()
+        self.db.query(ATISModel).filter(ATISModel.icao_code == icao_code.upper()).delete()
         self.db.commit()
         return count
 
     def delete_old(self, hours: int = 48) -> int:
         """Delete ATIS records older than N hours"""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
-        count = self.db.query(ATISModel).filter(
-            ATISModel.created_at < cutoff
-        ).count()
-        self.db.query(ATISModel).filter(
-            ATISModel.created_at < cutoff
-        ).delete()
+        count = self.db.query(ATISModel).filter(ATISModel.created_at < cutoff).count()
+        self.db.query(ATISModel).filter(ATISModel.created_at < cutoff).delete()
         self.db.commit()
         return count
 
@@ -115,10 +114,7 @@ class ATISRepository:
     @staticmethod
     def to_response(model: ATISModel) -> ATISResponse:
         """Convert database model to response schema"""
-        clouds = [
-            CloudLayer(coverage=c["coverage"], base_ft=c["base_ft"])
-            for c in (model.clouds or [])
-        ]
+        clouds = [CloudLayer(coverage=c["coverage"], base_ft=c["base_ft"]) for c in (model.clouds or [])]
 
         return ATISResponse(
             icao_code=model.icao_code,

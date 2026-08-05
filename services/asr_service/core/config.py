@@ -37,8 +37,7 @@ AVAILABLE_MODELS: list[dict] = [
     },
 ]
 
-_MODEL_BACKENDS: dict[str, str] = {
-    m["id"]: m["backend"] for m in AVAILABLE_MODELS}
+_MODEL_BACKENDS: dict[str, str] = {m["id"]: m["backend"] for m in AVAILABLE_MODELS}
 
 
 def get_model_backend(model_id: str) -> Literal["faster-whisper", "transformers"]:
@@ -59,13 +58,13 @@ class Settings(BaseSettings):
 
     # Transcription
     whisper_language: str = "en"
-    whisper_device: str = "cpu"          # "cpu" or "cuda"
-    whisper_compute_type: str = "int8"   # "int8", "float16", "float32"
+    whisper_device: str = "cpu"  # "cpu" or "cuda"
+    whisper_compute_type: str = "int8"  # "int8", "float16", "float32"
     whisper_beam_size: int = 5
 
     # LLM fallback (Gemini / Vertex AI) for callsign/SID entity mapping
-    llm_model: str = "gemini-3-flash-preview"   # env ASR_LLM_MODEL
-    llm_fallback: bool = True                    # env ASR_LLM_FALLBACK
+    llm_model: str = "gemini-3-flash-preview"  # env ASR_LLM_MODEL
+    llm_fallback: bool = True  # env ASR_LLM_FALLBACK
 
     # Service
     request_timeout: float = 30.0

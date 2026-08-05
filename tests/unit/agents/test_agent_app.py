@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 
 from agents.common.agent_app import AgentAppConfig, create_app
 
-
 DEL_CONFIG = AgentAppConfig(
     label="DEL",
     role="delivery",
@@ -41,9 +40,7 @@ def test_run_forwards_context_positionally_and_returns_the_data_key():
     seen = {}
 
     def run_agent(session_id, message, flight_plan=None, atis=None):
-        seen.update(
-            session_id=session_id, message=message, flight_plan=flight_plan, atis=atis
-        )
+        seen.update(session_id=session_id, message=message, flight_plan=flight_plan, atis=atis)
         return {"reply": "Cleared to LEPA", "clearance_data": {"squawk": "2341"}}
 
     with _client(DEL_CONFIG, run_agent) as client:

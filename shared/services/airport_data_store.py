@@ -3,8 +3,8 @@ import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional, cast
-import redis
 
+import redis
 
 _PREFIX = "airport:current"
 
@@ -64,8 +64,12 @@ class AirportDataStore:
         timestamp = self._r.get(f"{_PREFIX}:timestamp")
 
         keys = [
-            "nodes", "edges", "stands",
-            "runways", "traffic_patterns", "airport_info",
+            "nodes",
+            "edges",
+            "stands",
+            "runways",
+            "traffic_patterns",
+            "airport_info",
             "com_frequencies",
         ]
 
@@ -142,12 +146,15 @@ class AirportDataStore:
         Create a new training session and store its metadata in Redis.
         """
         session_id = str(uuid.uuid4())
-        self._r.hset(self._SESSION_KEY, mapping={
-            "session_id": session_id,
-            "airport_icao": airport_icao.upper(),
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "aircraft_count": str(aircraft_count),
-        })
+        self._r.hset(
+            self._SESSION_KEY,
+            mapping={
+                "session_id": session_id,
+                "airport_icao": airport_icao.upper(),
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "aircraft_count": str(aircraft_count),
+            },
+        )
         return session_id
 
     def end_session(self) -> None:

@@ -1,27 +1,25 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
-
-from models.schemas import (
-    ATISOptions,
-    ATISRequest,
-    ATISResponse,
-    CloudLayer,
-    HealthResponse,
-    MetarResponse,
-)
 from core.atis_generator import ATISGenerator
+from core.database.connection import check_connection, get_db
+from core.database.repositories.atis import ATISRepository
 from core.metar_taf_fetcher import (
     NoWeatherDataError,
     WeatherUpstreamError,
     get_metar,
     get_taf,
 )
-from core.database.connection import get_db, check_connection
-from core.database.repositories.atis import ATISRepository
+from fastapi import APIRouter, Depends, HTTPException, Query
+from models.schemas import (
+    ATISOptions,
+    ATISResponse,
+    CloudLayer,
+    HealthResponse,
+    MetarResponse,
+)
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +39,7 @@ async def health_check():
     """Health check endpoint"""
     db_ok = check_connection()
     return HealthResponse(
-        status="healthy" if db_ok else "degraded",
-        service="weather_service",
-        version="1.0.0",
-        db_connected=db_ok
+        status="healthy" if db_ok else "degraded", service="weather_service", version="1.0.0", db_connected=db_ok
     )
 
 
@@ -64,9 +59,7 @@ async def generate_atis(
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except MALFORMED_PAYLOAD_ERRORS:
         logger.exception("Malformed METAR payload while generating ATIS for %s", icao_code)
-        raise HTTPException(
-            status_code=502, detail=f"Malformed METAR data for {icao_code.upper()}"
-        )
+        raise HTTPException(status_code=502, detail=f"Malformed METAR data for {icao_code.upper()}")
 
     if not options.preview:
         try:
@@ -90,11 +83,7 @@ async def get_latest_atis(icao_code: str, db: Session = Depends(get_db)):
 
 
 @router.get("/atis/{icao_code}/history", response_model=list[ATISResponse], tags=["ATIS"])
-async def get_atis_history(
-    icao_code: str,
-    limit: int = Query(10, ge=1, le=100),
-    db: Session = Depends(get_db)
-):
+async def get_atis_history(icao_code: str, limit: int = Query(10, ge=1, le=100), db: Session = Depends(get_db)):
     """Get ATIS history for an airport"""
     repo = ATISRepository(db)
     models = repo.get_all_by_icao(icao_code, limit=limit)
@@ -109,7 +98,7 @@ async def delete_atis_by_airport(icao_code: str, db: Session = Depends(get_db)):
     return {"deleted_count": count, "icao_code": icao_code.upper()}
 
 
-#  METAR 
+#  METAR
 @router.get("/metar/{icao_code}", response_model=MetarResponse, tags=["METAR"])
 async def get_metar_data(icao_code: str):
     """Fetch current METAR for an airport"""
@@ -170,13 +159,11 @@ async def get_metar_data(icao_code: str):
             temperature_c=int(metar.get("temp", 15)),
             dewpoint_c=int(metar.get("dewp", 10)),
             qnh_hpa=qnh,
-            flight_category=flight_cat
+            flight_category=flight_cat,
         )
     except MALFORMED_PAYLOAD_ERRORS:
         logger.exception("Malformed METAR payload for %s", icao_code)
-        raise HTTPException(
-            status_code=502, detail=f"Malformed METAR data for {icao_code.upper()}"
-        )
+        raise HTTPException(status_code=502, detail=f"Malformed METAR data for {icao_code.upper()}")
 
 
 @router.get("/metar/{icao_code}/raw", tags=["METAR"])
@@ -189,7 +176,7 @@ async def get_metar_raw(icao_code: str):
     return {"icao_code": icao_code.upper(), "raw_metar": data.get("data", "")}
 
 
-#  TAF 
+#  TAF
 @router.get("/taf/{icao_code}", tags=["TAF"])
 async def get_taf_data(icao_code: str):
     """Fetch TAF for an airport"""

@@ -1,11 +1,11 @@
+import logging
 import os
 import sys
-import logging
 from pathlib import Path
 
+import httpx
 import redis as redis_lib
 from fastapi import APIRouter, HTTPException, Request
-import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -24,20 +24,14 @@ else:
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from airport_graph_builder import AirportMapVisualizer
 from airport_data_fetcher import XPlaneAirportDownloader
+from airport_graph_builder import AirportMapVisualizer
 
 # Cache parsed airport graphs: { "ICAO": graph_data_dict }
 _airport_graph_cache: dict = {}
 
-FLIGHT_PLAN_URL = os.getenv(
-    "FLIGHT_PLAN_SERVICE_URL",
-    "http://airport_flight_plan:8000"
-)
-WEATHER_URL = os.getenv(
-    "WEATHER_SERVICE_URL",
-    "http://airport_weather:8000"
-)
+FLIGHT_PLAN_URL = os.getenv("FLIGHT_PLAN_SERVICE_URL", "http://airport_flight_plan:8000")
+WEATHER_URL = os.getenv("WEATHER_SERVICE_URL", "http://airport_weather:8000")
 
 current_airport = {"icao": "LEST"}
 
@@ -58,7 +52,7 @@ async def get_airport():
 @router.post("/airport")
 async def set_airport(data: dict):
     """Set current airport ICAO (called by X-Plane plugin)"""
-    current_airport['icao'] = data["icao"]
+    current_airport["icao"] = data["icao"]
     return current_airport
 
 
@@ -162,16 +156,12 @@ async def get_weather():
     """Proxy: fetch METAR for current airport"""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            resp = await client.get(
-                f"{WEATHER_URL}/api/v1/weather/metar/{current_airport['icao']}"
-            )
+            resp = await client.get(f"{WEATHER_URL}/api/v1/weather/metar/{current_airport['icao']}")
             resp.raise_for_status()
             return resp.json()
         except httpx.HTTPError as e:
             logger.error("Failed to fetch weather: %s", e)
-            raise HTTPException(
-                status_code=502, detail="Weather service unavailable"
-            )
+            raise HTTPException(status_code=502, detail="Weather service unavailable")
 
 
 @router.get("/taf")
@@ -179,16 +169,12 @@ async def get_taf():
     """Proxy: fetch raw TAF for current airport"""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            resp = await client.get(
-                f"{WEATHER_URL}/api/v1/weather/taf/{current_airport['icao']}/raw"
-            )
+            resp = await client.get(f"{WEATHER_URL}/api/v1/weather/taf/{current_airport['icao']}/raw")
             resp.raise_for_status()
             return resp.json()
         except httpx.HTTPError as e:
             logger.error("Failed to fetch TAF: %s", e)
-            raise HTTPException(
-                status_code=502, detail="Weather service unavailable"
-            )
+            raise HTTPException(status_code=502, detail="Weather service unavailable")
 
 
 @router.get("/atis")
@@ -196,16 +182,12 @@ async def get_atis():
     """Proxy: fetch latest ATIS for current airport"""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            resp = await client.get(
-                f"{WEATHER_URL}/api/v1/weather/atis/{current_airport['icao']}/latest"
-            )
+            resp = await client.get(f"{WEATHER_URL}/api/v1/weather/atis/{current_airport['icao']}/latest")
             resp.raise_for_status()
             return resp.json()
         except httpx.HTTPError as e:
             logger.error("Failed to fetch ATIS: %s", e)
-            raise HTTPException(
-                status_code=502, detail="Weather service unavailable"
-            )
+            raise HTTPException(status_code=502, detail="Weather service unavailable")
 
 
 @router.post("/atis/generate")
@@ -247,9 +229,7 @@ async def generate_atis(data: dict):
             return resp.json()
         except httpx.HTTPError as e:
             logger.error("Failed to generate ATIS: %s", e)
-            raise HTTPException(
-                status_code=502, detail="Weather service unavailable"
-            )
+            raise HTTPException(status_code=502, detail="Weather service unavailable")
 
 
 @router.get("/aircraft/positions")
@@ -277,15 +257,17 @@ async def get_aircraft_positions():
         if not h:
             continue
         try:
-            out.append({
-                "registration": reg,
-                "callsign": h.get("callsign", reg),
-                "latitude": float(h.get("latitude", 0.0) or 0.0),
-                "longitude": float(h.get("longitude", 0.0) or 0.0),
-                "heading": float(h.get("heading", 0.0) or 0.0),
-                "ground_speed": float(h.get("ground_speed", 0.0) or 0.0),
-                "phase": h.get("phase", ""),
-            })
+            out.append(
+                {
+                    "registration": reg,
+                    "callsign": h.get("callsign", reg),
+                    "latitude": float(h.get("latitude", 0.0) or 0.0),
+                    "longitude": float(h.get("longitude", 0.0) or 0.0),
+                    "heading": float(h.get("heading", 0.0) or 0.0),
+                    "ground_speed": float(h.get("ground_speed", 0.0) or 0.0),
+                    "phase": h.get("phase", ""),
+                }
+            )
         except (TypeError, ValueError):
             continue
     return out
@@ -304,6 +286,7 @@ _RUNWAY_17_LON = -8.42033176
 
 def _haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     import math
+
     R = 6371000.0
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
@@ -370,7 +353,7 @@ async def update_strip_state(aircraft_reg: str, data: dict):
         "APPROACH": "ARRIVALS",
         "approach": "ARRIVALS",
         "short_final": "ARRIVALS",
-        "LANDED":   "ARRIVALS",
+        "LANDED": "ARRIVALS",
         "landing_roll": "ARRIVALS",
         "VACATING": "ARRIVALS",
         "vacating": "ARRIVALS",

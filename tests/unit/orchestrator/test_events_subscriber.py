@@ -11,8 +11,6 @@ from __future__ import annotations
 import json
 
 import pytest
-
-import session_log
 from api.events_subscriber import _CHAT_CHANNEL, EventsSubscriber
 
 
@@ -22,9 +20,7 @@ def _capture_events(monkeypatch):
     captured = []
 
     def _capture(sid, registration, event, extra=None):
-        captured.append(
-            {"sid": sid, "registration": registration, "event": event, "extra": extra}
-        )
+        captured.append({"sid": sid, "registration": registration, "event": event, "extra": extra})
 
     # Patch where events_subscriber imports it
     import api.events_subscriber as es
@@ -53,9 +49,7 @@ def session_inactive(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-async def test_handle_chat_message_calls_append_event_with_text(
-    session_active, _capture_events
-):
+async def test_handle_chat_message_calls_append_event_with_text(session_active, _capture_events):
     sub = EventsSubscriber()
     payload = {
         "sender": "controller",
@@ -80,9 +74,7 @@ async def test_handle_chat_message_calls_append_event_with_text(
     assert ev["extra"]["sender"] == "controller"
 
 
-async def test_handle_chat_message_with_kind_missing_defaults_to_chat(
-    session_active, _capture_events
-):
+async def test_handle_chat_message_with_kind_missing_defaults_to_chat(session_active, _capture_events):
     msg = {
         "type": "message",
         "channel": _CHAT_CHANNEL,
@@ -92,9 +84,7 @@ async def test_handle_chat_message_with_kind_missing_defaults_to_chat(
     assert _capture_events[0]["event"] == "chat"
 
 
-async def test_handle_move_event_extracts_registration_from_channel(
-    session_active, _capture_events
-):
+async def test_handle_move_event_extracts_registration_from_channel(session_active, _capture_events):
     msg = {
         "type": "pmessage",
         "channel": "aircraft:EC-MIG:move_events",
@@ -108,15 +98,11 @@ async def test_handle_move_event_extracts_registration_from_channel(
     assert ev["extra"] == {"runway": "17"}
 
 
-async def test_handle_move_event_strips_event_and_ts_from_extra(
-    session_active, _capture_events
-):
+async def test_handle_move_event_strips_event_and_ts_from_extra(session_active, _capture_events):
     msg = {
         "type": "pmessage",
         "channel": "aircraft:EC-MIG:move_events",
-        "data": json.dumps(
-            {"event": "request_landing", "ts": 1234.5, "dme_nm": 4.0}
-        ),
+        "data": json.dumps({"event": "request_landing", "ts": 1234.5, "dme_nm": 4.0}),
     }
     await EventsSubscriber()._handle(msg)
     extra = _capture_events[0]["extra"]
@@ -125,9 +111,7 @@ async def test_handle_move_event_strips_event_and_ts_from_extra(
     assert extra["dme_nm"] == 4.0
 
 
-async def test_handle_short_channel_yields_no_registration(
-    session_active, _capture_events
-):
+async def test_handle_short_channel_yields_no_registration(session_active, _capture_events):
     """A channel without three colon-parts must NOT crash, just leave reg=None."""
     msg = {
         "type": "pmessage",
@@ -139,9 +123,7 @@ async def test_handle_short_channel_yields_no_registration(
     assert _capture_events[0]["registration"] is None
 
 
-async def test_handle_invalid_json_in_chat_treats_as_text_payload(
-    session_active, _capture_events
-):
+async def test_handle_invalid_json_in_chat_treats_as_text_payload(session_active, _capture_events):
     """A non-JSON data payload on the chat channel must fall back to {"text": <raw>}."""
     msg = {"type": "message", "channel": _CHAT_CHANNEL, "data": "plain text"}
     await EventsSubscriber()._handle(msg)
@@ -151,9 +133,7 @@ async def test_handle_invalid_json_in_chat_treats_as_text_payload(
     assert ev["extra"]["text"] == "plain text"
 
 
-async def test_handle_no_active_session_returns_early(
-    session_inactive, _capture_events
-):
+async def test_handle_no_active_session_returns_early(session_inactive, _capture_events):
     """When no session is active, _handle returns without recording anything."""
     msg = {
         "type": "message",
@@ -165,9 +145,7 @@ async def test_handle_no_active_session_returns_early(
     assert _capture_events == []
 
 
-async def test_handle_non_string_data_results_in_empty_payload(
-    session_active, _capture_events
-):
+async def test_handle_non_string_data_results_in_empty_payload(session_active, _capture_events):
     """If data is bytes (or anything non-str), payload defaults to {}."""
     msg = {
         "type": "pmessage",

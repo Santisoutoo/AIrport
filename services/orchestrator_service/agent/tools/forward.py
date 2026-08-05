@@ -18,7 +18,6 @@ from typing import Any
 
 import httpx
 from google.adk.tools import ToolContext
-
 from session_log import append_agent_reply
 
 logger = logging.getLogger(__name__)
@@ -93,9 +92,7 @@ def _departure_icao_of(flight_plan: dict | None) -> str:
 
 def _del_context(registration: str) -> dict[str, Any]:
     """Flight plan + ATIS for the DEL agent, which has no state of its own."""
-    flight_plan = _fetch_context(
-        _FLIGHT_PLAN_URL, f"/plans/{registration}", "flight plan", registration
-    )
+    flight_plan = _fetch_context(_FLIGHT_PLAN_URL, f"/plans/{registration}", "flight plan", registration)
     atis = _fetch_context(
         _WEATHER_URL,
         f"/atis/{_departure_icao_of(flight_plan)}",
@@ -118,12 +115,8 @@ def _clearance_context(
     known about the aircraft and no taxi route was computed.
     """
     known = tool_context.state.get("known_aircraft", [])
-    aircraft_data = next(
-        (a for a in known if a.get("registration") == registration), {}
-    )
-    clearance_fields = {
-        k: v for k, v in aircraft_data.items() if k not in _NON_CLEARANCE_KEYS
-    }
+    aircraft_data = next((a for a in known if a.get("registration") == registration), {})
+    clearance_fields = {k: v for k, v in aircraft_data.items() if k not in _NON_CLEARANCE_KEYS}
     # Merge the pre-computed taxi route so the GND agent knows the exact
     # waypoints and can produce a correct pilot readback.
     if taxi_route and taxi_route.get("success"):
@@ -185,9 +178,7 @@ def _call_agent(dep: str, target: str, payload: dict[str, Any]) -> tuple[str, An
 # ---------------------------------------------------------------------------
 
 
-def _record_reply(
-    session_id: str, dep: str, registration: str, reply: str, taxi_data: Any
-) -> None:
+def _record_reply(session_id: str, dep: str, registration: str, reply: str, taxi_data: Any) -> None:
     """Persist the reply for the debrief timeline (fire-and-forget).
 
     Error replies count: an outage the controller heard belongs in the
@@ -234,6 +225,7 @@ def _dispatch_taxi(
     """
     try:
         from shared.services.taxi_router import dispatch_taxi_plan
+
         merged_clearance = {
             "taxi_route": taxi_route,
             "taxi_data": taxi_data,
@@ -251,9 +243,7 @@ def _dispatch_taxi(
         logger.error("[ORCH] taxi dispatch failed for %s: %s", registration, exc)
 
 
-def _write_state(
-    tool_context: ToolContext, reply: str, dep: str, registration: str, clearance_data: Any
-) -> None:
+def _write_state(tool_context: ToolContext, reply: str, dep: str, registration: str, clearance_data: Any) -> None:
     """Publish the outcome to session state — `runner.py` reads these after
     the agent run finishes."""
     tool_context.state["reply"] = reply
@@ -297,8 +287,7 @@ def forward_to_agent(
     session_id = tool_context.state.get("session_id", "")
     target = f"{agent_url}{agent_path}"
 
-    logger.info("[ORCH] forwarding to %s | reg=%s | session=%s | msg=%r",
-                dep, registration, session_id, message[:80])
+    logger.info("[ORCH] forwarding to %s | reg=%s | session=%s | msg=%r", dep, registration, session_id, message[:80])
 
     payload = _build_payload(dep, registration, message, session_id, tool_context, taxi_route)
     reply, clearance_data, taxi_data = _call_agent(dep, target, payload)

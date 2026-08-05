@@ -1,10 +1,10 @@
-from datetime import datetime
-from typing import Optional
 import logging
 import string
+from datetime import datetime
+from typing import Optional
 
-from models.schemas import ATISResponse, CloudLayer
 from core.metar_taf_fetcher import NoWeatherDataError, get_metar
+from models.schemas import ATISResponse, CloudLayer
 
 logger = logging.getLogger(__name__)
 
@@ -91,10 +91,32 @@ AIRPORT_DATA = {
 }
 
 PHONETIC_ALPHABET = [
-    "ALFA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "GOLF", "HOTEL",
-    "INDIA", "JULIET", "KILO", "LIMA", "MIKE", "NOVEMBER", "OSCAR", "PAPA",
-    "QUEBEC", "ROMEO", "SIERRA", "TANGO", "UNIFORM", "VICTOR", "WHISKEY",
-    "XRAY", "YANKEE", "ZULU"
+    "ALFA",
+    "BRAVO",
+    "CHARLIE",
+    "DELTA",
+    "ECHO",
+    "FOXTROT",
+    "GOLF",
+    "HOTEL",
+    "INDIA",
+    "JULIET",
+    "KILO",
+    "LIMA",
+    "MIKE",
+    "NOVEMBER",
+    "OSCAR",
+    "PAPA",
+    "QUEBEC",
+    "ROMEO",
+    "SIERRA",
+    "TANGO",
+    "UNIFORM",
+    "VICTOR",
+    "WHISKEY",
+    "XRAY",
+    "YANKEE",
+    "ZULU",
 ]
 
 WEATHER_DESCRIPTIONS = {
@@ -134,9 +156,9 @@ class ATISGenerator:
     async def generate(
         self,
         icao_code: str,
-        departure_runway = None,
-        arrival_runway = None,
-        approach = None,
+        departure_runway=None,
+        arrival_runway=None,
+        approach=None,
         qfe: Optional[int] = None,
         include_tl: bool = True,
         include_ta: bool = True,
@@ -168,13 +190,9 @@ class ATISGenerator:
 
         # Auto-select runways from wind when not provided by ATC
         if arrival_runway is None and not parsed.get("wind_variable"):
-            arrival_runway = self._select_runway_from_wind(
-                parsed["wind_direction"], airport["runways"]
-            )
+            arrival_runway = self._select_runway_from_wind(parsed["wind_direction"], airport["runways"])
         if departure_runway is None and not parsed.get("wind_variable"):
-            departure_runway = self._select_runway_from_wind(
-                parsed["wind_direction"], airport["runways"]
-            )
+            departure_runway = self._select_runway_from_wind(parsed["wind_direction"], airport["runways"])
 
         # Auto-select approach type for arrival runway when not provided by ATC
         if approach is None and arrival_runway:
@@ -229,7 +247,7 @@ class ATISGenerator:
             transition_altitude=airport["transition_altitude"],
             remarks=remarks,
             raw_metar=parsed["raw_metar"],
-            atis_text=atis_text
+            atis_text=atis_text,
         )
 
     async def _fetch_metar(self, icao_code: str) -> dict:
@@ -284,9 +302,7 @@ class ATISGenerator:
         wx_string = metar_data.get("wxString")
         if wx_string:
             result["weather"] = wx_string
-            result["weather_description"] = WEATHER_DESCRIPTIONS.get(
-                wx_string, wx_string
-            )
+            result["weather_description"] = WEATHER_DESCRIPTIONS.get(wx_string, wx_string)
 
         # Clouds
         clouds = []
@@ -373,8 +389,8 @@ class ATISGenerator:
 
     def _get_default_airport(self, icao_code: str) -> dict:
         """Return default airport data for unknown airports"""
-        #TODO: implement this funcion with apt.dat files
-        
+        # TODO: implement this funcion with apt.dat files
+
         return {
             "name": icao_code,
             "runways": ["09", "27"],
@@ -446,9 +462,7 @@ class ATISGenerator:
             lines.append(f"Clouds {', '.join(cloud_text)}.")
 
         # Temperature
-        lines.append(
-            f"Temperature {parsed['temperature_c']}, dewpoint {parsed['dewpoint_c']}."
-        )
+        lines.append(f"Temperature {parsed['temperature_c']}, dewpoint {parsed['dewpoint_c']}.")
 
         # QNH
         lines.append(f"QNH {parsed['qnh_hpa']} hectopascals.")

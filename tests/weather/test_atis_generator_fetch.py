@@ -34,9 +34,7 @@ def generator() -> ATISGenerator:
 
 @respx.mock
 async def test_fetch_metar_returns_the_first_observation(generator, metar_payload):
-    respx.get(METAR_URL).mock(
-        return_value=httpx.Response(200, json=[metar_payload, {"rawOb": "second"}])
-    )
+    respx.get(METAR_URL).mock(return_value=httpx.Response(200, json=[metar_payload, {"rawOb": "second"}]))
 
     data = await generator._fetch_metar("LEST")
 
