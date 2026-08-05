@@ -249,4 +249,8 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
 ]
-fail_under = 70
+# Real gate, enforced in CI (issue #47). Measured baseline on the branch point
+# for this change: 86.29% (773 statements, 106 missed). The threshold is
+# baseline - 2, rounded down, as a buffer against line-count noise; raise it in
+# follow-up PRs as coverage grows.
+fail_under = 84

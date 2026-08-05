@@ -28,11 +28,10 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra test
 
-      # Coverage is informational for now: --cov-fail-under=0 overrides the
-      # fail_under=70 gate in pyproject.toml so the build never fails on the
-      # coverage number while we establish a baseline.
-      - name: Run test suite (coverage informational)
-        run: uv run pytest --cov --cov-report=xml --cov-report=term --cov-fail-under=0
+      # The coverage gate comes from [tool.coverage.report] fail_under in
+      # pyproject.toml and is enforced here: a drop below it fails the build.
+      - name: Run test suite
+        run: uv run pytest --cov --cov-report=xml --cov-report=term
 
       - name: Upload coverage report
         if: always()
