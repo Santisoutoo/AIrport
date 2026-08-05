@@ -42,6 +42,34 @@ jobs:
           path: coverage.xml
           if-no-files-found: warn
 
+  # Non-blocking on purpose (issue #48): ruff is configured here but the repo
+  # has not been reformatted yet, so this job reports style drift without
+  # gating anything. It becomes blocking in the follow-up PR that applies
+  # `ruff check --fix` + `ruff format` across the codebase.
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install lint tooling
+        run: uv sync --only-group dev
+
+      - name: ruff check
+        continue-on-error: true
+        run: uv run ruff check --output-format=github
+
+      # Reported only, never enforced yet — the repo-wide reformat is a
+      # separate PR so it does not collide with the branches in flight.
+      - name: ruff format (report only)
+        continue-on-error: true
+        run: uv run ruff format --check
+
   # The per-service requirements.txt files are generated from the extras in
   # pyproject.toml; this catches a change to one that was not propagated.
   deps:

@@ -144,8 +144,52 @@ test = [
     "respx>=0.20",
 ]
 
+# Tooling installed for development only; never shipped in a service image.
+# `uv sync` installs this group by default.
+[dependency-groups]
+dev = [
+    "ruff>=0.14",
+]
+
 [tool.setuptools.packages.find]
 include = ["xplane_plugin*"]
+
+# ---------------------------------------------------------------------------
+# Ruff — deliberately lax first pass (issue #48).
+#
+# The goal is a signal, not a wall: the CI lint job is non-blocking and the
+# repo has NOT been reformatted yet. A repo-wide `ruff format` + `ruff check
+# --fix` lands as its own PR once the branches currently in flight are merged,
+# so the diff does not collide with them.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = [
+    "data",
+    "logs",
+    "output",
+    "transcription",
+]
+
+[tool.ruff.lint]
+# pycodestyle (E/W), pyflakes (F), isort (I). Nothing opinionated yet;
+# UP/B/SIM come later, one rule family per PR.
+select = ["E", "W", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Re-export surfaces: names are imported to be part of the public API.
+"**/__init__.py" = ["F401"]
+# The X-Plane plugins run inside the simulator's own interpreter and must
+# patch sys.path before importing anything from the repo.
+"plugins/**" = ["E402"]
+"xplane_plugin/**" = ["E402"]
+# pytest fixtures shadow their own names; conftest patches sys.path too.
+"tests/**" = ["E402", "F811"]
+"**/conftest.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shared", "plugins", "xplane_plugin"]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "services/orchestrator_service", "services/arrival_simulator_service"]

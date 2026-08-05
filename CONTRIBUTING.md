@@ -28,6 +28,24 @@ uv sync --extra analysis # + notebooks, plots and ASR benchmarking
 uv run pytest
 ```
 
+## Linting
+
+[Ruff](https://docs.astral.sh/ruff/) is configured in `pyproject.toml` under
+`[tool.ruff]` and installed with the `dev` dependency group (`uv sync` pulls it
+in by default):
+
+```bash
+uv run ruff check          # lint
+uv run ruff check --fix    # autofix, on the files you touched
+uv run ruff format         # format, on the files you touched
+```
+
+The ruleset is deliberately small for now (`E`, `W`, `F`, `I`) and the CI lint
+job is **non-blocking**: the codebase has not been reformatted yet, so ruff
+reports drift without gating merges. Please do not run `ruff format` or
+`ruff check --fix` across the whole repo in a feature branch — the repo-wide
+pass is its own PR. The job becomes blocking once that lands.
+
 ## Dependency layout
 
 The root `pyproject.toml` is the **single source of truth** for Python
