@@ -36,8 +36,8 @@ class DelClearence:
     lat: float
     lon: float
     squawk: int
-    initial_altitude: int = 6000
     intrumental_departure: str
     runway_in_use: str
     altimeter: float
+    initial_altitude: int = 6000
     

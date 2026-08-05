@@ -11,8 +11,8 @@ class HandOff:
 
 class Frequencies(Enum):
 
-    ATIS: float = 121.980
-    DEL: float = 121.805
-    GND: float = 121.655
-    TWR: float = 118.330
+    ATIS = 121.980
+    DEL = 121.805
+    GND = 121.655
+    TWR = 118.330
     

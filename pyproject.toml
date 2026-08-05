@@ -149,6 +149,7 @@ test = [
 [dependency-groups]
 dev = [
     "ruff>=0.14",
+    "mypy>=1.11",
 ]
 
 [tool.setuptools.packages.find]
@@ -190,6 +191,38 @@ select = ["E", "W", "F", "I"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["shared", "plugins", "xplane_plugin"]
+
+# ---------------------------------------------------------------------------
+# Mypy — gradual adoption, package by package (issue #50).
+#
+# The global settings are lax so type checking never blocks work on modules
+# that have not been annotated yet. Strictness is opted into per package with
+# an override block; `shared/` is the first one because it has the highest
+# fan-in. To add a package, append its module pattern to the strict override
+# below and to the `mypy` invocation in the CI type-check job.
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+# Third-party packages here ship no stubs (google-adk, xplane-airports,
+# faster-whisper, ...); do not fail on that.
+ignore_missing_imports = true
+follow_imports = "silent"
+warn_unused_configs = true
+show_error_codes = true
+pretty = true
+warn_redundant_casts = true
+
+# Strict for shared/ only.
+[[tool.mypy.overrides]]
+module = ["shared.*"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+warn_return_any = true
+warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 pythonpath = [".", "services/orchestrator_service", "services/arrival_simulator_service"]

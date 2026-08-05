@@ -46,6 +46,36 @@ reports drift without gating merges. Please do not run `ruff format` or
 `ruff check --fix` across the whole repo in a feature branch — the repo-wide
 pass is its own PR. The job becomes blocking once that lands.
 
+## Type checking
+
+[Mypy](https://mypy.readthedocs.io/) is configured in `pyproject.toml` under
+`[tool.mypy]` and ships in the same `dev` group:
+
+```bash
+uv run mypy shared
+```
+
+Adoption is **gradual**. The global settings are lax so unannotated modules
+never block work; strictness is opted into one package at a time through a
+`[[tool.mypy.overrides]]` block. `shared/` is strict today and the `typecheck`
+CI job enforces it.
+
+To add a package to the check:
+
+1. Add its module pattern to the `module = ["shared.*"]` list in the strict
+   `[[tool.mypy.overrides]]` block in `pyproject.toml`.
+2. Add the path to the `mypy` invocation in the `typecheck` job of
+   `.github/workflows/ci.yml`.
+3. Run `uv run mypy <path>` and fix what it reports before opening the PR —
+   annotations only, no logic changes.
+
+If you develop the X-Plane plugin locally and want the XPPython3 stubs
+resolved, export `MYPYPATH` instead of committing a machine-specific path:
+
+```bash
+export MYPYPATH="/path/to/X-Plane 12/Resources/plugins/XPPython3"
+```
+
 ## Dependency layout
 
 The root `pyproject.toml` is the **single source of truth** for Python

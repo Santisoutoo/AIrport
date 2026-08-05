@@ -34,7 +34,7 @@ class AircraftState:
 
     timestamp: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.now(timezone.utc).isoformat()
 

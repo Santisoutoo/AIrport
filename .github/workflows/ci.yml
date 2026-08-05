@@ -69,6 +69,25 @@ jobs:
         continue-on-error: true
         run: uv run ruff format --check
 
+  # Blocking, but narrow: only the packages listed below are strict-checked
+  # (see the [[tool.mypy.overrides]] block in pyproject.toml). Widen the scope
+  # one package at a time.
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: mypy
+        run: uv run mypy shared
+
   # The per-service requirements.txt files are generated from the extras in
   # pyproject.toml; this catches a change to one that was not propagated.
   deps:

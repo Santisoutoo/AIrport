@@ -1,4 +1,5 @@
 import random
+from typing import Optional, cast
 
 # ICAO width code ordering for size comparison
 _WIDTH_ORDER = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5}
@@ -50,7 +51,7 @@ class StandAssigner:
 
         return assignments
 
-    def _find_compatible(self, aircraft_type: str, available: list):
+    def _find_compatible(self, aircraft_type: str, available: list) -> Optional[dict]:
         """Find first available stand compatible with this aircraft type."""
         classification = _AIRCRAFT_CLASSIFICATION.get(aircraft_type)
         if classification is None:
@@ -81,6 +82,6 @@ class StandAssigner:
             if not is_ga and stand.get("stand_type", "") != "gate":
                 continue
 
-            return stand
+            return cast(dict, stand)
 
         return None
