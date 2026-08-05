@@ -1,5 +1,4 @@
 import random
-import string
 from datetime import datetime, timedelta
 
 from models.schemas import FlightPlanResponse
@@ -7,6 +6,7 @@ from core.data import (
     AIRCRAFT_DATA, AIRPORT_DATA, DISTANCES, PILOT_NAMES,
     AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX,
 )
+from core.registration import generate_registration
 
 
 class FlightPlanGenerator:
@@ -33,11 +33,11 @@ class FlightPlanGenerator:
             airline = AIRLINE_DATA[airline_icao]
             callsign = self._generate_callsign(airline_icao)
             prefix = AIRLINE_REGISTRATION_PREFIX.get(airline["country"], "EC")
-            aircraft_reg = self._generate_registration(prefix)
+            aircraft_reg = generate_registration(prefix)
             flight_type = "S"  # Scheduled
         else:
             callsign = ""
-            aircraft_reg = self._generate_registration("EC")
+            aircraft_reg = generate_registration("EC")
             flight_type = "G"  # General aviation
 
         # Get aircraft data
@@ -99,13 +99,6 @@ class FlightPlanGenerator:
     def _generate_aircraft_type(self) -> str:
         """Generate random aircraft type"""
         return random.choice(self.aircraft_types)
-
-    def _generate_registration(self, prefix: str = "EC") -> str:
-        """Generate random aircraft registration with country prefix"""
-        letters = ''.join(random.choices(string.ascii_uppercase, k=3))
-        if prefix.endswith("-"):
-            return f"{prefix}{letters}"
-        return f"{prefix}-{letters}"
 
     def _select_airline(self, aircraft_type: str) -> str:
         """Select a random airline that operates the given aircraft type"""

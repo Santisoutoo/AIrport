@@ -16,8 +16,9 @@ Design:
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
 from typing import Iterable, Optional
+
+from utils import fmt_ts as _fmt_ts
 
 # Fallback when the airport has no parsed COM frequencies in Redis. Same
 # values as shared.models.communications.Frequencies — duplicated here to
@@ -141,19 +142,6 @@ def _expected_for(service: Optional[str], com_frequencies: list[dict]) -> Option
             except (TypeError, ValueError, KeyError):
                 continue
     return _DEFAULT_FREQS_MHZ.get(service)
-
-
-def _fmt_ts(ts: float | str | None) -> str:
-    if ts is None:
-        return "--:--:--"
-    try:
-        if isinstance(ts, str):
-            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        else:
-            dt = datetime.fromtimestamp(float(ts), tz=timezone.utc)
-        return dt.strftime("%H:%M:%S")
-    except (ValueError, TypeError):
-        return "--:--:--"
 
 
 def audit_frequencies(
