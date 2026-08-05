@@ -1,2 +1,11 @@
-sqlalchemy==2.0.25
-psycopg2-binary==2.9.9
+# GENERATED FILE -- DO NOT EDIT.
+#
+# Source of truth: root pyproject.toml, extras: service-core, flight-plan
+# Regenerate with: python scripts/sync_requirements.py
+
+fastapi>=0.111,<1.0
+uvicorn[standard]>=0.27,<1.0
+pydantic>=2.5,<3
+sqlalchemy>=2.0,<3
+psycopg2-binary>=2.9
+httpx>=0.26,<1.0

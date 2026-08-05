@@ -1,6 +1,11 @@
-fastapi
-uvicorn[standard]
-python-multipart
-python-dotenv
-httpx
-pydantic
+# GENERATED FILE -- DO NOT EDIT.
+#
+# Source of truth: root pyproject.toml, extras: service-core, pilots-communication
+# Regenerate with: python scripts/sync_requirements.py
+
+fastapi>=0.111,<1.0
+uvicorn[standard]>=0.27,<1.0
+pydantic>=2.5,<3
+python-multipart>=0.0.9
+python-dotenv>=1.0
+httpx>=0.26,<1.0

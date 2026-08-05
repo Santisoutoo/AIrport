@@ -1,9 +1,14 @@
-fastapi
-uvicorn[standard]
-httpx
-pydantic
-sqlalchemy
-psycopg2-binary
-redis
-google-adk
-networkx
+# GENERATED FILE -- DO NOT EDIT.
+#
+# Source of truth: root pyproject.toml, extras: service-core, orchestrator
+# Regenerate with: python scripts/sync_requirements.py
+
+fastapi>=0.111,<1.0
+uvicorn[standard]>=0.27,<1.0
+pydantic>=2.5,<3
+httpx>=0.26,<1.0
+sqlalchemy>=2.0,<3
+psycopg2-binary>=2.9
+redis>=5.0,<7
+networkx>=3.0,<4
+google-adk>=1.0
