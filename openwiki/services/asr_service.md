@@ -44,6 +44,12 @@ the caller supplied as two extra sentences ("Active callsigns: ...", "Expected S
 `use_initial_prompt=False` suppresses the prompt regardless of mode, kept for backward
 compatibility.
 
+All of those switches arrive as multipart form fields alongside the audio, and they are grouped in
+`TranscribeOptions` ([`api/schemas.py`](../../services/asr_service/api/schemas.py)) rather than
+listed one by one on the handler; `audio` stays a plain `UploadFile`. The model also owns the
+JSON-array-or-CSV parsing of `session_callsigns`/`session_sids` (`options.callsigns`,
+`options.sids`). Field names, defaults and the multipart contract are unchanged.
+
 ## The correction pipeline
 
 `api/routes.py` hands the raw Whisper string to

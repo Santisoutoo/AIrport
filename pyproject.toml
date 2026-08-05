@@ -105,7 +105,6 @@ weather = [
     "sqlalchemy>=2.0,<3",
     "psycopg2-binary>=2.9",
     "httpx>=0.26,<1.0",
-    "requests>=2.31,<3",
 ]
 
 pilots-communication = [

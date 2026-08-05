@@ -20,10 +20,18 @@ aviationweather.gov directly.
 ## From METAR to ATIS
 
 Two thin layers sit around one real upstream API. `core/metar_taf_fetcher.py` is a small,
-key-less client with a 10 s timeout that hits `/api/data/metar` and `/api/data/taf` on
-aviationweather.gov; `api/routes.py` exposes both as pass-through endpoints
-(`/metar/{icao}`, `/metar/{icao}/raw`, `/taf/{icao}`, `/taf/{icao}/raw`) that reshape the JSON —
-or hand back the raw string — without ever touching the database.
+key-less **async** client — one shared `httpx.AsyncClient` with a 10 s timeout, closed by the
+FastAPI lifespan — that hits `/api/data/metar` and `/api/data/taf` on aviationweather.gov;
+`api/routes.py` exposes both as pass-through endpoints (`/metar/{icao}`, `/metar/{icao}/raw`,
+`/taf/{icao}`, `/taf/{icao}/raw`) that reshape the JSON — or hand back the raw string — without
+ever touching the database.
+
+Upstream failures are typed, not swallowed: the fetcher raises `WeatherUpstreamError`
+(carrying the status the API should answer with — 502 for an unreachable host, a bad status or an
+undecodable body; 504 for a timeout) and `NoWeatherDataError` when the upstream is healthy but has
+no observation for that airport. `routes.py` maps them to 502/504/404 respectively, and turns a
+payload it cannot parse into a 502 rather than a 500 — an outage upstream is never reported as a
+bug here.
 
 The real work happens one layer up, in `core/atis_generator.py`. `ATISGenerator.generate()`
 fetches the current METAR for the requested ICAO and parses wind direction/speed/gust,
@@ -37,7 +45,10 @@ LEVC, LEAL, LEZL, LEMG); anything else falls back to a generic two-runway defaul
 five-step lookup for transition level — FL65 when pressure is high, stepping up to FL90 as QNH
 drops below 978 hPa — and an in-memory counter per ICAO hands out a sequential ATIS letter with
 its phonetic name ("information ALFA"), wrapping back to A after Z. ATC can override the
-auto-picked runway, approach, QFE and remarks through query params on `GET /atis/{icao}`; a
+auto-picked runway, approach, QFE and remarks through query params on `GET /atis/{icao}` — they are
+grouped in the `ATISOptions` model
+([`models/schemas.py`](../../services/weather_service/models/schemas.py)) and bound with
+`Depends(ATISOptions.as_query)`, so the query string itself is unchanged; a
 `preview=true` flag runs the same generation without saving to PostgreSQL or advancing the letter —
 the HMI's own `/atis/generate` proxy exposes that same flag to the ATC-facing form.
 

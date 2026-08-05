@@ -1,12 +1,12 @@
-import json
 import logging
 import os
 import time
 
 import httpx
-from fastapi import APIRouter, Form, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File
 
 from . import transcribe_service
+from .schemas import TranscribeOptions
 from core.config import get_settings, AVAILABLE_MODELS
 from core.postprocess import postprocess_transcription, FUZZY_THRESHOLD
 from core.llm_postprocess import llm_map_entities
@@ -40,23 +40,6 @@ def get_config():
     return get_settings().model_dump()
 
 
-def _parse_list_field(raw: str | None) -> list[str]:
-    """Parse a Form field that may be a JSON array (["A", "B"]) or a CSV string ("A,B")."""
-    if not raw:
-        return []
-    raw = raw.strip()
-    if not raw:
-        return []
-    if raw.startswith("["):
-        try:
-            parsed = json.loads(raw)
-            if isinstance(parsed, list):
-                return [str(v).strip() for v in parsed if str(v).strip()]
-        except json.JSONDecodeError:
-            logger.warning("[ASR] could not parse '%s' as JSON list — falling back to CSV", raw)
-    return [v.strip() for v in raw.split(",") if v.strip()]
-
-
 def _build_initial_prompt(
     context_mode: str, session_callsigns: list[str], session_sids: list[str],
 ) -> str | None:
@@ -81,31 +64,26 @@ def _build_initial_prompt(
 @router.post("/transcribe")
 async def transcribe(
     audio: UploadFile = File(...),
-    session_id: str = Form(""),
-    apply_corrections: bool = Form(True),
-    use_initial_prompt: bool = Form(True),
-    context_mode: str = Form("generic"),
-    session_callsigns: str | None = Form(None),
-    session_sids: str | None = Form(None),
-    llm_fallback: bool | None = Form(None),
+    options: TranscribeOptions = Depends(TranscribeOptions.as_form),
 ):
     audio_bytes = await audio.read()
     filename = audio.filename or "audio.webm"
     content_type = (audio.content_type or "audio/webm").split(";")[0].strip()
 
-    callsigns_list = _parse_list_field(session_callsigns)
-    sids_list = _parse_list_field(session_sids)
+    callsigns_list = options.callsigns
+    sids_list = options.sids
 
     # use_initial_prompt=False keeps overriding everything (backward compatible
     # with the pre-existing flag); otherwise the prompt follows context_mode.
     initial_prompt = (
-        _build_initial_prompt(context_mode, callsigns_list, sids_list)
-        if use_initial_prompt else None
+        _build_initial_prompt(options.context_mode, callsigns_list, sids_list)
+        if options.use_initial_prompt else None
     )
 
     logger.info(
         "[ASR] transcribe: %d bytes, file=%s, ct=%s, corrections=%s, context_mode=%s",
-        len(audio_bytes), filename, content_type, apply_corrections, context_mode,
+        len(audio_bytes), filename, content_type,
+        options.apply_corrections, options.context_mode,
     )
 
     raw_text, duration_s = await transcribe_service.transcribe_raw(
@@ -114,7 +92,7 @@ async def transcribe(
 
     cfg = get_settings()
 
-    if apply_corrections:
+    if options.apply_corrections:
         steps = postprocess_transcription(
             raw_text,
             session_callsigns=callsigns_list or None,
@@ -138,7 +116,7 @@ async def transcribe(
     # LLM fallback — only in session mode, when enabled, when we actually have
     # session lists AND the deterministic pass could not confidently resolve an
     # entity we have a list for (callsign, or SID if session SIDs were given).
-    llm_enabled = cfg.llm_fallback if llm_fallback is None else llm_fallback
+    llm_enabled = cfg.llm_fallback if options.llm_fallback is None else options.llm_fallback
     cs_unresolved = bool(callsigns_list) and (
         steps["cs_fuzzy_candidate"] is None or steps["cs_fuzzy_score"] < FUZZY_THRESHOLD
     )
@@ -150,8 +128,8 @@ async def transcribe(
     llm_applied = False
     llm_latency_s = 0.0
     if (
-        apply_corrections
-        and context_mode == "session"
+        options.apply_corrections
+        and options.context_mode == "session"
         and llm_enabled
         and (callsigns_list or sids_list)
         and deterministic_failed
@@ -174,7 +152,7 @@ async def transcribe(
         "postprocess_steps": steps,
         "duration_s": duration_s,
         "model": cfg.hf_model,
-        "context_mode": context_mode,
+        "context_mode": options.context_mode,
         "llm_applied": llm_applied,
         "llm_latency_s": llm_latency_s,
     }
@@ -185,7 +163,7 @@ async def transcribe(
             async with httpx.AsyncClient(timeout=60) as client:
                 dispatch_resp = await client.post(
                     f"{_ORCHESTRATOR_URL}/dispatch",
-                    json={"session_id": session_id, "message": final_text},
+                    json={"session_id": options.session_id, "message": final_text},
                 )
                 dispatch_resp.raise_for_status()
                 dispatch_data = dispatch_resp.json()
