@@ -162,6 +162,7 @@ service-core = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 test = [
+    { name = "jiwer" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -200,6 +201,7 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'weather'", specifier = ">=0.26,<1.0" },
     { name = "ipykernel", marker = "extra == 'analysis'", specifier = ">=6.0" },
     { name = "jiwer", marker = "extra == 'analysis'", specifier = ">=3.0" },
+    { name = "jiwer", marker = "extra == 'test'", specifier = ">=3.0" },
     { name = "jupyter", marker = "extra == 'analysis'", specifier = ">=1.0" },
     { name = "matplotlib", marker = "extra == 'analysis'", specifier = ">=3.8" },
     { name = "networkx", specifier = ">=3.0,<4" },

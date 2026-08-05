@@ -141,6 +141,9 @@ test = [
     "pytest-mock>=3.12",
     "pytest-cov>=5.0",
     "respx>=0.20",
+    # `agents_evaluation/evaluate_wer.py` imports it at module level, so the
+    # unit tests for that script cannot collect without it.
+    "jiwer>=3.0",
 ]
 
 # Tooling installed for development only; never shipped in a service image.
