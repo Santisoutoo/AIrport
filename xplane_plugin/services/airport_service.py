@@ -96,6 +96,6 @@ class AirportService:
         cls._store = None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     a = AirportService()
     print(a.get_icao())

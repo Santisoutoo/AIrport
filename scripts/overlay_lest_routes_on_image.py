@@ -8,6 +8,7 @@ resulting PNG, adjust CALIBRATION below. Each entry pairs a geographic
 coordinate (longitude, latitude) — taken from LEST_graph.json or from the
 runway thresholds — with the pixel where it appears on the screenshot.
 """
+
 from pathlib import Path
 
 import numpy as np
@@ -40,10 +41,10 @@ GRAPH_JSON = Path("data/airport_data/LEST/LEST_graph.json")
 # image — if the routes look mis-aligned, tweak them.
 CALIBRATION = [
     # (lon,         lat,        px,    py)   ← edit if alignment is off
-    (-8.42033176, 42.91180046,  550,   60),   # RWY 17 threshold — far end on horizon
-    (-8.41094228, 42.88381103, 1500,  900),   # RWY 35 threshold — extrapolated, off-frame SE
-    (-8.41920889, 42.89347487,  340,  430),   # stand 11 — GA apron centre
-    (-8.41854799, 42.89546741,  410,  370),   # stand 19 — GA apron, north of stand 11
+    (-8.42033176, 42.91180046, 550, 60),  # RWY 17 threshold — far end on horizon
+    (-8.41094228, 42.88381103, 1500, 900),  # RWY 35 threshold — extrapolated, off-frame SE
+    (-8.41920889, 42.89347487, 340, 430),  # stand 11 — GA apron centre
+    (-8.41854799, 42.89546741, 410, 370),  # stand 19 — GA apron, north of stand 11
 ]
 
 
@@ -82,17 +83,20 @@ def main():
     print("\nCalibration residuals (pixels):")
     for lon, lat, px, py in CALIBRATION:
         ppx, ppy = project(H, lon, lat)
-        print(f"  ({lon:.5f},{lat:.5f}) -> ({ppx:7.1f},{ppy:7.1f})  "
-              f"target=({px},{py})  err=({ppx-px:+.1f},{ppy-py:+.1f})")
+        print(
+            f"  ({lon:.5f},{lat:.5f}) -> ({ppx:7.1f},{ppy:7.1f})  "
+            f"target=({px},{py})  err=({ppx - px:+.1f},{ppy - py:+.1f})"
+        )
 
     # Compute the three routes (same as figure script)
     routes = [
-        ("Stand 11 -> RWY 35 (directa)", "#2e7d32",
-         g.find_route_from_position(42.89347487, -8.41920889, "35")),
-        ("Stand 11 -> RWY 35 via E1", "#c62828",
-         g.find_route_from_position(42.89347487, -8.41920889, "35", via=["E1"])),
-        ("Stand 19 -> RWY 17", "#1565c0",
-         g.find_route_from_position(42.89546741, -8.41854799, "17")),
+        ("Stand 11 -> RWY 35 (directa)", "#2e7d32", g.find_route_from_position(42.89347487, -8.41920889, "35")),
+        (
+            "Stand 11 -> RWY 35 via E1",
+            "#c62828",
+            g.find_route_from_position(42.89347487, -8.41920889, "35", via=["E1"]),
+        ),
+        ("Stand 19 -> RWY 17", "#1565c0", g.find_route_from_position(42.89546741, -8.41854799, "17")),
     ]
 
     # Draw the underlying taxi graph faintly first
@@ -108,7 +112,7 @@ def main():
             print(f"  SKIP {label}: {r.get('error')}")
             continue
         # Hex to RGBA
-        c = tuple(int(hex_color[i:i + 2], 16) for i in (1, 3, 5)) + (235,)
+        c = tuple(int(hex_color[i : i + 2], 16) for i in (1, 3, 5)) + (235,)
         pts = []
         for nid in r["path_node_ids"]:
             n = g.graph.nodes[nid]
@@ -117,11 +121,15 @@ def main():
         # Markers at start and end
         draw.ellipse(
             [pts[0][0] - 9, pts[0][1] - 9, pts[0][0] + 9, pts[0][1] + 9],
-            fill=c, outline=(255, 255, 255, 255), width=2,
+            fill=c,
+            outline=(255, 255, 255, 255),
+            width=2,
         )
         draw.ellipse(
             [pts[-1][0] - 9, pts[-1][1] - 9, pts[-1][0] + 9, pts[-1][1] + 9],
-            fill=c, outline=(255, 255, 255, 255), width=2,
+            fill=c,
+            outline=(255, 255, 255, 255),
+            width=2,
         )
 
     # Legend top-right
@@ -129,15 +137,13 @@ def main():
     pad = 8
     line_h = 32
     draw.rectangle(
-        [legend_x - pad, legend_y - pad,
-         legend_x + 370, legend_y + line_h * len(routes) + pad],
+        [legend_x - pad, legend_y - pad, legend_x + 370, legend_y + line_h * len(routes) + pad],
         fill=(0, 0, 0, 170),
     )
     for i, (label, hex_color, _) in enumerate(routes):
-        c = tuple(int(hex_color[i_:i_ + 2], 16) for i_ in (1, 3, 5)) + (255,)
+        c = tuple(int(hex_color[i_ : i_ + 2], 16) for i_ in (1, 3, 5)) + (255,)
         y = legend_y + i * line_h
-        draw.line([(legend_x, y + 14), (legend_x + 50, y + 14)],
-                  fill=c, width=6)
+        draw.line([(legend_x, y + 14), (legend_x + 50, y + 14)], fill=c, width=6)
         draw.text((legend_x + 60, y + 4), label, fill=(255, 255, 255, 255))
 
     out = Image.alpha_composite(img, overlay)

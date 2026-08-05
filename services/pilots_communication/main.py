@@ -43,7 +43,6 @@ async def process(
     filename = audio.filename or "audio.webm"
 
     async with httpx.AsyncClient(timeout=60.0) as client:
-
         # 2. Transcribe
         try:
             transcription_resp = await client.post(

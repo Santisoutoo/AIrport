@@ -14,18 +14,18 @@ class AircraftState:
     callsign: str
 
     # Position & orientation
-    latitude: float        # degrees
-    longitude: float       # degrees
-    altitude_msl: float    # feet
-    altitude_agl: float    # feet
-    heading: float         # degrees
-    pitch: float           # degrees
-    roll: float            # degrees
+    latitude: float  # degrees
+    longitude: float  # degrees
+    altitude_msl: float  # feet
+    altitude_agl: float  # feet
+    heading: float  # degrees
+    pitch: float  # degrees
+    roll: float  # degrees
 
     # Speeds
-    ground_speed: float       # knots
-    indicated_airspeed: float # knots
-    vertical_speed: float     # feet per minute
+    ground_speed: float  # knots
+    indicated_airspeed: float  # knots
+    vertical_speed: float  # feet per minute
 
     # State
     on_ground: bool

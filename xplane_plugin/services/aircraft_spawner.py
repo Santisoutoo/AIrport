@@ -8,8 +8,8 @@ class AircraftSpawner:
     """Loads .obj models and places them at stand positions or in the air."""
 
     def __init__(self):
-        self._instances = []   # (instance, obj)
-        self._registry = {}    # {instance, obj, latitude, longitude, true_hdg, aircraft_type}
+        self._instances = []  # (instance, obj)
+        self._registry = {}  # {instance, obj, latitude, longitude, true_hdg, aircraft_type}
         self._probe = None
 
     def spawn(self, assignments: list) -> int:

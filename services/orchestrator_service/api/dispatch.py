@@ -22,15 +22,15 @@ _executor = ThreadPoolExecutor(max_workers=4)
 
 class DispatchRequest(BaseModel):
     session_id: str
-    message: str   # raw Whisper transcription
+    message: str  # raw Whisper transcription
 
 
 class DispatchResponse(BaseModel):
     session_id: str
     reply: str
-    agent: str                          # DEL | GND | TWR
-    aircraft_registration: str | None   # corrected callsign, if found
-    callsign: str | None = None         # operational callsign (e.g. BAW5939); falls back to registration
+    agent: str  # DEL | GND | TWR
+    aircraft_registration: str | None  # corrected callsign, if found
+    callsign: str | None = None  # operational callsign (e.g. BAW5939); falls back to registration
 
 
 @router.post("", response_model=DispatchResponse)
@@ -60,8 +60,7 @@ async def dispatch(req: DispatchRequest, db: Session = Depends(get_db)):
         )
     except Exception as exc:
         logger.error("Orchestrator agent failed: %s", exc)
-        raise HTTPException(
-            status_code=500, detail=f"Orchestrator error: {exc}") from exc
+        raise HTTPException(status_code=500, detail=f"Orchestrator error: {exc}") from exc
 
     try:
         _r = _redis.from_url(

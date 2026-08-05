@@ -4,10 +4,12 @@ These helpers back strict routing (issue #67): `taxiway_subgraph` constrains
 A* to authorized edges and `taxiway_intersections` picks real entry/exit
 nodes between consecutive taxiways in a controller clearance.
 """
+
 import pytest
 
 
 # ---- _edges_by_taxiway index ------------------------------------------------
+
 
 def test_edges_by_taxiway_keys_match_nodes_by_taxiway(airport):
     g = airport.graph
@@ -21,8 +23,7 @@ def test_edges_by_taxiway_edges_exist_in_graph(airport):
     for tw, edges in g._edges_by_taxiway.items():
         for u, v in edges:
             assert g.graph.has_edge(u, v), (
-                f"[{airport.icao}] indexed edge {u}->{v} for taxiway {tw} "
-                "not present in graph"
+                f"[{airport.icao}] indexed edge {u}->{v} for taxiway {tw} not present in graph"
             )
 
 
@@ -35,8 +36,7 @@ def test_edges_by_taxiway_twoway_has_both_directions(airport):
             data = g.graph.edges[u, v]
             if data.get("direction", "twoway").lower() == "twoway":
                 assert (v, u) in edges, (
-                    f"[{airport.icao}] twoway edge {u}->{v} of {tw} missing "
-                    "reverse direction in index"
+                    f"[{airport.icao}] twoway edge {u}->{v} of {tw} missing reverse direction in index"
                 )
 
 
@@ -46,24 +46,20 @@ def test_edges_by_taxiway_endpoints_match_node_index(airport):
     g = airport.graph
     for tw, edges in g._edges_by_taxiway.items():
         endpoint_nodes = {n for uv in edges for n in uv}
-        assert endpoint_nodes == set(g._nodes_by_taxiway[tw]), (
-            f"[{airport.icao}] endpoint mismatch for taxiway {tw}"
-        )
+        assert endpoint_nodes == set(g._nodes_by_taxiway[tw]), f"[{airport.icao}] endpoint mismatch for taxiway {tw}"
 
 
 # ---- taxiway_subgraph -------------------------------------------------------
+
 
 def test_taxiway_subgraph_contains_only_own_edges(airport):
     g = airport.graph
     for tw in airport.expected_taxiway_subset:
         sub = g.taxiway_subgraph(tw)
-        assert sub.number_of_edges() > 0, (
-            f"[{airport.icao}] empty subgraph for known taxiway {tw}"
-        )
+        assert sub.number_of_edges() > 0, f"[{airport.icao}] empty subgraph for known taxiway {tw}"
         for u, v, data in sub.edges(data=True):
             assert str(data.get("taxiway_id", "")).upper() == tw, (
-                f"[{airport.icao}] foreign edge {u}->{v} "
-                f"({data.get('taxiway_id')!r}) in subgraph of {tw}"
+                f"[{airport.icao}] foreign edge {u}->{v} ({data.get('taxiway_id')!r}) in subgraph of {tw}"
             )
 
 
@@ -81,6 +77,7 @@ def test_taxiway_subgraph_unknown_taxiway_is_empty(airport):
 
 
 # ---- taxiway_intersections --------------------------------------------------
+
 
 def _adjacent_taxiway_pair(graph):
     """Find a real pair of distinct taxiways sharing at least one node."""
@@ -114,7 +111,7 @@ def test_taxiway_intersections_non_touching_pair_empty(airport):
     tws = list(airport.expected_taxiway_subset)
     for i, a in enumerate(tws):
         set_a = set(g._nodes_by_taxiway[a])
-        for b in tws[i + 1:]:
+        for b in tws[i + 1 :]:
             if set_a.isdisjoint(g._nodes_by_taxiway[b]):
                 assert g.taxiway_intersections(a, b) == []
                 return

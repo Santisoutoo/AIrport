@@ -80,11 +80,7 @@ def test_register_arrival_idempotent_on_repeat_call(client, db_session):
         "/api/v1/orchestrator/arrivals/register",
         json={"aircraft_registration": "EC-X", "runway_in_use": "35"},
     )
-    rows = (
-        db_session.query(AircraftClearance)
-        .filter_by(aircraft_registration="EC-X")
-        .all()
-    )
+    rows = db_session.query(AircraftClearance).filter_by(aircraft_registration="EC-X").all()
     assert len(rows) == 1
     assert rows[0].runway_in_use == "35"
 

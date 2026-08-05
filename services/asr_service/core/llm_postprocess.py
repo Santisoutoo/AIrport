@@ -28,8 +28,8 @@ _SYSTEM_PROMPT = (
     "those lists. Do not change, reorder, add or remove anything else: keep all "
     "other words, numbers, frequencies and punctuation exactly as they are. If "
     "no callsign or SID from the lists matches, return the text unchanged. "
-    "Respond with JSON only: {\"text\": <corrected transcription>, "
-    "\"changed\": <true if you replaced anything, otherwise false>}."
+    'Respond with JSON only: {"text": <corrected transcription>, '
+    '"changed": <true if you replaced anything, otherwise false>}.'
 )
 
 _RESPONSE_SCHEMA: dict = {
@@ -48,6 +48,7 @@ def _get_client():
     global _client
     if _client is None:
         from google import genai
+
         # The SDK reads GOOGLE_GENAI_USE_VERTEXAI / GOOGLE_CLOUD_PROJECT /
         # GOOGLE_CLOUD_LOCATION / GOOGLE_APPLICATION_CREDENTIALS from env.
         _client = genai.Client()

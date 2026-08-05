@@ -44,9 +44,7 @@ def _patch_flight_plan_url(monkeypatch, url: str | None):
 
 
 @respx.mock
-def test_fetch_known_aircraft_db_only_returns_clearances(
-    db_session, clearance_factory, fake_redis, monkeypatch
-):
+def test_fetch_known_aircraft_db_only_returns_clearances(db_session, clearance_factory, fake_redis, monkeypatch):
     clearance_factory(registration="EC-MIG", dependency="DEL")
     _patch_redis(monkeypatch, fake_redis)
     _patch_flight_plan_url(monkeypatch, None)
@@ -59,9 +57,7 @@ def test_fetch_known_aircraft_db_only_returns_clearances(
 
 
 @respx.mock
-def test_fetch_known_aircraft_includes_full_clearance_for_gnd(
-    db_session, clearance_factory, fake_redis, monkeypatch
-):
+def test_fetch_known_aircraft_includes_full_clearance_for_gnd(db_session, clearance_factory, fake_redis, monkeypatch):
     clearance_factory(
         registration="EC-MIG",
         dependency="GND",
@@ -84,9 +80,7 @@ def test_fetch_known_aircraft_includes_full_clearance_for_gnd(
 
 
 @respx.mock
-def test_fetch_known_aircraft_DEL_entry_has_no_clearance_fields(
-    db_session, clearance_factory, fake_redis, monkeypatch
-):
+def test_fetch_known_aircraft_DEL_entry_has_no_clearance_fields(db_session, clearance_factory, fake_redis, monkeypatch):
     """For dependency='DEL' the clearance bundle is intentionally omitted."""
     clearance_factory(registration="EC-MIG", dependency="DEL", squawk=4321)
     _patch_redis(monkeypatch, fake_redis)
@@ -104,9 +98,7 @@ def test_fetch_known_aircraft_merges_flight_plan_callsign_into_db_entry(
 ):
     clearance_factory(registration="EC-MIG", dependency="DEL")
     respx.get("http://fp.test/plans").mock(
-        return_value=httpx.Response(
-            200, json=[{"aircraft_registration": "EC-MIG", "callsign": "IBE3421"}]
-        )
+        return_value=httpx.Response(200, json=[{"aircraft_registration": "EC-MIG", "callsign": "IBE3421"}])
     )
     _patch_redis(monkeypatch, fake_redis)
     _patch_flight_plan_url(monkeypatch, "http://fp.test")
@@ -119,9 +111,7 @@ def test_fetch_known_aircraft_merges_flight_plan_callsign_into_db_entry(
 
 
 @respx.mock
-def test_fetch_known_aircraft_redis_adds_unknown_aircraft_as_del(
-    db_session, fake_redis, monkeypatch
-):
+def test_fetch_known_aircraft_redis_adds_unknown_aircraft_as_del(db_session, fake_redis, monkeypatch):
     """An aircraft present only in Redis (not in DB or flight_plan) becomes a DEL entry."""
     fake_redis.sadd("aircraft:active_set", "EC-NEW")
     fake_redis.hset("aircraft:state:EC-NEW", "callsign", "VLG7777")
@@ -154,9 +144,7 @@ def test_fetch_known_aircraft_redis_fills_missing_callsign_for_db_entry(
 
 
 @respx.mock
-def test_fetch_known_aircraft_redis_failure_does_not_crash(
-    db_session, clearance_factory, fake_redis, monkeypatch
-):
+def test_fetch_known_aircraft_redis_failure_does_not_crash(db_session, clearance_factory, fake_redis, monkeypatch):
     clearance_factory(registration="EC-MIG", dependency="DEL")
     fake_redis.fail_next("smembers", times=10)
     _patch_redis(monkeypatch, fake_redis)
@@ -169,9 +157,7 @@ def test_fetch_known_aircraft_redis_failure_does_not_crash(
 
 
 @respx.mock
-def test_fetch_known_aircraft_flight_plan_503_falls_through(
-    db_session, clearance_factory, fake_redis, monkeypatch
-):
+def test_fetch_known_aircraft_flight_plan_503_falls_through(db_session, clearance_factory, fake_redis, monkeypatch):
     clearance_factory(registration="EC-MIG", dependency="DEL")
     respx.get("http://fp.test/plans").mock(return_value=httpx.Response(503))
     _patch_redis(monkeypatch, fake_redis)
@@ -189,9 +175,7 @@ def test_fetch_known_aircraft_flight_plan_503_falls_through(
 
 
 @respx.mock
-def test_run_orchestrator_agent_persists_clearance_when_data_present(
-    db_session, fake_redis, monkeypatch
-):
+def test_run_orchestrator_agent_persists_clearance_when_data_present(db_session, fake_redis, monkeypatch):
     _patch_redis(monkeypatch, fake_redis)
     _patch_flight_plan_url(monkeypatch, None)
 
@@ -227,9 +211,7 @@ def test_run_orchestrator_agent_persists_clearance_when_data_present(
 
 
 @respx.mock
-def test_run_orchestrator_agent_uses_fallback_squawk_when_clearance_missing_fields(
-    db_session, fake_redis, monkeypatch
-):
+def test_run_orchestrator_agent_uses_fallback_squawk_when_clearance_missing_fields(db_session, fake_redis, monkeypatch):
     """When clearance_data only carries partial fields, the unspecified ones
     must fall back to the runner-side defaults (squawk=2000, alt=6000, etc).
 
@@ -262,9 +244,7 @@ def test_run_orchestrator_agent_uses_fallback_squawk_when_clearance_missing_fiel
 
 
 @respx.mock
-def test_run_orchestrator_agent_advances_to_gnd_when_flag_set(
-    db_session, clearance_factory, fake_redis, monkeypatch
-):
+def test_run_orchestrator_agent_advances_to_gnd_when_flag_set(db_session, clearance_factory, fake_redis, monkeypatch):
     """advance_registration_gnd in state must flip the row to dependency='GND'."""
     clearance_factory(registration="EC-MIG", dependency="DEL")
     _patch_redis(monkeypatch, fake_redis)
@@ -298,9 +278,7 @@ def test_run_orchestrator_agent_advances_to_gnd_when_flag_set(
     strict=True,
 )
 @respx.mock
-def test_run_orchestrator_agent_advances_to_twr(
-    db_session, clearance_factory, fake_redis, monkeypatch
-):
+def test_run_orchestrator_agent_advances_to_twr(db_session, clearance_factory, fake_redis, monkeypatch):
     clearance_factory(registration="EC-MIG", dependency="GND")
     _patch_redis(monkeypatch, fake_redis)
     _patch_flight_plan_url(monkeypatch, None)
@@ -331,9 +309,7 @@ def test_run_orchestrator_agent_advances_to_twr(
     strict=True,
 )
 @respx.mock
-def test_run_orchestrator_agent_arrival_advance_to_gnd_creates_row_if_missing(
-    db_session, fake_redis, monkeypatch
-):
+def test_run_orchestrator_agent_arrival_advance_to_gnd_creates_row_if_missing(db_session, fake_redis, monkeypatch):
     """The reverse-handoff fallback: if no row exists yet, upsert with dependency='GND'."""
     _patch_redis(monkeypatch, fake_redis)
     _patch_flight_plan_url(monkeypatch, None)
@@ -351,11 +327,7 @@ def test_run_orchestrator_agent_arrival_advance_to_gnd_creates_row_if_missing(
 
     runner_mod.run_orchestrator_agent("sess-1", "contact ground", db_session)
 
-    row = (
-        db_session.query(AircraftClearance)
-        .filter_by(aircraft_registration="EC-NEW")
-        .one_or_none()
-    )
+    row = db_session.query(AircraftClearance).filter_by(aircraft_registration="EC-NEW").one_or_none()
     assert row is not None
     assert row.dependency == "GND"
 
@@ -382,9 +354,7 @@ def test_run_orchestrator_agent_returns_callsign_from_known_aircraft(
 
 
 @respx.mock
-def test_run_orchestrator_agent_returns_null_callsign_when_no_registration(
-    db_session, fake_redis, monkeypatch
-):
+def test_run_orchestrator_agent_returns_null_callsign_when_no_registration(db_session, fake_redis, monkeypatch):
     """If the agent didn't resolve a registration, callsign is None."""
     _patch_redis(monkeypatch, fake_redis)
     _patch_flight_plan_url(monkeypatch, None)
@@ -401,9 +371,7 @@ def test_run_orchestrator_agent_returns_null_callsign_when_no_registration(
 
 
 @respx.mock
-def test_run_orchestrator_agent_falls_back_to_final_text_when_state_reply_missing(
-    db_session, fake_redis, monkeypatch
-):
+def test_run_orchestrator_agent_falls_back_to_final_text_when_state_reply_missing(db_session, fake_redis, monkeypatch):
     """If the agent ends without setting state['reply'], the final event text is used."""
     _patch_redis(monkeypatch, fake_redis)
     _patch_flight_plan_url(monkeypatch, None)
@@ -416,9 +384,7 @@ def test_run_orchestrator_agent_falls_back_to_final_text_when_state_reply_missin
 
 
 @respx.mock
-def test_run_orchestrator_agent_handles_upsert_exception_gracefully(
-    db_session, fake_redis, monkeypatch
-):
+def test_run_orchestrator_agent_handles_upsert_exception_gracefully(db_session, fake_redis, monkeypatch):
     """A persistence failure during clearance upsert must not crash the request."""
     _patch_redis(monkeypatch, fake_redis)
     _patch_flight_plan_url(monkeypatch, None)

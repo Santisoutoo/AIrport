@@ -180,9 +180,7 @@ def test_upstream_timeout_is_a_504(client):
 @respx.mock
 def test_malformed_upstream_payload_is_a_502_not_a_500(client):
     """A ``null`` reportTime blows up inside the parser; the client sees 502."""
-    respx.get(METAR_URL).mock(
-        return_value=httpx.Response(200, json=[{"rawOb": "LEST", "reportTime": None}])
-    )
+    respx.get(METAR_URL).mock(return_value=httpx.Response(200, json=[{"rawOb": "LEST", "reportTime": None}]))
 
     response = client.get(f"{PREFIX}/atis/LEST")
 
@@ -192,9 +190,7 @@ def test_malformed_upstream_payload_is_a_502_not_a_500(client):
 
 @respx.mock
 def test_malformed_payload_on_the_metar_endpoint_is_a_502(client):
-    respx.get(METAR_URL).mock(
-        return_value=httpx.Response(200, json=[{"rawOb": "LEST", "wdir": "north"}])
-    )
+    respx.get(METAR_URL).mock(return_value=httpx.Response(200, json=[{"rawOb": "LEST", "wdir": "north"}]))
 
     response = client.get(f"{PREFIX}/metar/LEST")
 
@@ -203,9 +199,7 @@ def test_malformed_payload_on_the_metar_endpoint_is_a_502(client):
 
 
 @respx.mock
-def test_database_failure_is_a_500_without_leaking_the_driver_error(
-    client, monkeypatch, metar_payload
-):
+def test_database_failure_is_a_500_without_leaking_the_driver_error(client, monkeypatch, metar_payload):
     respx.get(METAR_URL).mock(return_value=httpx.Response(200, json=[metar_payload]))
 
     class _BrokenRepository(_FakeRepository):

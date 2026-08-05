@@ -16,6 +16,7 @@ Example:
     --audio-root "C:/Users/santi/Documents/personal_projects/pilot-readback-corpus/output" \
     --ref-root   "C:/Users/santi/Documents/personal_projects/pilot-readback-corpus"
 """
+
 import argparse
 import csv
 import json
@@ -53,16 +54,44 @@ DEPS = ["del", "gnd", "twr"]
 _SERVICE_DIR = Path(__file__).resolve().parent.parent / "services" / "asr_service"
 
 _PHON_DIGIT = {
-    "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
-    "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
+    "zero": "0",
+    "one": "1",
+    "two": "2",
+    "three": "3",
+    "four": "4",
+    "five": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
     "niner": "9",
 }
 _PHON_LETTER = {
-    "alpha": "A", "bravo": "B", "charlie": "C", "delta": "D", "echo": "E",
-    "foxtrot": "F", "golf": "G", "hotel": "H", "india": "I", "juliet": "J",
-    "kilo": "K", "lima": "L", "mike": "M", "november": "N", "oscar": "O",
-    "papa": "P", "quebec": "Q", "romeo": "R", "sierra": "S", "tango": "T",
-    "uniform": "U", "victor": "V", "whiskey": "W", "xray": "X", "yankee": "Y",
+    "alpha": "A",
+    "bravo": "B",
+    "charlie": "C",
+    "delta": "D",
+    "echo": "E",
+    "foxtrot": "F",
+    "golf": "G",
+    "hotel": "H",
+    "india": "I",
+    "juliet": "J",
+    "kilo": "K",
+    "lima": "L",
+    "mike": "M",
+    "november": "N",
+    "oscar": "O",
+    "papa": "P",
+    "quebec": "Q",
+    "romeo": "R",
+    "sierra": "S",
+    "tango": "T",
+    "uniform": "U",
+    "victor": "V",
+    "whiskey": "W",
+    "xray": "X",
+    "yankee": "Y",
     "zulu": "Z",
 }
 
@@ -70,13 +99,32 @@ _PHON_LETTER = {
 # corpus (lower-case). Extended/overridden by the service's AIRLINE_ICAO when
 # the import below succeeds.
 _FALLBACK_ICAO = {
-    "ryanair": "RYR", "iberia": "IBE", "lufthansa": "DLH", "speedbird": "BAW",
-    "swiss": "SWR", "easyjet": "EZY", "vueling": "VLG", "aer lingus": "EIN",
-    "norwegian": "NAX", "tap": "TAP", "transavia": "TRA", "volotea": "VOE",
-    "finnair": "FIN", "klm": "KLM", "turkish": "THY", "condor": "CFG",
-    "wizz air": "WZZ", "jet2": "EXS", "air france": "AFR", "brussels": "BEL",
-    "austrian": "AUA", "sas": "SAS", "alitalia": "AZA", "lot": "LOT",
-    "croatia": "CTN", "pegasus": "PGT",
+    "ryanair": "RYR",
+    "iberia": "IBE",
+    "lufthansa": "DLH",
+    "speedbird": "BAW",
+    "swiss": "SWR",
+    "easyjet": "EZY",
+    "vueling": "VLG",
+    "aer lingus": "EIN",
+    "norwegian": "NAX",
+    "tap": "TAP",
+    "transavia": "TRA",
+    "volotea": "VOE",
+    "finnair": "FIN",
+    "klm": "KLM",
+    "turkish": "THY",
+    "condor": "CFG",
+    "wizz air": "WZZ",
+    "jet2": "EXS",
+    "air france": "AFR",
+    "brussels": "BEL",
+    "austrian": "AUA",
+    "sas": "SAS",
+    "alitalia": "AZA",
+    "lot": "LOT",
+    "croatia": "CTN",
+    "pegasus": "PGT",
 }
 
 _HAVE_SERVICE_POSTPROCESS = False
@@ -87,6 +135,7 @@ try:
         sys.path.insert(0, str(_SERVICE_DIR))
     from core.postprocess import AIRLINE_ICAO as _svc_airline_icao  # type: ignore
     from core.postprocess import normalize_reference as _svc_normalize_reference  # type: ignore
+
     _HAVE_SERVICE_POSTPROCESS = True
 except Exception:  # noqa: BLE001 - service stack is optional
     _svc_normalize_reference = None
@@ -104,30 +153,24 @@ _LET_WORD = "|".join(_PHON_LETTER)
 _NW = "(?:" + _NUM_WORD + ")"
 _LW = "(?:" + _LET_WORD + ")"
 # Longest airline names first so "aer lingus" wins over any 1-word prefix.
-_AIRLINE_ALT = "|".join(
-    re.escape(k) for k in sorted(AIRLINE_ICAO, key=len, reverse=True))
+_AIRLINE_ALT = "|".join(re.escape(k) for k in sorted(AIRLINE_ICAO, key=len, reverse=True))
 
-_STATION_RE = re.compile(
-    r"^\s*santiago\s+(?:delivery|ground|tower)\s*,?\s*", re.IGNORECASE)
+_STATION_RE = re.compile(r"^\s*santiago\s+(?:delivery|ground|tower)\s*,?\s*", re.IGNORECASE)
 _CS_RE = re.compile(
     r"(" + _AIRLINE_ALT + r")\s+"
     r"((?:(?:" + _NW + r"|" + _LW + r")\s+){1,4}(?:" + _NW + r"|" + _LW + r"))",
-    re.IGNORECASE)
+    re.IGNORECASE,
+)
 _SID_RE = re.compile(
-    r"\bvia\s+(?:the\s+)?([A-Za-z]{3,})\s+(" + _NUM_WORD + r")\s+("
-    + _LET_WORD + r")\s+departure\b", re.IGNORECASE)
+    r"\bvia\s+(?:the\s+)?([A-Za-z]{3,})\s+(" + _NUM_WORD + r")\s+(" + _LET_WORD + r")\s+departure\b", re.IGNORECASE
+)
 _FREQ_RE = re.compile(
-    r"\b(" + _NW + r"(?:\s+" + _NW + r")*)\s+decimal\s+("
-    + _NW + r"(?:\s+" + _NW + r")*)\b", re.IGNORECASE)
-_RWY_RE = re.compile(
-    r"\brunway\s+(" + _NW + r")\s+(" + _NW + r")(?:\s+(left|right|centre|center))?\b",
-    re.IGNORECASE)
-_SQ_RE = re.compile(
-    r"\b(squawk|QNH)\s+(" + _NW + r"(?:\s+" + _NW + r"){3})\b", re.IGNORECASE)
-_FL_RE = re.compile(
-    r"\bflight level\s+(" + _NW + r"(?:\s+" + _NW + r"){1,2})\b", re.IGNORECASE)
-_TH_RE = re.compile(
-    r"\b(" + _NW + r"(?:\s+" + _NW + r")*)\s+thousand\b", re.IGNORECASE)
+    r"\b(" + _NW + r"(?:\s+" + _NW + r")*)\s+decimal\s+(" + _NW + r"(?:\s+" + _NW + r")*)\b", re.IGNORECASE
+)
+_RWY_RE = re.compile(r"\brunway\s+(" + _NW + r")\s+(" + _NW + r")(?:\s+(left|right|centre|center))?\b", re.IGNORECASE)
+_SQ_RE = re.compile(r"\b(squawk|QNH)\s+(" + _NW + r"(?:\s+" + _NW + r"){3})\b", re.IGNORECASE)
+_FL_RE = re.compile(r"\bflight level\s+(" + _NW + r"(?:\s+" + _NW + r"){1,2})\b", re.IGNORECASE)
+_TH_RE = re.compile(r"\b(" + _NW + r"(?:\s+" + _NW + r")*)\s+thousand\b", re.IGNORECASE)
 _RUNWAY_SIDE = {"left": "L", "right": "R", "centre": "C", "center": "C"}
 
 # Extra out-of-corpus entities so the fuzzy matcher has to discriminate.
@@ -148,8 +191,7 @@ def _phon_code(spoken: str) -> str:
 
 
 def _digits(spoken: str) -> str:
-    return "".join(_PHON_DIGIT[w.lower()] for w in spoken.split()
-                   if w.lower() in _PHON_DIGIT)
+    return "".join(_PHON_DIGIT[w.lower()] for w in spoken.split() if w.lower() in _PHON_DIGIT)
 
 
 def extract_callsign(ref: str) -> str:
@@ -205,8 +247,7 @@ def _fallback_normalize_reference(text: str) -> str:
     t = _SQ_RE.sub(lambda m: m.group(1) + " " + _digits(m.group(2)), t)
     t = _RWY_RE.sub(_rwy_sub, t)
     t = _FL_RE.sub(lambda m: "FL" + _digits(m.group(1)), t)
-    t = _TH_RE.sub(
-        lambda m: str(int(_digits(m.group(1))) * 1000) if _digits(m.group(1)) else m.group(0), t)
+    t = _TH_RE.sub(lambda m: str(int(_digits(m.group(1))) * 1000) if _digits(m.group(1)) else m.group(0), t)
     t = _SID_RE.sub(_sid_sub, t)
     t = _CS_RE.sub(_cs_sub, t)
     return t
@@ -244,11 +285,13 @@ def load_corpus(path: Path) -> dict[str, dict]:
         if not line or line.startswith("#"):
             continue
         if line.startswith("[") and line.endswith("]"):
-            cid = line[1:-1]; ref = rb = None
+            cid = line[1:-1]
+            ref = rb = None
         elif line.startswith("> ") and cid:
             ref = line[2:]
         elif line.startswith("< ") and cid:
-            rb = line[2:]; corpus[cid] = {"ref": ref, "readback": rb}
+            rb = line[2:]
+            corpus[cid] = {"ref": ref, "readback": rb}
     return corpus
 
 
@@ -288,9 +331,11 @@ def wer_breakdown(ref: str, hyp: str) -> dict:
                 sub += 1
             i, j = i - 1, j - 1
         elif i > 0 and dp[i][j] == dp[i - 1][j] + 1:
-            dele += 1; i -= 1
+            dele += 1
+            i -= 1
         else:
-            ins += 1; j -= 1
+            ins += 1
+            j -= 1
     werv = (sub + dele + ins) / n if n else 0.0
     return {"wer": werv, "sub": sub, "dele": dele, "ins": ins, "n_ref": n}
 
@@ -303,9 +348,14 @@ def wer_breakdown(ref: str, hyp: str) -> dict:
 _RETRY_CODES = {429, 500, 502, 503}
 
 
-def transcribe(api_url: str, wav_path: Path, context_mode: str,
-               session_callsigns: str = "", session_sids: str = "",
-               max_retries: int = 5) -> tuple[dict, float]:
+def transcribe(
+    api_url: str,
+    wav_path: Path,
+    context_mode: str,
+    session_callsigns: str = "",
+    session_sids: str = "",
+    max_retries: int = 5,
+) -> tuple[dict, float]:
     boundary = uuid.uuid4().hex
     audio = wav_path.read_bytes()
     body = bytearray()
@@ -323,15 +373,14 @@ def transcribe(api_url: str, wav_path: Path, context_mode: str,
     if session_sids:
         field("session_sids", session_sids)
     body.extend(f"--{boundary}\r\n".encode())
-    body.extend(
-        f'Content-Disposition: form-data; name="audio"; filename="{wav_path.name}"\r\n'.encode())
+    body.extend(f'Content-Disposition: form-data; name="audio"; filename="{wav_path.name}"\r\n'.encode())
     body.extend(b"Content-Type: audio/wav\r\n\r\n")
     body.extend(audio)
     body.extend(f"\r\n--{boundary}--\r\n".encode())
 
     req = urllib.request.Request(
-        api_url, data=bytes(body), method="POST",
-        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        api_url, data=bytes(body), method="POST", headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}
+    )
 
     last_exc: Exception | None = None
     for attempt in range(max_retries):
@@ -387,31 +436,56 @@ def _entity_columns(ref: str, final: str, data: dict) -> dict:
 
 def _blank_row(dep, wav, ref, ctx):
     return {
-        "audio_id": wav.stem, "dep": dep, "wav": wav.name,
-        "audio_dur_s": round(wav_duration(wav), 2), "ref": ref,
-        "ref_normalized": "", "context_mode": ctx,
-        "raw_transcription": "", "final_transcription": "",
-        "duration_s": "", "latency_client_s": "",
-        "wer_raw": "", "sub_raw": "", "del_raw": "", "ins_raw": "", "n_ref": "",
-        "wer_post": "", "cs_canonical": "", "cs_correct": "",
-        "sid_canonical": "", "sid_correct": "", "llm_applied": "", "llm_latency_s": "",
-        "rtf": "", "cost_per_transcription": "", "http_status": "", "error": "",
+        "audio_id": wav.stem,
+        "dep": dep,
+        "wav": wav.name,
+        "audio_dur_s": round(wav_duration(wav), 2),
+        "ref": ref,
+        "ref_normalized": "",
+        "context_mode": ctx,
+        "raw_transcription": "",
+        "final_transcription": "",
+        "duration_s": "",
+        "latency_client_s": "",
+        "wer_raw": "",
+        "sub_raw": "",
+        "del_raw": "",
+        "ins_raw": "",
+        "n_ref": "",
+        "wer_post": "",
+        "cs_canonical": "",
+        "cs_correct": "",
+        "sid_canonical": "",
+        "sid_correct": "",
+        "llm_applied": "",
+        "llm_latency_s": "",
+        "rtf": "",
+        "cost_per_transcription": "",
+        "http_status": "",
+        "error": "",
     }
 
 
-def run_one(api_url, dep, wav, ref, ctx, cost_per_h,
-            session_callsigns="", session_sids="", dry_run=False):
+def run_one(api_url, dep, wav, ref, ctx, cost_per_h, session_callsigns="", session_sids="", dry_run=False):
     row = _blank_row(dep, wav, ref, ctx)
     if dry_run:
         # No service call: exercise the plumbing with hyp = ref (raw & final).
         dur = row["audio_dur_s"]
         wr = wer_breakdown(ref, ref)
-        row.update({
-            "raw_transcription": ref, "final_transcription": ref,
-            "duration_s": dur, "latency_client_s": 0.0,
-            "wer_raw": round(wr["wer"], 4), "sub_raw": wr["sub"], "del_raw": wr["dele"],
-            "ins_raw": wr["ins"], "n_ref": wr["n_ref"], "http_status": 200,
-        })
+        row.update(
+            {
+                "raw_transcription": ref,
+                "final_transcription": ref,
+                "duration_s": dur,
+                "latency_client_s": 0.0,
+                "wer_raw": round(wr["wer"], 4),
+                "sub_raw": wr["sub"],
+                "del_raw": wr["dele"],
+                "ins_raw": wr["ins"],
+                "n_ref": wr["n_ref"],
+                "http_status": 200,
+            }
+        )
         row.update(_entity_columns(ref, ref, {}))
         if dur:
             row["rtf"] = round(dur / dur, 2)
@@ -423,14 +497,20 @@ def run_one(api_url, dep, wav, ref, ctx, cost_per_h,
         final = data.get("transcription") or ""
         dur = data.get("duration_s")
         wr = wer_breakdown(ref, raw)
-        row.update({
-            "raw_transcription": raw, "final_transcription": final,
-            "duration_s": round(dur, 3) if isinstance(dur, (int, float)) else "",
-            "latency_client_s": round(wall, 3),
-            "wer_raw": round(wr["wer"], 4), "sub_raw": wr["sub"], "del_raw": wr["dele"],
-            "ins_raw": wr["ins"], "n_ref": wr["n_ref"],
-            "http_status": 200,
-        })
+        row.update(
+            {
+                "raw_transcription": raw,
+                "final_transcription": final,
+                "duration_s": round(dur, 3) if isinstance(dur, (int, float)) else "",
+                "latency_client_s": round(wall, 3),
+                "wer_raw": round(wr["wer"], 4),
+                "sub_raw": wr["sub"],
+                "del_raw": wr["dele"],
+                "ins_raw": wr["ins"],
+                "n_ref": wr["n_ref"],
+                "http_status": 200,
+            }
+        )
         row.update(_entity_columns(ref, final, data))
         if isinstance(dur, (int, float)) and row["audio_dur_s"]:
             row["rtf"] = round(dur / row["audio_dur_s"], 2)
@@ -442,8 +522,7 @@ def run_one(api_url, dep, wav, ref, ctx, cost_per_h,
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--asr-url", default="",
-                    help="Base Cloud Run URL (no path); not needed with --dry-run")
+    ap.add_argument("--asr-url", default="", help="Base Cloud Run URL (no path); not needed with --dry-run")
     ap.add_argument("--model", required=True)
     ap.add_argument("--tier", required=True)
     ap.add_argument("--cost-per-h", type=float, default=0.0)
@@ -452,15 +531,18 @@ def main():
     ap.add_argument("--deps", default="del,gnd,twr")
     ap.add_argument(
         "--audio-root",
-        default=os.getenv("ASR_BENCH_AUDIO_DIR",
-                          r"C:/Users/santi/Documents/personal_projects/pilot-readback-corpus/output"))
-    ap.add_argument(
-        "--ref-root",
-        default=r"C:/Users/santi/Documents/personal_projects/pilot-readback-corpus")
+        default=os.getenv(
+            "ASR_BENCH_AUDIO_DIR", r"C:/Users/santi/Documents/personal_projects/pilot-readback-corpus/output"
+        ),
+    )
+    ap.add_argument("--ref-root", default=r"C:/Users/santi/Documents/personal_projects/pilot-readback-corpus")
     ap.add_argument("--out", default="")
-    ap.add_argument("--dry-run", action="store_true",
-                    help="Build session lists + new columns without calling the "
-                         "service (fills hyp=ref for a few audios, writes to a temp CSV)")
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Build session lists + new columns without calling the "
+        "service (fills hyp=ref for a few audios, writes to a temp CSV)",
+    )
     args = ap.parse_args()
 
     api = args.asr_url.rstrip("/") + "/api/v1/asr/transcribe" if args.asr_url else ""
@@ -473,7 +555,8 @@ def main():
     for dep in deps:
         ref_txt = ref_root / dep.upper() / f"corpus_wer_{dep}.txt"
         if not ref_txt.exists():
-            print(f"[WARN] no ref for {dep}: {ref_txt}"); continue
+            print(f"[WARN] no ref for {dep}: {ref_txt}")
+            continue
         corpus = load_corpus(ref_txt)
         corpus_by_dep[dep] = corpus
         refs = [e["ref"] for e in corpus.values() if e.get("ref")]
@@ -492,23 +575,27 @@ def main():
         for wav in wavs:
             ent = corpus.get(wav.stem)
             if not ent:
-                print(f"[WARN] {wav.stem} not in corpus — skipping"); continue
+                print(f"[WARN] {wav.stem} not in corpus — skipping")
+                continue
             tasks.append((dep, wav, ent["ref"]))
 
     # Session vocabularies only travel to the service in "session" context.
     use_session = args.context == "session"
-    print(f"Model={args.model} tier={args.tier}  {len(tasks)} audios  "
-          f"ctx={args.context}  workers={args.workers}\n  {api}\n")
+    print(
+        f"Model={args.model} tier={args.tier}  {len(tasks)} audios  "
+        f"ctx={args.context}  workers={args.workers}\n  {api}\n"
+    )
 
     rows, done, t0 = [], 0, time.perf_counter()
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         futs = {}
         for dep, wav, ref in tasks:
             cs_csv, sid_csv = session_by_dep.get(dep, ("", "")) if use_session else ("", "")
-            futs[ex.submit(run_one, api, dep, wav, ref, args.context,
-                           args.cost_per_h, cs_csv, sid_csv)] = wav
+            futs[ex.submit(run_one, api, dep, wav, ref, args.context, args.cost_per_h, cs_csv, sid_csv)] = wav
         for fut in as_completed(futs):
-            row = fut.result(); rows.append(row); done += 1
+            row = fut.result()
+            rows.append(row)
+            done += 1
             tag = row["error"] or f"wer_raw={row['wer_raw']}"
             print(f"  [{done}/{len(tasks)}] {row['audio_id']}  {tag}")
 
@@ -516,8 +603,11 @@ def main():
     for r in rows:
         r["model"], r["tier"], r["cost_per_h"] = args.model, args.tier, args.cost_per_h
 
-    out = Path(args.out) if args.out else Path(__file__).parent.parent / "output" / \
-        "asr_bench" / f"asr_{args.model}_{args.tier}_{args.context}.csv"
+    out = (
+        Path(args.out)
+        if args.out
+        else Path(__file__).parent.parent / "output" / "asr_bench" / f"asr_{args.model}_{args.tier}_{args.context}.csv"
+    )
     _write_csv(out, rows)
 
     _print_summary(rows, deps, args, t0, out)
@@ -527,15 +617,15 @@ def _write_csv(out: Path, rows: list[dict]) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        w.writeheader(); w.writerows(rows)
+        w.writeheader()
+        w.writerows(rows)
 
 
 def _print_summary(rows, deps, args, t0, out) -> None:
     # ---- summary (micro-averaged WER = total edits / total ref words) ----
-    print(f"\n{'='*64}\n  SUMMARY  model={args.model} tier={args.tier} ctx={args.context}\n{'='*64}")
+    print(f"\n{'=' * 64}\n  SUMMARY  model={args.model} tier={args.tier} ctx={args.context}\n{'=' * 64}")
     ok = [r for r in rows if r["http_status"] == 200]
-    print(f"  transcribed: {len(ok)}/{len(rows)}  ({len(rows)-len(ok)} errors)  "
-          f"wall={time.perf_counter()-t0:.0f}s")
+    print(f"  transcribed: {len(ok)}/{len(rows)}  ({len(rows) - len(ok)} errors)  wall={time.perf_counter() - t0:.0f}s")
     for scope in deps + ["ALL"]:
         sub = [r for r in ok if scope == "ALL" or r["dep"] == scope]
         if not sub:
@@ -545,31 +635,29 @@ def _print_summary(rows, deps, args, t0, out) -> None:
         micro = tot_edits / tot_words if tot_words else 0.0
         macro = sum(r["wer_raw"] for r in sub) / len(sub)
         durs = [r["duration_s"] for r in sub if isinstance(r["duration_s"], (int, float))]
-        p50 = sorted(durs)[len(durs)//2] if durs else 0
+        p50 = sorted(durs)[len(durs) // 2] if durs else 0
         # entity recovery: cs over all rows, sid only over rows that have a SID
         cs_pct = sum(1 for r in sub if r["cs_correct"] is True) / len(sub)
         sid_rows = [r for r in sub if r["sid_canonical"]]
-        sid_pct = (sum(1 for r in sid_rows if r["sid_correct"] is True) / len(sid_rows)
-                   if sid_rows else 0.0)
-        print(f"  {scope.upper():4} n={len(sub):3}  WERraw micro={micro:.1%} macro={macro:.1%}"
-              f"  S/D/I={sum(r['sub_raw'] for r in sub)}/{sum(r['del_raw'] for r in sub)}/"
-              f"{sum(r['ins_raw'] for r in sub)}  server_p50={p50:.1f}s"
-              f"  cs_ok={cs_pct:.0%}  sid_ok={sid_pct:.0%} (n={len(sid_rows)})")
+        sid_pct = sum(1 for r in sid_rows if r["sid_correct"] is True) / len(sid_rows) if sid_rows else 0.0
+        print(
+            f"  {scope.upper():4} n={len(sub):3}  WERraw micro={micro:.1%} macro={macro:.1%}"
+            f"  S/D/I={sum(r['sub_raw'] for r in sub)}/{sum(r['del_raw'] for r in sub)}/"
+            f"{sum(r['ins_raw'] for r in sub)}  server_p50={p50:.1f}s"
+            f"  cs_ok={cs_pct:.0%}  sid_ok={sid_pct:.0%} (n={len(sid_rows)})"
+        )
     print(f"\n  CSV: {out}")
 
 
 def _run_dry(args, deps, audio_root, corpus_by_dep, session_by_dep):
     """Build session lists + new columns offline; write a temp CSV. No service."""
-    print(f"{'='*64}\n  DRY-RUN  model={args.model} tier={args.tier} "
-          f"ctx={args.context}\n{'='*64}")
+    print(f"{'=' * 64}\n  DRY-RUN  model={args.model} tier={args.tier} ctx={args.context}\n{'=' * 64}")
     for dep in deps:
         cs_csv, sid_csv = session_by_dep.get(dep, ("", ""))
         cs_list = cs_csv.split(",") if cs_csv else []
         sid_list = sid_csv.split(",") if sid_csv else []
-        print(f"\n  [{dep.upper()}] session_callsigns ({len(cs_list)}): "
-              f"{', '.join(cs_list)}")
-        print(f"  [{dep.upper()}] session_sids ({len(sid_list)}): "
-              f"{', '.join(sid_list)}")
+        print(f"\n  [{dep.upper()}] session_callsigns ({len(cs_list)}): {', '.join(cs_list)}")
+        print(f"  [{dep.upper()}] session_sids ({len(sid_list)}): {', '.join(sid_list)}")
 
     rows = []
     per_dep = 3
@@ -582,24 +670,26 @@ def _run_dry(args, deps, audio_root, corpus_by_dep, session_by_dep):
             ent = corpus.get(wav.stem)
             if not ent:
                 continue
-            rows.append(run_one("", dep, wav, ent["ref"], args.context,
-                                args.cost_per_h, dry_run=True))
+            rows.append(run_one("", dep, wav, ent["ref"], args.context, args.cost_per_h, dry_run=True))
     for r in rows:
         r["model"], r["tier"], r["cost_per_h"] = args.model, args.tier, args.cost_per_h
 
     if args.out:
         out = Path(args.out)
     else:
-        out = Path(tempfile.gettempdir()) / "asr_bench_dryrun" / \
-            f"asr_{args.model}_{args.tier}_{args.context}_dryrun.csv"
+        out = (
+            Path(tempfile.gettempdir()) / "asr_bench_dryrun" / f"asr_{args.model}_{args.tier}_{args.context}_dryrun.csv"
+        )
     if rows:
         _write_csv(out, rows)
 
     print(f"\n  {len(rows)} dry-run rows (hyp=ref). Sample entity columns:")
     for r in rows:
-        print(f"   {r['audio_id']}: cs={r['cs_canonical'] or '-':10} "
-              f"sid={r['sid_canonical'] or '-':9} "
-              f"wer_post={r['wer_post']}  ref_norm={r['ref_normalized'][:70]}")
+        print(
+            f"   {r['audio_id']}: cs={r['cs_canonical'] or '-':10} "
+            f"sid={r['sid_canonical'] or '-':9} "
+            f"wer_post={r['wer_post']}  ref_norm={r['ref_normalized'][:70]}"
+        )
     print(f"\n  CSV: {out}")
 
 

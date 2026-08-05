@@ -64,9 +64,7 @@ async def generate_flight_plan_api(
         repo.create(flight_plan)
         return flight_plan
     except Exception as e:
-        logger.warning(
-            "FlightPlanDatabase API failed (%s), falling back to local generator", e
-        )
+        logger.warning("FlightPlanDatabase API failed (%s), falling back to local generator", e)
         try:
             flight_plan = generator.generate(departure=departure)
             repo = FlightPlanRepository(db)
@@ -129,9 +127,7 @@ async def get_flight_plan(registration: str, db: Session = Depends(get_db)):
     repo = FlightPlanRepository(db)
     model = repo.get_by_registration(registration)
     if not model:
-        raise HTTPException(
-            status_code=404, detail=f"Flight plan for {registration} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Flight plan for {registration} not found")
     return repo.to_response(model)
 
 
@@ -141,9 +137,7 @@ async def delete_flight_plan(registration: str, db: Session = Depends(get_db)):
     repo = FlightPlanRepository(db)
     deleted = repo.delete(registration)
     if not deleted:
-        raise HTTPException(
-            status_code=404, detail=f"Flight plan for {registration} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Flight plan for {registration} not found")
     return {"deleted": registration}
 
 
@@ -164,20 +158,10 @@ reference_router = APIRouter(tags=["Reference Data"])
 @reference_router.get("/aircraft-types")
 async def list_aircraft_types():
     """List available aircraft types with their performance data"""
-    return {
-        "aircraft_types": [
-            {"code": code, "speed_kts": data["speed"]}
-            for code, data in AIRCRAFT_DATA.items()
-        ]
-    }
+    return {"aircraft_types": [{"code": code, "speed_kts": data["speed"]} for code, data in AIRCRAFT_DATA.items()]}
 
 
 @reference_router.get("/airports")
 async def list_airports():
     """List available airports in the database"""
-    return {
-        "airports": [
-            {"icao": icao, "name": data["name"]}
-            for icao, data in AIRPORT_DATA.items()
-        ]
-    }
+    return {"airports": [{"icao": icao, "name": data["name"]} for icao, data in AIRPORT_DATA.items()]}

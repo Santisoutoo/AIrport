@@ -42,10 +42,7 @@ def _advance_point(lat: float, lon: float, bearing_deg: float, dist_m: float) ->
     lam1 = math.radians(lon)
     theta = math.radians(bearing_deg)
     delta = dist_m / _EARTH_R
-    phi2 = math.asin(
-        math.sin(phi1) * math.cos(delta)
-        + math.cos(phi1) * math.sin(delta) * math.cos(theta)
-    )
+    phi2 = math.asin(math.sin(phi1) * math.cos(delta) + math.cos(phi1) * math.sin(delta) * math.cos(theta))
     lam2 = lam1 + math.atan2(
         math.sin(theta) * math.sin(delta) * math.cos(phi1),
         math.cos(delta) - math.sin(phi1) * math.sin(phi2),

@@ -138,13 +138,9 @@ def test_departure_full_pipeline_del_to_gnd_to_twr(wire_pipeline, client, db_ses
         )
     )
     respx.get("http://fp.test/plans/EC-MIG").mock(
-        return_value=httpx.Response(
-            200, json={"departure_ICAO": "LEST", "callsign": "IBE3421"}
-        )
+        return_value=httpx.Response(200, json={"departure_ICAO": "LEST", "callsign": "IBE3421"})
     )
-    respx.get("http://wx.test/atis/LEST").mock(
-        return_value=httpx.Response(200, json={"info": "A"})
-    )
+    respx.get("http://wx.test/atis/LEST").mock(return_value=httpx.Response(200, json={"info": "A"}))
     del_call = respx.post("http://del.test/agents/delivery/run").mock(
         return_value=httpx.Response(
             200,
@@ -176,9 +172,7 @@ def test_departure_full_pipeline_del_to_gnd_to_twr(wire_pipeline, client, db_ses
         )
     )
     twr_call = respx.post("http://twr.test/agents/tower/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "IBE3421, runway 17, cleared for takeoff."}
-        )
+        return_value=httpx.Response(200, json={"reply": "IBE3421, runway 17, cleared for takeoff."})
     )
 
     # -------------------------------------------------------------------
@@ -186,9 +180,7 @@ def test_departure_full_pipeline_del_to_gnd_to_twr(wire_pipeline, client, db_ses
     # -------------------------------------------------------------------
     # Script the orchestrator to call forward_to_agent("DEL", ...)
     def _step1_state(state):
-        forward_mod.forward_to_agent(
-            "DEL", "EC-MIG", "IBE3421 request startup", types.SimpleNamespace(state=state)
-        )
+        forward_mod.forward_to_agent("DEL", "EC-MIG", "IBE3421 request startup", types.SimpleNamespace(state=state))
 
     fake_runner.script(state_updates=_step1_state, final_text="Cleared")
     resp1 = client.post(
@@ -288,9 +280,7 @@ def test_departure_full_pipeline_del_to_gnd_to_twr(wire_pipeline, client, db_ses
     # Step 5: TWR clearance -- sub-agent reachable, reply published
     # -------------------------------------------------------------------
     def _step5_state(state):
-        forward_mod.forward_to_agent(
-            "TWR", "EC-MIG", "IBE3421 ready for takeoff", types.SimpleNamespace(state=state)
-        )
+        forward_mod.forward_to_agent("TWR", "EC-MIG", "IBE3421 ready for takeoff", types.SimpleNamespace(state=state))
 
     fake_runner.script(state_updates=_step5_state, final_text="Cleared takeoff")
     resp5 = client.post(
@@ -326,9 +316,7 @@ def test_pipeline_does_not_leak_state_between_aircraft(wire_pipeline, client, db
 
     with respx.mock:
         respx.get("http://fp.test/plans").mock(return_value=httpx.Response(200, json=[]))
-        respx.get("http://fp.test/plans/EC-MIG").mock(
-            return_value=httpx.Response(404)
-        )
+        respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(404))
         respx.get("http://wx.test/atis/LEST").mock(return_value=httpx.Response(200, json={}))
         respx.post("http://del.test/agents/delivery/run").mock(
             return_value=httpx.Response(
@@ -345,14 +333,10 @@ def test_pipeline_does_not_leak_state_between_aircraft(wire_pipeline, client, db
         )
 
         def _state(state):
-            forward_mod.forward_to_agent(
-                "DEL", "EC-MIG", "msg", types.SimpleNamespace(state=state)
-            )
+            forward_mod.forward_to_agent("DEL", "EC-MIG", "msg", types.SimpleNamespace(state=state))
 
         fake_runner.script(state_updates=_state, final_text="ok")
-        client.post(
-            "/dispatch", json={"session_id": "sess-1", "message": "EC-MIG startup"}
-        )
+        client.post("/dispatch", json={"session_id": "sess-1", "message": "EC-MIG startup"})
 
     rows = db_session.query(AircraftClearance).all()
     # Only EC-MIG was clearance-persisted; EC-OTHER lives only in Redis.

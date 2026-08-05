@@ -5,6 +5,7 @@ position perpendicularly onto the taxiway centerline (prolonging the nearest
 segment when the foot falls beyond an endpoint) instead of cutting diagonally
 to the nearest graph node — and never via an unconstrained graph search.
 """
+
 import math
 
 import pytest
@@ -30,17 +31,11 @@ def _haversine(lat1, lon1, lat2, lon2):
 
 
 def _edge_taxiways(graph, path):
-    return [
-        str(graph.graph.edges[path[i], path[i + 1]].get("taxiway_id", "")).upper()
-        for i in range(len(path) - 1)
-    ]
+    return [str(graph.graph.edges[path[i], path[i + 1]].get("taxiway_id", "")).upper() for i in range(len(path) - 1)]
 
 
 def _start_node_on(graph, tw):
-    nodes = sorted(
-        {n for uv in graph._edges_by_taxiway[tw.upper()] for n in uv}
-        & graph._main_cc
-    )
+    nodes = sorted({n for uv in graph._edges_by_taxiway[tw.upper()] for n in uv} & graph._main_cc)
     assert nodes, f"no main-CC node on taxiway {tw}"
     return nodes[0]
 
@@ -70,9 +65,12 @@ def _perpendicular_offset_from_edge(graph, tw, dist_m, min_len_m=60.0):
 
 # ---- LEBL: real-graph behavior ----------------------------------------------
 
+
 def test_entry_join_projects_perpendicularly(lebl_graph):
     (p_lat, p_lon), (mid_lat, mid_lon) = _perpendicular_offset_from_edge(
-        lebl_graph, "E", 30.0,
+        lebl_graph,
+        "E",
+        30.0,
     )
     dest = _start_node_on(lebl_graph, "M")
     r = lebl_graph.find_route_strict_from_position(p_lat, p_lon, ["E", "M"], dest)
@@ -97,7 +95,12 @@ def test_entry_join_too_far_fails(lebl_graph):
     for u, v in lebl_graph._edges_by_taxiway["E"]:
         nu, nv = lebl_graph.graph.nodes[u], lebl_graph.graph.nodes[v]
         _f1, _f2, perp, _t = project_point_to_segment(
-            p_lat, p_lon, nu["lat"], nu["lon"], nv["lat"], nv["lon"],
+            p_lat,
+            p_lon,
+            nu["lat"],
+            nu["lon"],
+            nv["lat"],
+            nv["lon"],
         )
         assert perp > AirportGraph.MAX_ENTRY_JOIN_M
     dest = _start_node_on(lebl_graph, "M")
@@ -134,8 +137,12 @@ def _synthetic_data(t_direction="twoway"):
         return {"node_id": nid, "lat": lat, "lon": lon, "usage": "both", "name": f"n{nid}"}
 
     nodes = [
-        node(1, 0, 0), node(2, 0, 100), node(3, 0, 200), node(4, 100, 200),
-        node(5, 1000, 0), node(6, 1000, 100),
+        node(1, 0, 0),
+        node(2, 0, 100),
+        node(3, 0, 200),
+        node(4, 100, 200),
+        node(5, 1000, 0),
+        node(6, 1000, 100),
     ]
     edges = [
         {"start_node_id": 1, "end_node_id": 2, "direction": t_direction, "taxiway_id": "T"},

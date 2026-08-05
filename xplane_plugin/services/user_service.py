@@ -50,7 +50,7 @@ class UserService:
             "sha256",
             password.encode("utf-8"),
             salt,
-            100000  # iteraciones
+            100000,  # iteraciones
         )
         # Guardamos salt + hash juntos
         combined = salt + pwd_hash
@@ -64,12 +64,7 @@ class UserService:
             salt = combined[:32]
             stored_pwd_hash = combined[32:]
 
-            pwd_hash = hashlib.pbkdf2_hmac(
-                "sha256",
-                password.encode("utf-8"),
-                salt,
-                100000
-            )
+            pwd_hash = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
             return pwd_hash == stored_pwd_hash
         except (ValueError, IndexError):
             return False
@@ -84,19 +79,13 @@ class UserService:
             cursor = conn.cursor()
 
             # Verificar si el usuario ya existe
-            cursor.execute(
-                "SELECT id FROM users WHERE username = %s",
-                (username,)
-            )
+            cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
             if cursor.fetchone():
                 return False, "Username already exists"
 
             password_hash, _ = self._hash_password(password)
 
-            cursor.execute(
-                "INSERT INTO users (username, password_hash) VALUES (%s, %s)",
-                (username, password_hash)
-            )
+            cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, password_hash))
             conn.commit()
             cursor.close()
 
@@ -116,10 +105,7 @@ class UserService:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute(
-                "SELECT password_hash FROM users WHERE username = %s",
-                (username,)
-            )
+            cursor.execute("SELECT password_hash FROM users WHERE username = %s", (username,))
             result = cursor.fetchone()
             cursor.close()
 
@@ -141,10 +127,7 @@ class UserService:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute(
-                "SELECT 1 FROM users WHERE username = %s",
-                (username,)
-            )
+            cursor.execute("SELECT 1 FROM users WHERE username = %s", (username,))
             result = cursor.fetchone()
             cursor.close()
 

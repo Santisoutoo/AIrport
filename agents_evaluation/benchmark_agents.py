@@ -13,6 +13,7 @@ Reads the endpoints from .env (DEL_AGENT_URL, GND_AGENT_URL, TWR_AGENT_URL).
 
 Used by memoria 5.2.2.
 """
+
 from __future__ import annotations
 
 import csv
@@ -133,16 +134,12 @@ def summarise(rows: list[dict], dep: str) -> dict:
     sub = [r for r in rows if r["dep"] == dep]
     n = len(sub)
     if n == 0:
-        return {"dep": dep, "n": 0, "pct_schema_valid": 0.0,
-                "pct_clearance_complete": 0.0, "p50_s": 0.0, "p95_s": 0.0}
+        return {"dep": dep, "n": 0, "pct_schema_valid": 0.0, "pct_clearance_complete": 0.0, "p50_s": 0.0, "p95_s": 0.0}
     schema_ok = sum(1 for r in sub if r["schema_valid"])
     clearance_ok = sum(1 for r in sub if r["clearance_complete"])
     lats = [r["latency_s"] for r in sub if r["schema_valid"]]
     p50 = statistics.median(lats) if lats else 0.0
-    p95 = (
-        statistics.quantiles(lats, n=100, method="inclusive")[94]
-        if len(lats) >= 2 else (lats[0] if lats else 0.0)
-    )
+    p95 = statistics.quantiles(lats, n=100, method="inclusive")[94] if len(lats) >= 2 else (lats[0] if lats else 0.0)
     return {
         "dep": dep,
         "n": n,
@@ -179,29 +176,39 @@ def main():
             block = resp.get(struct_key) if isinstance(resp, dict) else None
             clearance_complete = is_clearance_complete(dep, block) if schema_valid else False
             reply_text = (resp or {}).get("reply", "") if schema_valid else ""
-            rows.append({
-                "dep": dep,
-                "entry_id": entry_id,
-                "status": status,
-                "latency_s": round(lat, 3),
-                "schema_valid": schema_valid,
-                "clearance_present": block is not None,
-                "clearance_complete": clearance_complete,
-                "reply_chars": len(reply_text),
-                "error": err,
-            })
+            rows.append(
+                {
+                    "dep": dep,
+                    "entry_id": entry_id,
+                    "status": status,
+                    "latency_s": round(lat, 3),
+                    "schema_valid": schema_valid,
+                    "clearance_present": block is not None,
+                    "clearance_complete": clearance_complete,
+                    "reply_chars": len(reply_text),
+                    "error": err,
+                }
+            )
             mark = "OK" if schema_valid else "FAIL"
-            print(f"  [{i:3d}/{len(entries)}] {entry_id}: {mark} "
-                  f"({lat:.1f}s, status={status})", flush=True)
+            print(f"  [{i:3d}/{len(entries)}] {entry_id}: {mark} ({lat:.1f}s, status={status})", flush=True)
 
     # Write CSV
     CSV_OUT.parent.mkdir(parents=True, exist_ok=True)
     with CSV_OUT.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=[
-            "dep", "entry_id", "status", "latency_s",
-            "schema_valid", "clearance_present", "clearance_complete",
-            "reply_chars", "error",
-        ])
+        w = csv.DictWriter(
+            f,
+            fieldnames=[
+                "dep",
+                "entry_id",
+                "status",
+                "latency_s",
+                "schema_valid",
+                "clearance_present",
+                "clearance_complete",
+                "reply_chars",
+                "error",
+            ],
+        )
         w.writeheader()
         w.writerows(rows)
     print(f"\nWrote: {CSV_OUT}")
@@ -212,9 +219,11 @@ def main():
     print("-" * 55)
     for dep in ("DEL", "GND", "TWR"):
         s = summarise(rows, dep)
-        print(f"{s['dep']:<5} {s['n']:>4} {s['pct_schema_valid']:>8.1f}% "
-              f"{s['pct_clearance_complete']:>10.1f}% "
-              f"{s['p50_s']:>8.1f} {s['p95_s']:>8.1f}")
+        print(
+            f"{s['dep']:<5} {s['n']:>4} {s['pct_schema_valid']:>8.1f}% "
+            f"{s['pct_clearance_complete']:>10.1f}% "
+            f"{s['p50_s']:>8.1f} {s['p95_s']:>8.1f}"
+        )
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ Aircraft state endpoints — used by GND and TWR agents.
 Redis stores real-time position snapshots (lat/lon/alt/speed) written by X-Plane.
 PostgreSQL (aircraft_clearances) stores the lifecycle state (dependency, taxi_route, etc.).
 """
+
 import json
 import os
 from typing import Optional
@@ -32,6 +33,7 @@ def _get_redis():
 # Position (Redis — written by X-Plane plugin)
 # ---------------------------------------------------------------------------
 
+
 @router.get("/{registration}/position")
 async def get_position(registration: str):
     """Return the latest position snapshot for an aircraft from Redis."""
@@ -53,14 +55,13 @@ async def get_active_aircraft():
 # Clearance / lifecycle (PostgreSQL)
 # ---------------------------------------------------------------------------
 
+
 class TaxiRouteUpdate(BaseModel):
     taxi_route: dict
 
 
 @router.patch("/{registration}/taxi-route")
-async def update_taxi_route(
-    registration: str, body: TaxiRouteUpdate, db: Session = Depends(get_db)
-):
+async def update_taxi_route(registration: str, body: TaxiRouteUpdate, db: Session = Depends(get_db)):
     """GND agent sets the taxi route after issuing taxi instructions."""
     record = ClearanceRepository(db).get(registration)
     if record is None:
@@ -98,14 +99,13 @@ async def get_clearance(registration: str, db: Session = Depends(get_db)):
 # Airport graph (for GND taxi routing)
 # ---------------------------------------------------------------------------
 
+
 @router.get("/airport/{icao}/graph")
 async def get_airport_graph(icao: str):
     """Return the taxiway graph JSON for an airport."""
     import pathlib
-    graph_path = (
-        pathlib.Path(__file__).parents[3]
-        / "data" / "airport_data" / icao / f"{icao}_graph.json"
-    )
+
+    graph_path = pathlib.Path(__file__).parents[3] / "data" / "airport_data" / icao / f"{icao}_graph.json"
     if not graph_path.exists():
         raise HTTPException(status_code=404, detail=f"No graph data for {icao}")
     return json.loads(graph_path.read_text())

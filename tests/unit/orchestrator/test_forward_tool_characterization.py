@@ -60,9 +60,7 @@ def captured_dispatch(monkeypatch):
     captured: list[dict] = []
 
     fake_router = types.ModuleType("shared.services.taxi_router")
-    fake_router.dispatch_taxi_plan = lambda merged, **kw: captured.append(
-        {"merged": merged, "kwargs": kw}
-    )
+    fake_router.dispatch_taxi_plan = lambda merged, **kw: captured.append({"merged": merged, "kwargs": kw})
     if "shared.services.taxi_router" in sys.modules:
         original = sys.modules["shared.services.taxi_router"]
         for attr in dir(original):
@@ -98,9 +96,7 @@ def _payload_of(route) -> dict:
     ],
 )
 @respx.mock
-def test_dependency_is_upper_cased_before_routing(
-    configured_urls, captured_log, dependency, expected_url
-):
+def test_dependency_is_upper_cased_before_routing(configured_urls, captured_log, dependency, expected_url):
     route = respx.post(expected_url).mock(return_value=httpx.Response(200, json={"reply": "ok"}))
     known = [{"registration": "EC-MIG", "callsign": "IBE"}]
 
@@ -111,15 +107,11 @@ def test_dependency_is_upper_cased_before_routing(
 
 @pytest.mark.parametrize("dependency", ["", "APP", "who-knows", "DELIVERY"])
 @respx.mock
-def test_any_unrecognised_dependency_falls_back_to_del(
-    configured_urls, captured_log, dependency
-):
+def test_any_unrecognised_dependency_falls_back_to_del(configured_urls, captured_log, dependency):
     """Note the fallback normalises the *route* to DEL and also reports DEL in
     ``state["dependency"]`` — the caller never learns the original value."""
     respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(404))
-    respx.post("http://del.test/agents/delivery/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    respx.post("http://del.test/agents/delivery/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
     ctx = _ctx()
 
     forward_mod.forward_to_agent(dependency, "EC-MIG", "msg", ctx)
@@ -127,9 +119,7 @@ def test_any_unrecognised_dependency_falls_back_to_del(
     assert ctx.state["dependency"] == "DEL"
 
 
-def test_unconfigured_agent_url_returns_early_without_any_side_effect(
-    monkeypatch, captured_log, captured_dispatch
-):
+def test_unconfigured_agent_url_returns_early_without_any_side_effect(monkeypatch, captured_log, captured_dispatch):
     """The "not configured" guard returns before the state writes — so
     ``reply``/``dependency``/``registration`` are NOT set, and nothing is
     logged. `runner.py` therefore falls back to the raw final LLM text."""
@@ -152,9 +142,7 @@ def test_unconfigured_agent_url_returns_early_without_any_side_effect(
 
 
 @respx.mock
-def test_del_without_registration_takes_the_clearance_branch_not_the_prefetch_branch(
-    configured_urls, captured_log
-):
+def test_del_without_registration_takes_the_clearance_branch_not_the_prefetch_branch(configured_urls, captured_log):
     """The pre-fetch guard is ``dep == "DEL" and registration``. An empty
     registration therefore routes to DEL but builds a GND-style payload from
     ``known_aircraft`` — no flight_plan/atis keys at all."""
@@ -176,12 +164,8 @@ def test_del_accepts_the_lower_case_departure_icao_spelling(configured_urls, cap
     """The flight plan service has shipped both ``departure_ICAO`` and
     ``departure_icao``; the upper-case one wins, the lower-case one is the
     documented fallback."""
-    respx.get("http://fp.test/plans/EC-MIG").mock(
-        return_value=httpx.Response(200, json={"departure_icao": "LEBL"})
-    )
-    atis = respx.get("http://wx.test/atis/LEBL").mock(
-        return_value=httpx.Response(200, json={"info": "ATIS-B"})
-    )
+    respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(200, json={"departure_icao": "LEBL"}))
+    atis = respx.get("http://wx.test/atis/LEBL").mock(return_value=httpx.Response(200, json={"info": "ATIS-B"}))
     route = respx.post("http://del.test/agents/delivery/run").mock(
         return_value=httpx.Response(200, json={"reply": "ok"})
     )
@@ -195,16 +179,10 @@ def test_del_accepts_the_lower_case_departure_icao_spelling(configured_urls, cap
 @respx.mock
 def test_del_upper_case_departure_icao_wins_over_lower_case(configured_urls, captured_log):
     respx.get("http://fp.test/plans/EC-MIG").mock(
-        return_value=httpx.Response(
-            200, json={"departure_ICAO": "LEST", "departure_icao": "LEBL"}
-        )
+        return_value=httpx.Response(200, json={"departure_ICAO": "LEST", "departure_icao": "LEBL"})
     )
-    atis = respx.get("http://wx.test/atis/LEST").mock(
-        return_value=httpx.Response(200, json={"info": "ATIS-A"})
-    )
-    respx.post("http://del.test/agents/delivery/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    atis = respx.get("http://wx.test/atis/LEST").mock(return_value=httpx.Response(200, json={"info": "ATIS-A"}))
+    respx.post("http://del.test/agents/delivery/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
 
     forward_mod.forward_to_agent("DEL", "EC-MIG", "msg", _ctx())
 
@@ -249,9 +227,7 @@ def test_del_context_fetch_network_error_degrades_to_none(configured_urls, captu
 
 @respx.mock
 def test_del_atis_error_leaves_the_flight_plan_intact(configured_urls, captured_log):
-    respx.get("http://fp.test/plans/EC-MIG").mock(
-        return_value=httpx.Response(200, json={"departure_ICAO": "LEST"})
-    )
+    respx.get("http://fp.test/plans/EC-MIG").mock(return_value=httpx.Response(200, json={"departure_ICAO": "LEST"}))
     respx.get("http://wx.test/atis/LEST").mock(side_effect=httpx.ConnectError("down"))
     route = respx.post("http://del.test/agents/delivery/run").mock(
         return_value=httpx.Response(200, json={"reply": "ok"})
@@ -284,14 +260,10 @@ def test_del_non_200_context_responses_become_none(configured_urls, captured_log
 
 
 @respx.mock
-def test_clearance_data_key_is_omitted_entirely_when_nothing_is_known(
-    configured_urls, captured_log
-):
+def test_clearance_data_key_is_omitted_entirely_when_nothing_is_known(configured_urls, captured_log):
     """Unknown registration and no taxi route: the payload carries only
     ``session_id`` and ``message`` — the key is absent, not empty."""
-    route = respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    route = respx.post("http://gnd.test/agents/ground/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
 
     forward_mod.forward_to_agent("GND", "EC-UNKNOWN", "msg", _ctx(known_aircraft=[]))
 
@@ -302,14 +274,10 @@ def test_clearance_data_key_is_omitted_entirely_when_nothing_is_known(
 def test_taxi_route_alone_is_enough_to_create_clearance_data(configured_urls, captured_log):
     """Even for an aircraft with no stored clearance, a successful taxi route
     materialises ``clearance_data`` with just that one key."""
-    route = respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    route = respx.post("http://gnd.test/agents/ground/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
     taxi_route = {"success": True, "waypoints": [{"lat": 41.0, "lon": 2.0}]}
 
-    forward_mod.forward_to_agent(
-        "GND", "EC-UNKNOWN", "taxi", _ctx(known_aircraft=[]), taxi_route=taxi_route
-    )
+    forward_mod.forward_to_agent("GND", "EC-UNKNOWN", "taxi", _ctx(known_aircraft=[]), taxi_route=taxi_route)
 
     assert _payload_of(route)["clearance_data"] == {"taxi_route": taxi_route}
 
@@ -319,9 +287,7 @@ def test_taxi_route_without_success_key_is_not_merged(configured_urls, captured_
     """The guard is ``taxi_route.get("success")`` — a route dict that simply
     omits the flag is dropped exactly like an explicit failure."""
     known = [{"registration": "EC-MIG", "callsign": "IBE"}]
-    route = respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    route = respx.post("http://gnd.test/agents/ground/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
 
     forward_mod.forward_to_agent(
         "GND",
@@ -335,18 +301,14 @@ def test_taxi_route_without_success_key_is_not_merged(configured_urls, captured_
 
 
 @respx.mock
-def test_clearance_data_takes_the_first_match_and_strips_three_keys(
-    configured_urls, captured_log
-):
+def test_clearance_data_takes_the_first_match_and_strips_three_keys(configured_urls, captured_log):
     """Duplicate registrations in ``known_aircraft`` resolve to the first
     entry; ``registration``/``dependency``/``source`` never reach the agent."""
     known = [
         {"registration": "EC-MIG", "dependency": "GND", "source": "db", "squawk": 1111},
         {"registration": "EC-MIG", "dependency": "GND", "source": "redis", "squawk": 2222},
     ]
-    route = respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    route = respx.post("http://gnd.test/agents/ground/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
 
     forward_mod.forward_to_agent("GND", "EC-MIG", "msg", _ctx(known_aircraft=known))
 
@@ -356,9 +318,7 @@ def test_clearance_data_takes_the_first_match_and_strips_three_keys(
 @respx.mock
 def test_missing_known_aircraft_state_key_is_tolerated(configured_urls, captured_log):
     """``known_aircraft`` absent from state entirely (not just empty)."""
-    route = respx.post("http://twr.test/agents/tower/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    route = respx.post("http://twr.test/agents/tower/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
     ctx = SimpleNamespace(state={"session_id": "sess-1"})
 
     reply = forward_mod.forward_to_agent("TWR", "EC-MIG", "msg", ctx)
@@ -369,9 +329,7 @@ def test_missing_known_aircraft_state_key_is_tolerated(configured_urls, captured
 
 @respx.mock
 def test_session_id_missing_from_state_is_sent_as_empty_string(configured_urls, captured_log):
-    route = respx.post("http://twr.test/agents/tower/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    route = respx.post("http://twr.test/agents/tower/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
 
     forward_mod.forward_to_agent("TWR", "EC-MIG", "msg", SimpleNamespace(state={}))
 
@@ -384,9 +342,7 @@ def test_session_id_missing_from_state_is_sent_as_empty_string(configured_urls, 
 
 
 @respx.mock
-def test_response_without_a_reply_key_yields_empty_reply_and_no_session_log(
-    configured_urls, captured_log
-):
+def test_response_without_a_reply_key_yields_empty_reply_and_no_session_log(configured_urls, captured_log):
     """A malformed agent response degrades to an empty reply; the state key is
     still written (as ""), but nothing is appended to the debrief log."""
     respx.post("http://twr.test/agents/tower/run").mock(
@@ -406,9 +362,7 @@ def test_response_without_a_reply_key_yields_empty_reply_and_no_session_log(
 def test_empty_registration_is_normalised_to_none_in_state(configured_urls, captured_log):
     """`runner.py` treats ``registration`` as optional — an empty string would
     otherwise be persisted as a bogus aircraft key."""
-    respx.post("http://twr.test/agents/tower/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    respx.post("http://twr.test/agents/tower/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
     ctx = _ctx()
 
     forward_mod.forward_to_agent("TWR", "", "msg", ctx)
@@ -417,13 +371,9 @@ def test_empty_registration_is_normalised_to_none_in_state(configured_urls, capt
 
 
 @respx.mock
-def test_clearance_data_state_key_is_none_when_the_agent_omits_it(
-    configured_urls, captured_log
-):
+def test_clearance_data_state_key_is_none_when_the_agent_omits_it(configured_urls, captured_log):
     """Always written, never left stale — `runner.py` reads it unconditionally."""
-    respx.post("http://twr.test/agents/tower/run").mock(
-        return_value=httpx.Response(200, json={"reply": "ok"})
-    )
+    respx.post("http://twr.test/agents/tower/run").mock(return_value=httpx.Response(200, json={"reply": "ok"}))
     ctx = _ctx()
     ctx.state["clearance_data"] = {"stale": True}
 
@@ -452,13 +402,9 @@ def test_http_failure_still_writes_all_four_state_keys(configured_urls, captured
 def test_error_replies_are_written_to_the_debrief_log(configured_urls, captured_log):
     """The append guard is only ``reply and session_id`` — error strings count
     as replies, so the instructor's timeline records the outage."""
-    respx.post("http://gnd.test/agents/ground/run").mock(
-        side_effect=httpx.ConnectError("refused")
-    )
+    respx.post("http://gnd.test/agents/ground/run").mock(side_effect=httpx.ConnectError("refused"))
 
-    forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "msg", _ctx(known_aircraft=[{"registration": "EC-MIG"}])
-    )
+    forward_mod.forward_to_agent("GND", "EC-MIG", "msg", _ctx(known_aircraft=[{"registration": "EC-MIG"}]))
 
     assert len(captured_log) == 1
     assert captured_log[0]["reply"].startswith("[ERROR] could not reach GND agent")
@@ -466,9 +412,7 @@ def test_error_replies_are_written_to_the_debrief_log(configured_urls, captured_
 
 
 @respx.mock
-def test_session_log_callsign_comes_from_taxi_data_not_known_aircraft(
-    configured_urls, captured_log, captured_dispatch
-):
+def test_session_log_callsign_comes_from_taxi_data_not_known_aircraft(configured_urls, captured_log, captured_dispatch):
     """The ``callsign`` recorded for the debrief is whatever the pilot agent
     echoed back in ``taxi_data.aircraft_registration`` — and it is None
     whenever the agent sent no taxi_data at all."""
@@ -482,9 +426,7 @@ def test_session_log_callsign_comes_from_taxi_data_not_known_aircraft(
         )
     )
 
-    forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "pushback", _ctx(known_aircraft=[{"registration": "EC-MIG"}])
-    )
+    forward_mod.forward_to_agent("GND", "EC-MIG", "pushback", _ctx(known_aircraft=[{"registration": "EC-MIG"}]))
 
     assert captured_log[0]["callsign"] == "IBE3421"
     assert captured_log[0]["taxi_data"] == {
@@ -514,33 +456,23 @@ def test_session_log_callsign_comes_from_taxi_data_not_known_aircraft(
     ],
 )
 @respx.mock
-def test_gnd_dispatch_trigger_truth_table(
-    configured_urls, captured_log, captured_dispatch, taxi_data, should_dispatch
-):
+def test_gnd_dispatch_trigger_truth_table(configured_urls, captured_log, captured_dispatch, taxi_data, should_dispatch):
     """A whitespace-only taxi_route does not count; a falsy pushback flag alone
     does not either. Both are stripped/booled before the OR."""
     body = {"reply": "ok"}
     if taxi_data is not None:
         body["taxi_data"] = taxi_data
-    respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(200, json=body)
-    )
+    respx.post("http://gnd.test/agents/ground/run").mock(return_value=httpx.Response(200, json=body))
 
-    forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "msg", _ctx(known_aircraft=[{"registration": "EC-MIG"}])
-    )
+    forward_mod.forward_to_agent("GND", "EC-MIG", "msg", _ctx(known_aircraft=[{"registration": "EC-MIG"}]))
 
     assert bool(captured_dispatch) is should_dispatch
 
 
 @respx.mock
-def test_dispatch_is_skipped_when_registration_is_empty(
-    configured_urls, captured_log, captured_dispatch
-):
+def test_dispatch_is_skipped_when_registration_is_empty(configured_urls, captured_log, captured_dispatch):
     respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}}
-        )
+        return_value=httpx.Response(200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}})
     )
 
     forward_mod.forward_to_agent("GND", "", "msg", _ctx())
@@ -551,9 +483,7 @@ def test_dispatch_is_skipped_when_registration_is_empty(
 @respx.mock
 def test_twr_never_dispatches_a_taxi_plan(configured_urls, captured_log, captured_dispatch):
     respx.post("http://twr.test/agents/tower/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}}
-        )
+        return_value=httpx.Response(200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}})
     )
 
     forward_mod.forward_to_agent("TWR", "EC-MIG", "msg", _ctx())
@@ -562,18 +492,14 @@ def test_twr_never_dispatches_a_taxi_plan(configured_urls, captured_log, capture
 
 
 @respx.mock
-def test_dispatch_payload_shape_is_exactly_three_merged_keys(
-    configured_urls, captured_log, captured_dispatch
-):
+def test_dispatch_payload_shape_is_exactly_three_merged_keys(configured_urls, captured_log, captured_dispatch):
     """The taxi router receives the *A\\* route*, the *agent's structured taxi
     data*, and the *pilot readback* — plus the controller's original
     instruction as a separate kwarg. This is the taxi-router contract."""
     taxi_route = {"success": True, "waypoints": [{"lat": 41.0, "lon": 2.0}]}
     taxi_data = {"taxi_route": "T E1", "aircraft_registration": "IBE3421"}
     respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "Taxi via T to E1, IBE3421", "taxi_data": taxi_data}
-        )
+        return_value=httpx.Response(200, json={"reply": "Taxi via T to E1, IBE3421", "taxi_data": taxi_data})
     )
 
     forward_mod.forward_to_agent(
@@ -600,33 +526,23 @@ def test_dispatch_payload_shape_is_exactly_three_merged_keys(
 
 
 @respx.mock
-def test_dispatch_callsign_falls_back_to_registration(
-    configured_urls, captured_log, captured_dispatch
-):
+def test_dispatch_callsign_falls_back_to_registration(configured_urls, captured_log, captured_dispatch):
     respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}}
-        )
+        return_value=httpx.Response(200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}})
     )
 
-    forward_mod.forward_to_agent(
-        "GND", "EC-MIG", "msg", _ctx(known_aircraft=[{"registration": "EC-MIG"}])
-    )
+    forward_mod.forward_to_agent("GND", "EC-MIG", "msg", _ctx(known_aircraft=[{"registration": "EC-MIG"}]))
 
     assert captured_dispatch[0]["kwargs"]["callsign"] == "EC-MIG"
 
 
 @respx.mock
-def test_dispatch_merges_a_failed_taxi_route_unchanged(
-    configured_urls, captured_log, captured_dispatch
-):
+def test_dispatch_merges_a_failed_taxi_route_unchanged(configured_urls, captured_log, captured_dispatch):
     """``taxi_route`` is forwarded to the router verbatim even when it was not
     merged into the agent payload — the success filter applies only upstream."""
     failed_route = {"success": False, "error": "no route"}
     respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}}
-        )
+        return_value=httpx.Response(200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}})
     )
 
     forward_mod.forward_to_agent(
@@ -641,9 +557,7 @@ def test_dispatch_merges_a_failed_taxi_route_unchanged(
 
 
 @respx.mock
-def test_dispatch_runs_after_the_session_log_and_before_the_state_writes(
-    configured_urls, captured_log, monkeypatch
-):
+def test_dispatch_runs_after_the_session_log_and_before_the_state_writes(configured_urls, captured_log, monkeypatch):
     """Ordering guard: if dispatch blows up, the debrief entry has already been
     written but the state keys have NOT — and the tool still returns the reply.
     A refactor that moves the state writes above the dispatch would change what
@@ -656,9 +570,7 @@ def test_dispatch_runs_after_the_session_log_and_before_the_state_writes(
     fake_router.dispatch_taxi_plan = _boom
     monkeypatch.setitem(sys.modules, "shared.services.taxi_router", fake_router)
     respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "Push approved", "taxi_data": {"pushback_approved": True}}
-        )
+        return_value=httpx.Response(200, json={"reply": "Push approved", "taxi_data": {"pushback_approved": True}})
     )
     ctx = _ctx(known_aircraft=[{"registration": "EC-MIG"}])
 
@@ -676,9 +588,7 @@ def test_no_session_log_and_no_state_pollution_when_session_id_is_empty(
     """An empty session_id suppresses the debrief entry but NOT the dispatch —
     the aircraft still moves, the instructor just loses the line."""
     respx.post("http://gnd.test/agents/ground/run").mock(
-        return_value=httpx.Response(
-            200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}}
-        )
+        return_value=httpx.Response(200, json={"reply": "ok", "taxi_data": {"pushback_approved": True}})
     )
 
     forward_mod.forward_to_agent(

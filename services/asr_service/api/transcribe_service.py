@@ -12,8 +12,8 @@ from core.config import get_settings, get_model_backend
 
 logger = logging.getLogger(__name__)
 
-_model: Any = None           # faster_whisper.WhisperModel  OR  transformers pipeline
-_loaded_model_id: str = ""   # track which model is currently loaded
+_model: Any = None  # faster_whisper.WhisperModel  OR  transformers pipeline
+_loaded_model_id: str = ""  # track which model is currently loaded
 _executor = ThreadPoolExecutor(max_workers=2)
 
 
@@ -28,11 +28,14 @@ def load_model() -> Any:
     backend = get_model_backend(cfg.hf_model)
     logger.info(
         "Loading model: %s  backend=%s  device=%s",
-        cfg.hf_model, backend, cfg.whisper_device,
+        cfg.hf_model,
+        backend,
+        cfg.whisper_device,
     )
 
     if backend == "faster-whisper":
         from faster_whisper import WhisperModel
+
         _model = WhisperModel(
             cfg.hf_model,
             device=cfg.whisper_device,
@@ -41,6 +44,7 @@ def load_model() -> Any:
     else:  # transformers pipeline (large-v3 etc.)
         import torch
         from transformers import pipeline
+
         on_gpu = cfg.whisper_device == "cuda" and torch.cuda.is_available()
         device = 0 if on_gpu else -1
         pipe_kwargs: dict = {}
@@ -67,8 +71,11 @@ def load_model() -> Any:
 # excluding tempfile I/O and postprocessing (done by the caller).
 # ---------------------------------------------------------------------------
 
+
 def _transcribe_faster_whisper(
-    audio_bytes: bytes, suffix: str, initial_prompt: str | None,
+    audio_bytes: bytes,
+    suffix: str,
+    initial_prompt: str | None,
 ) -> tuple[str, float]:
     cfg = get_settings()
     model = load_model()
@@ -97,7 +104,9 @@ def _transcribe_faster_whisper(
 
 
 def _transcribe_transformers(
-    audio_bytes: bytes, suffix: str, initial_prompt: str | None,
+    audio_bytes: bytes,
+    suffix: str,
+    initial_prompt: str | None,
 ) -> tuple[str, float]:
     cfg = get_settings()
     pipe = load_model()
@@ -119,7 +128,8 @@ def _transcribe_transformers(
         except Exception as exc:
             logger.warning(
                 "[ASR] could not build prompt_ids for this transformers version (%s) — "
-                "transcribing without initial prompt.", exc,
+                "transcribing without initial prompt.",
+                exc,
             )
 
     try:
@@ -134,7 +144,8 @@ def _transcribe_transformers(
             if prompt_ids is None:
                 raise
             logger.warning(
-                "[ASR] transcription with initial_prompt failed (%s) — retrying without it.", exc,
+                "[ASR] transcription with initial_prompt failed (%s) — retrying without it.",
+                exc,
             )
             t0 = time.perf_counter()
             result = pipe(tmp_path, generate_kwargs=base_kwargs)
@@ -162,6 +173,7 @@ def _transcribe_sync(
 # ---------------------------------------------------------------------------
 # Public async entry point
 # ---------------------------------------------------------------------------
+
 
 async def transcribe_raw(
     audio_bytes: bytes,

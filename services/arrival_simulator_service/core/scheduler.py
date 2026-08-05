@@ -64,7 +64,8 @@ class ArrivalScheduler:
         self._task = asyncio.create_task(self._run_loop())
         logger.info(
             "ArrivalScheduler started (min_concurrent=%d, check_interval=%.1f s)",
-            self._min_concurrent, CHECK_INTERVAL_S,
+            self._min_concurrent,
+            CHECK_INTERVAL_S,
         )
 
     async def stop(self) -> None:
@@ -109,17 +110,21 @@ class ArrivalScheduler:
         self._active_meta[reg] = meta
         logger.info(
             "Dispatched %s — active now: %d/%d",
-            reg, len(self._active_regs), self._min_concurrent,
+            reg,
+            len(self._active_regs),
+            self._min_concurrent,
         )
 
 
 async def _purge_stale_redis_keys() -> None:
     """Delete spawn_request and move_cmd keys left over from the previous session."""
     import redis as _redis
+
     r = _redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379"), decode_responses=True)
     for key in r.keys("aircraft:spawn_request:*"):
         r.delete(key)
     from .plan_catalog import _SYNTHETIC_POOL
+
     for p in _SYNTHETIC_POOL:
         r.delete(f"aircraft:{p['aircraft_registration']}:move_cmd")
     logger.info("Purged stale arrival Redis keys")

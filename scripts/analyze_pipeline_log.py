@@ -8,6 +8,7 @@ and reports n/min/median/p95/max for each stage. Used by memoria 5.4.1.
 Usage:
     python scripts/analyze_pipeline_log.py
 """
+
 from __future__ import annotations
 
 import csv
@@ -23,9 +24,9 @@ CSV_OUT = Path("output/latencies.csv")
 # order the stages appear in the output table.
 STAGE_PAIRS = {
     "ASR (post-procesado LLM)": ("WHISPER_RAW", "LLM_CORRECTED"),
-    "Agente DEL":                ("DEL_INPUT", "DEL_REPLY"),
-    "Agente GND":                ("GND_INPUT", "GND_REPLY"),
-    "Agente TWR":                ("TWR_INPUT", "TWR_REPLY"),
+    "Agente DEL": ("DEL_INPUT", "DEL_REPLY"),
+    "Agente GND": ("GND_INPUT", "GND_REPLY"),
+    "Agente TWR": ("TWR_INPUT", "TWR_REPLY"),
 }
 
 
@@ -124,8 +125,7 @@ def main():
         if s is None:
             print(f"{label:<28} {'--':>4} {'--':>8} {'--':>8} {'--':>8} {'--':>8}")
         else:
-            print(f"{label:<28} {s['n']:>4} {s['min']:>8.1f} "
-                  f"{s['p50']:>8.1f} {s['p95']:>8.1f} {s['max']:>8.1f}")
+            print(f"{label:<28} {s['n']:>4} {s['min']:>8.1f} {s['p50']:>8.1f} {s['p95']:>8.1f} {s['max']:>8.1f}")
 
     # CSV out
     CSV_OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -136,9 +136,9 @@ def main():
             if s is None:
                 w.writerow([label, 0, "", "", "", ""])
             else:
-                w.writerow([label, s["n"],
-                            round(s["min"], 1), round(s["p50"], 1),
-                            round(s["p95"], 1), round(s["max"], 1)])
+                w.writerow(
+                    [label, s["n"], round(s["min"], 1), round(s["p50"], 1), round(s["p95"], 1), round(s["max"], 1)]
+                )
     print(f"\nWrote: {CSV_OUT}")
 
 

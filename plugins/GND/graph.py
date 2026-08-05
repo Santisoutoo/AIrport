@@ -7,9 +7,12 @@ EARTH_R_M = 6371000.0
 
 
 def project_point_to_segment(
-    lat: float, lon: float,
-    lat_a: float, lon_a: float,
-    lat_b: float, lon_b: float,
+    lat: float,
+    lon: float,
+    lat_a: float,
+    lon_a: float,
+    lat_b: float,
+    lon_b: float,
 ) -> tuple[float, float, float, float]:
     """Perpendicular foot of point P on the (infinite) line through A-B.
 
@@ -74,69 +77,63 @@ class AirportGraph:
         self._build_graph()
 
     def _load_json_data(self, json_file_path: str) -> dict:
-        with open(json_file_path, 'r', encoding='utf-8') as f:
+        with open(json_file_path, "r", encoding="utf-8") as f:
             return json.load(f)
-    
-    def _calculate_distance(
-        self, 
-        lat1: float, lon1: float, 
-        lat2: float, lon2: float
-        ) -> float:
+
+    def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate distance between two points using Haversine formula (meters)"""
         R = 6371000
-        
+
         lat1_rad, lat2_rad = math.radians(lat1), math.radians(lat2)
         delta_lat, delta_lon = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
-        
-        a = (math.sin(delta_lat/2)**2 + 
-             math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2)
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-        
+
+        a = math.sin(delta_lat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
         return R * c
-    
+
     def _build_graph(self):
         """Build the navigation graph from JSON data"""
         print("Building airport graph...")
 
         # Create nodes dictionary
-        nodes_dict = {str(node['node_id']): node for node in self.data.get('nodes', [])}
+        nodes_dict = {str(node["node_id"]): node for node in self.data.get("nodes", [])}
 
         # Add nodes to graph
-        for node in self.data.get('nodes', []):
-            node_id = str(node['node_id'])
+        for node in self.data.get("nodes", []):
+            node_id = str(node["node_id"])
             self.graph.add_node(node_id, **node)
 
             # Index by name (case-insensitive). Names are not unique.
-            name = node.get('name')
+            name = node.get("name")
             if name:
                 key = name.lower()
                 self._nodes_by_name.setdefault(key, []).append(node_id)
 
         # Add edges to graph
-        for edge in self.data.get('edges', []):
-            start_id = str(edge['start_node_id'])
-            end_id = str(edge['end_node_id'])
+        for edge in self.data.get("edges", []):
+            start_id = str(edge["start_node_id"])
+            end_id = str(edge["end_node_id"])
 
             if start_id in nodes_dict and end_id in nodes_dict:
                 start_node = nodes_dict[start_id]
                 end_node = nodes_dict[end_id]
 
                 distance = self._calculate_distance(
-                    start_node['lat'], start_node['lon'],
-                    end_node['lat'], end_node['lon']
+                    start_node["lat"], start_node["lon"], end_node["lat"], end_node["lon"]
                 )
 
-                direction = edge.get('direction', 'twoway').lower()
+                direction = edge.get("direction", "twoway").lower()
 
                 # Add edge(s) based on direction
-                if direction == 'twoway':
+                if direction == "twoway":
                     self.graph.add_edge(start_id, end_id, weight=distance, **edge)
                     self.graph.add_edge(end_id, start_id, weight=distance, **edge)
                 else:  # oneway
                     self.graph.add_edge(start_id, end_id, weight=distance, **edge)
 
                 # Index nodes by taxiway_id (uppercased) for via-point resolution
-                taxiway_id = edge.get('taxiway_id')
+                taxiway_id = edge.get("taxiway_id")
                 if taxiway_id:
                     key = str(taxiway_id).upper()
                     bucket = self._nodes_by_taxiway.setdefault(key, [])
@@ -148,27 +145,27 @@ class AirportGraph:
                     # (both directions for twoway, matching the edges added above)
                     edge_bucket = self._edges_by_taxiway.setdefault(key, set())
                     edge_bucket.add((start_id, end_id))
-                    if direction == 'twoway':
+                    if direction == "twoway":
                         edge_bucket.add((end_id, start_id))
 
         # Index stands by a normalised stand_id string. The parser stores
         # stand_id as a Python list-literal string ("['Gate', '224']") so we
         # strip brackets/quotes/commas and uppercase, then do substring lookup.
-        for stand in self.data.get('stands', []):
-            sid_raw = stand.get('stand_id', '')
+        for stand in self.data.get("stands", []):
+            sid_raw = stand.get("stand_id", "")
             sid_clean = re.sub(r"[\[\]',]", " ", str(sid_raw)).upper()
             sid_clean = " ".join(sid_clean.split())
             if sid_clean:
                 self._stands_by_id[sid_clean] = stand
 
         # Index runway thresholds by their designator
-        for runway in self.data.get('runways', []):
-            r1 = str(runway.get('runway_1_id', '')).upper()
-            r2 = str(runway.get('runway_2_id', '')).upper()
+        for runway in self.data.get("runways", []):
+            r1 = str(runway.get("runway_1_id", "")).upper()
+            r2 = str(runway.get("runway_2_id", "")).upper()
             if r1:
-                self._runways_by_id[r1] = (runway['lat'], runway['lon'])
+                self._runways_by_id[r1] = (runway["lat"], runway["lon"])
             if r2:
-                self._runways_by_id[r2] = (runway['lat_2'], runway['lon_2'])
+                self._runways_by_id[r2] = (runway["lat_2"], runway["lon_2"])
 
         # Compute the main (largest) weakly-connected component. Real-world
         # apt.dat files often contain orphan stand-area nodes; snapping a
@@ -187,10 +184,11 @@ class AirportGraph:
             f"{len(self._stands_by_id)} stands, "
             f"{len(self._runways_by_id)} runway ends"
         )
-    
+
     def find_nearest_node(
         self,
-        target_lat: float, target_lon: float,
+        target_lat: float,
+        target_lon: float,
         max_distance: float = 1000.0,
         restrict_to_main_cc: bool = False,
     ):
@@ -204,64 +202,61 @@ class AirportGraph:
                 snapping a stand or runway threshold so the resulting node
                 is reachable from the rest of the taxi network.
         """
-        min_distance = float('inf')
+        min_distance = float("inf")
         nearest_node = None
 
         candidates = self._main_cc if restrict_to_main_cc else self.graph.nodes()
         for node_id in candidates:
             node = self.graph.nodes[node_id]
-            distance = self._calculate_distance(target_lat, target_lon, node['lat'], node['lon'])
+            distance = self._calculate_distance(target_lat, target_lon, node["lat"], node["lon"])
 
             if distance < min_distance and distance <= max_distance:
                 min_distance = distance
                 nearest_node = node_id
 
         return (nearest_node, min_distance) if nearest_node else (None, None)
-    
+
     def find_shortest_path(
-        self, 
-        start_lat: float, start_lon: float, 
-        end_lat: float, end_lon: float, 
-        max_search_distance: float = 1000.0
+        self, start_lat: float, start_lon: float, end_lat: float, end_lon: float, max_search_distance: float = 1000.0
     ):
         """Find shortest path between two coordinates"""
         # Find nearest nodes
         start_node, start_dist = self.find_nearest_node(start_lat, start_lon, max_search_distance)
         end_node, end_dist = self.find_nearest_node(end_lat, end_lon, max_search_distance)
-        
+
         if not start_node:
             return {"error": f"No node found near start coordinates within {max_search_distance}m"}
-        
+
         if not end_node:
             return {"error": f"No node found near end coordinates within {max_search_distance}m"}
-        
+
         try:
             # Calculate shortest path
-            path = nx.shortest_path(self.graph, start_node, end_node, weight='weight')
-            total_distance = nx.shortest_path_length(self.graph, start_node, end_node, weight='weight')
-            
+            path = nx.shortest_path(self.graph, start_node, end_node, weight="weight")
+            total_distance = nx.shortest_path_length(self.graph, start_node, end_node, weight="weight")
+
             # Get taxiway sequence
             taxiways = []
             for i in range(len(path) - 1):
-                edge_data = self.graph.edges[path[i], path[i+1]]
-                taxiway = edge_data.get('taxiway_id', 'Unknown')
+                edge_data = self.graph.edges[path[i], path[i + 1]]
+                taxiway = edge_data.get("taxiway_id", "Unknown")
                 if taxiway not in taxiways:
                     taxiways.append(taxiway)
-            
+
             return {
                 "success": True,
                 "path": path,
                 "total_distance": total_distance + start_dist + end_dist,
                 "taxiway_sequence": " → ".join(taxiways),
                 "start_node": start_node,
-                "end_node": end_node
+                "end_node": end_node,
             }
-            
+
         except nx.NetworkXNoPath:
             return {"error": f"No route found between nodes {start_node} and {end_node}"}
         except Exception as e:
             return {"error": f"Error calculating route: {str(e)}"}
-    
+
     def _astar(self, start_node_id: str, end_node_id: str) -> list:
         """A* over the taxi graph using a Haversine heuristic.
 
@@ -270,14 +265,18 @@ class AirportGraph:
         same optimal path as Dijkstra but explores fewer nodes on large
         airports.
         """
+
         def heuristic(u: str, v: str) -> float:
             nu = self.graph.nodes[u]
             nv = self.graph.nodes[v]
-            return self._calculate_distance(nu['lat'], nu['lon'], nv['lat'], nv['lon'])
+            return self._calculate_distance(nu["lat"], nu["lon"], nv["lat"], nv["lon"])
 
         return nx.astar_path(
-            self.graph, start_node_id, end_node_id,
-            heuristic=heuristic, weight='weight',
+            self.graph,
+            start_node_id,
+            end_node_id,
+            heuristic=heuristic,
+            weight="weight",
         )
 
     def taxiway_subgraph(self, taxiway_id: str) -> nx.DiGraph:
@@ -301,6 +300,7 @@ class AirportGraph:
         edge of each taxiway. Returns [] when the taxiways do not touch or
         either is unknown.
         """
+
         def endpoints(tw: str) -> set:
             edges = self._edges_by_taxiway.get(str(tw).upper(), set())
             nodes: set = set()
@@ -311,9 +311,7 @@ class AirportGraph:
 
         return sorted(endpoints(tw_a) & endpoints(tw_b))
 
-    def _find_nearest_via_start(
-        self, start_lat: float, start_lon: float, via: list
-    ) -> tuple:
+    def _find_nearest_via_start(self, start_lat: float, start_lon: float, via: list) -> tuple:
         """Return (via_idx, node_id) of the via-point node closest to (start_lat, start_lon).
 
         Iterates every node that belongs to any taxiway in ``via`` and returns
@@ -321,14 +319,14 @@ class AirportGraph:
         given position. This determines which via-point the aircraft is closest
         to so earlier ones can be skipped without backtracking.
         """
-        best_dist = float('inf')
+        best_dist = float("inf")
         best_idx = 0
         best_node = None
         for i, tw in enumerate(via):
             key = str(tw).upper()
             for nid in self._nodes_by_taxiway.get(key, []):
                 n = self.graph.nodes[nid]
-                d = self._calculate_distance(start_lat, start_lon, n['lat'], n['lon'])
+                d = self._calculate_distance(start_lat, start_lon, n["lat"], n["lon"])
                 if d < best_dist:
                     best_dist, best_idx, best_node = d, i, nid
         return best_idx, best_node
@@ -341,8 +339,10 @@ class AirportGraph:
         return min(
             candidates,
             key=lambda nid: self._calculate_distance(
-                hint_lat, hint_lon,
-                self.graph.nodes[nid]['lat'], self.graph.nodes[nid]['lon'],
+                hint_lat,
+                hint_lon,
+                self.graph.nodes[nid]["lat"],
+                self.graph.nodes[nid]["lon"],
             ),
         )
 
@@ -377,43 +377,50 @@ class AirportGraph:
         # 0. Direct node_id — allows find_route_from_position to bypass token resolution
         if t in self.graph.nodes:
             n = self.graph.nodes[t]
-            return (t, n['lat'], n['lon'])
+            return (t, n["lat"], n["lon"])
 
         # 1. Runway threshold
         if t_upper in self._runways_by_id:
             lat, lon = self._runways_by_id[t_upper]
             node_id, _dist = self.find_nearest_node(
-                lat, lon, max_distance=2000.0, restrict_to_main_cc=True,
+                lat,
+                lon,
+                max_distance=2000.0,
+                restrict_to_main_cc=True,
             )
             if node_id:
                 n = self.graph.nodes[node_id]
-                return (node_id, n['lat'], n['lon'])
+                return (node_id, n["lat"], n["lon"])
 
         # 2. Taxiway letter
         if t_upper in self._nodes_by_taxiway:
             best = self._pick_node_by_distance(
-                self._nodes_by_taxiway[t_upper], hint_lat, hint_lon,
+                self._nodes_by_taxiway[t_upper],
+                hint_lat,
+                hint_lon,
             )
             n = self.graph.nodes[best]
-            return (best, n['lat'], n['lon'])
+            return (best, n["lat"], n["lon"])
 
         # 3. Stand identifier (substring match against the cleaned-up stand_id)
         for sid_clean, stand in self._stands_by_id.items():
             if t_upper in sid_clean:
                 node_id, _dist = self.find_nearest_node(
-                    stand['latitude'], stand['longitude'],
-                    max_distance=2000.0, restrict_to_main_cc=True,
+                    stand["latitude"],
+                    stand["longitude"],
+                    max_distance=2000.0,
+                    restrict_to_main_cc=True,
                 )
                 if node_id:
                     n = self.graph.nodes[node_id]
-                    return (node_id, n['lat'], n['lon'])
+                    return (node_id, n["lat"], n["lon"])
 
         # 4. Node name
         candidates = self._nodes_by_name.get(t.lower())
         if candidates:
             best = self._pick_node_by_distance(candidates, hint_lat, hint_lon)
             n = self.graph.nodes[best]
-            return (best, n['lat'], n['lon'])
+            return (best, n["lat"], n["lon"])
 
         return None
 
@@ -445,9 +452,7 @@ class AirportGraph:
         # aircraft never needs to backtrack in mid-taxi re-routing scenarios.
         via_list = list(via or [])
         if via_list:
-            start_idx, nearest_node_id = self._find_nearest_via_start(
-                start[1], start[2], via_list
-            )
+            start_idx, nearest_node_id = self._find_nearest_via_start(start[1], start[2], via_list)
             remaining_via = via_list[start_idx:]
         else:
             remaining_via = []
@@ -459,14 +464,14 @@ class AirportGraph:
 
         if nearest_node_id is not None and nearest_node_id != start[0]:
             n = self.graph.nodes[nearest_node_id]
-            resolved.append((nearest_node_id, n['lat'], n['lon']))
-            cur_lat, cur_lon = n['lat'], n['lon']
+            resolved.append((nearest_node_id, n["lat"], n["lon"]))
+            cur_lat, cur_lon = n["lat"], n["lon"]
 
         for v in remaining_via[1:]:  # remaining via-points after the nearest
             node_id = self._pick_via_node_on_taxiway(v, cur_lat, cur_lon)
             if node_id is not None:
                 n = self.graph.nodes[node_id]
-                resolved.append((node_id, n['lat'], n['lon']))
+                resolved.append((node_id, n["lat"], n["lon"]))
             else:
                 r = self.resolve_point(v, cur_lat, cur_lon)
                 if r is None:
@@ -499,7 +504,7 @@ class AirportGraph:
                 full_path.extend(leg[1:])  # avoid duplicating the join node
             for j in range(len(leg) - 1):
                 edge = self.graph.edges[leg[j], leg[j + 1]]
-                total_distance += edge.get('weight', 0.0)
+                total_distance += edge.get("weight", 0.0)
 
         if not full_path:
             # start == end and no via points -> trivial single-node path
@@ -510,15 +515,17 @@ class AirportGraph:
         taxiway_sequence: list = []
         for i, nid in enumerate(full_path):
             n = self.graph.nodes[nid]
-            waypoints.append({
-                "node_id": nid,
-                "lat": n['lat'],
-                "lon": n['lon'],
-                "name": n.get('name', ''),
-            })
+            waypoints.append(
+                {
+                    "node_id": nid,
+                    "lat": n["lat"],
+                    "lon": n["lon"],
+                    "name": n.get("name", ""),
+                }
+            )
             if i < len(full_path) - 1:
                 edge = self.graph.edges[nid, full_path[i + 1]]
-                tw = edge.get('taxiway_id')
+                tw = edge.get("taxiway_id")
                 if tw and (not taxiway_sequence or taxiway_sequence[-1] != tw):
                     taxiway_sequence.append(tw)
 
@@ -529,11 +536,15 @@ class AirportGraph:
             "taxiway_sequence": taxiway_sequence,
             "total_distance_m": round(total_distance, 1),
             "start": {
-                "node_id": start[0], "lat": start[1], "lon": start[2],
+                "node_id": start[0],
+                "lat": start[1],
+                "lon": start[2],
                 "token": start_token,
             },
             "end": {
-                "node_id": end[0], "lat": end[1], "lon": end[2],
+                "node_id": end[0],
+                "lat": end[1],
+                "lon": end[2],
                 "token": end_token,
             },
         }
@@ -562,7 +573,9 @@ class AirportGraph:
             return [source], 0.0
         try:
             lengths = nx.single_source_dijkstra_path_length(
-                graph, source, weight='weight',
+                graph,
+                source,
+                weight="weight",
             )
         except nx.NodeNotFound:
             return None, None
@@ -570,10 +583,9 @@ class AirportGraph:
         if not reachable:
             return None, None
         best = min(reachable, key=lambda t: lengths[t])
-        return nx.dijkstra_path(graph, source, best, weight='weight'), lengths[best]
+        return nx.dijkstra_path(graph, source, best, weight="weight"), lengths[best]
 
-    def _join_taxiway_entry(self, lat: float, lon: float, taxiway: str,
-                            targets: set):
+    def _join_taxiway_entry(self, lat: float, lon: float, taxiway: str, targets: set):
         """Straight centerline join onto ``taxiway`` from a raw position.
 
         Projects (lat, lon) perpendicularly onto each directed edge of the
@@ -600,7 +612,9 @@ class AirportGraph:
         sub = self.taxiway_subgraph(key)
         try:
             dist_to_target = nx.multi_source_dijkstra_path_length(
-                sub.reverse(copy=False), set(targets), weight='weight',
+                sub.reverse(copy=False),
+                set(targets),
+                weight="weight",
             )
         except nx.NodeNotFound:
             return None
@@ -608,16 +622,21 @@ class AirportGraph:
         best = None
         for u, v in edges:
             nu, nv = self.graph.nodes[u], self.graph.nodes[v]
-            seg_len = self.graph.edges[u, v].get('weight', 0.0)
+            seg_len = self.graph.edges[u, v].get("weight", 0.0)
             if seg_len <= 0.0:
                 continue
             _f_lat, _f_lon, _perp, t = project_point_to_segment(
-                lat, lon, nu['lat'], nu['lon'], nv['lat'], nv['lon'],
+                lat,
+                lon,
+                nu["lat"],
+                nu["lon"],
+                nv["lat"],
+                nv["lon"],
             )
             ext = self.MAX_ENTRY_EXTENSION_M / seg_len
             t = max(-ext, min(1.0 + ext, t))
-            join_lat = nu['lat'] + t * (nv['lat'] - nu['lat'])
-            join_lon = nu['lon'] + t * (nv['lon'] - nu['lon'])
+            join_lat = nu["lat"] + t * (nv["lat"] - nu["lat"])
+            join_lon = nu["lon"] + t * (nv["lon"] - nu["lon"])
             entry_dist = self._calculate_distance(lat, lon, join_lat, join_lon)
             if entry_dist > self.MAX_ENTRY_JOIN_M:
                 continue
@@ -627,7 +646,7 @@ class AirportGraph:
             if entry_node not in dist_to_target:
                 continue
             en = self.graph.nodes[entry_node]
-            along = self._calculate_distance(join_lat, join_lon, en['lat'], en['lon'])
+            along = self._calculate_distance(join_lat, join_lon, en["lat"], en["lon"])
             # Rank: nearest feasible stretch first, then cheapest continuation,
             # then the entry node closest to the foot (breaks the tie between
             # collinear segments whose prolongations claim the same foot).
@@ -639,12 +658,15 @@ class AirportGraph:
                 along,
             )
             if best is None or cost < best[0]:
-                best = (cost, {
-                    "foot": (join_lat, join_lon),
-                    "entry_node": entry_node,
-                    "entry_dist_m": entry_dist,
-                    "along_m": along,
-                })
+                best = (
+                    cost,
+                    {
+                        "foot": (join_lat, join_lon),
+                        "entry_node": entry_node,
+                        "entry_dist_m": entry_dist,
+                        "along_m": along,
+                    },
+                )
         return best[1] if best else None
 
     def find_route_strict(
@@ -670,10 +692,15 @@ class AirportGraph:
         if start is None:
             return {"success": False, "error": f"Could not resolve start token: {start_token!r}"}
         return self._route_strict_core(
-            sequence, destination_token,
-            start_lat=start[1], start_lon=start[2], start_node=start[0],
+            sequence,
+            destination_token,
+            start_lat=start[1],
+            start_lon=start[2],
+            start_node=start[0],
             start_meta={
-                "node_id": start[0], "lat": start[1], "lon": start[2],
+                "node_id": start[0],
+                "lat": start[1],
+                "lon": start[2],
                 "token": start_token,
             },
         )
@@ -736,13 +763,17 @@ class AirportGraph:
             elif end[0] in tw_nodes(seq[0]):
                 targets = {end[0]}
             else:
-                targets = {min(
-                    tw_nodes(seq[0]),
-                    key=lambda n: self._calculate_distance(
-                        self.graph.nodes[n]['lat'], self.graph.nodes[n]['lon'],
-                        end[1], end[2],
-                    ),
-                )}
+                targets = {
+                    min(
+                        tw_nodes(seq[0]),
+                        key=lambda n: self._calculate_distance(
+                            self.graph.nodes[n]["lat"],
+                            self.graph.nodes[n]["lon"],
+                            end[1],
+                            end[2],
+                        ),
+                    )
+                }
             join = self._join_taxiway_entry(start_lat, start_lon, seq[0], targets)
             if join is None:
                 return {
@@ -772,7 +803,9 @@ class AirportGraph:
                     "error": f"taxiway sequence not connected: {here} -> {nxt}",
                 }
             leg_path, _dist = self._dijkstra_to_nearest(
-                self.taxiway_subgraph(here), cur, crossings,
+                self.taxiway_subgraph(here),
+                cur,
+                crossings,
             )
             if leg_path is None:
                 return {
@@ -798,7 +831,9 @@ class AirportGraph:
         else:
             try:
                 lengths = nx.single_source_dijkstra_path_length(
-                    last_sub, cur, weight='weight',
+                    last_sub,
+                    cur,
+                    weight="weight",
                 )
             except nx.NodeNotFound:
                 lengths = {cur: 0.0}
@@ -806,12 +841,14 @@ class AirportGraph:
             exit_node = min(
                 reachable,
                 key=lambda n: self._calculate_distance(
-                    self.graph.nodes[n]['lat'], self.graph.nodes[n]['lon'],
-                    end[1], end[2],
+                    self.graph.nodes[n]["lat"],
+                    self.graph.nodes[n]["lon"],
+                    end[1],
+                    end[2],
                 ),
             )
             if exit_node != cur:
-                leg_path = nx.dijkstra_path(last_sub, cur, exit_node, weight='weight')
+                leg_path = nx.dijkstra_path(last_sub, cur, exit_node, weight="weight")
                 full_path.extend(leg_path[1:])
             # Bounded unconstrained hop off the last taxiway to the destination
             if exit_node != end[0]:
@@ -822,16 +859,12 @@ class AirportGraph:
                         "success": False,
                         "error": f"no path from taxiway '{last}' to destination",
                     }
-                hop_dist = sum(
-                    self.graph.edges[hop[j], hop[j + 1]].get('weight', 0.0)
-                    for j in range(len(hop) - 1)
-                )
+                hop_dist = sum(self.graph.edges[hop[j], hop[j + 1]].get("weight", 0.0) for j in range(len(hop) - 1))
                 if hop_dist > self.MAX_EXIT_HOP_M:
                     return {
                         "success": False,
                         "error": (
-                            f"destination too far from taxiway '{last}' "
-                            f"({hop_dist:.0f}m off the authorized sequence)"
+                            f"destination too far from taxiway '{last}' ({hop_dist:.0f}m off the authorized sequence)"
                         ),
                     }
                 full_path.extend(hop[1:])
@@ -841,22 +874,23 @@ class AirportGraph:
         # synthetic entry waypoint (centerline join point) is prepended to
         # the waypoints only — path_node_ids stays graph-nodes-only.
         total_distance = entry_along + sum(
-            self.graph.edges[full_path[j], full_path[j + 1]].get('weight', 0.0)
-            for j in range(len(full_path) - 1)
+            self.graph.edges[full_path[j], full_path[j + 1]].get("weight", 0.0) for j in range(len(full_path) - 1)
         )
         waypoints = []
         taxiway_sequence: list = []
         for i, nid in enumerate(full_path):
             n = self.graph.nodes[nid]
-            waypoints.append({
-                "node_id": nid,
-                "lat": n['lat'],
-                "lon": n['lon'],
-                "name": n.get('name', ''),
-            })
+            waypoints.append(
+                {
+                    "node_id": nid,
+                    "lat": n["lat"],
+                    "lon": n["lon"],
+                    "name": n.get("name", ""),
+                }
+            )
             if i < len(full_path) - 1:
                 edge = self.graph.edges[nid, full_path[i + 1]]
-                tw = edge.get('taxiway_id')
+                tw = edge.get("taxiway_id")
                 if tw and (not taxiway_sequence or taxiway_sequence[-1] != tw):
                     taxiway_sequence.append(tw)
         if entry_wp is not None:
@@ -872,7 +906,9 @@ class AirportGraph:
             "entry_distance_m": round(entry_dist, 1),
             "start": start_meta,
             "end": {
-                "node_id": end[0], "lat": end[1], "lon": end[2],
+                "node_id": end[0],
+                "lat": end[1],
+                "lon": end[2],
                 "token": destination_token,
             },
         }
@@ -894,7 +930,10 @@ class AirportGraph:
         reported as ``start`` metadata.
         """
         snapped, _snap = self.find_nearest_node(
-            start_lat, start_lon, max_distance=2000.0, restrict_to_main_cc=True,
+            start_lat,
+            start_lon,
+            max_distance=2000.0,
+            restrict_to_main_cc=True,
         )
         if snapped is None:
             return {
@@ -902,10 +941,15 @@ class AirportGraph:
                 "error": f"No connected node within 2000m of ({start_lat:.6f}, {start_lon:.6f})",
             }
         return self._route_strict_core(
-            sequence, destination_token,
-            start_lat=start_lat, start_lon=start_lon, start_node=None,
+            sequence,
+            destination_token,
+            start_lat=start_lat,
+            start_lon=start_lon,
+            start_node=None,
             start_meta={
-                "node_id": snapped, "lat": start_lat, "lon": start_lon,
+                "node_id": snapped,
+                "lat": start_lat,
+                "lon": start_lon,
                 "token": snapped,
             },
         )
@@ -925,7 +969,10 @@ class AirportGraph:
         but there is no explicit stand name for the origin.
         """
         start_node, _snap = self.find_nearest_node(
-            start_lat, start_lon, max_distance=2000.0, restrict_to_main_cc=True,
+            start_lat,
+            start_lon,
+            max_distance=2000.0,
+            restrict_to_main_cc=True,
         )
         if start_node is None:
             return {
@@ -933,7 +980,7 @@ class AirportGraph:
                 "error": f"No connected node within 2000m of ({start_lat:.6f}, {start_lon:.6f})",
             }
         return self.find_route_via(
-            start_token=start_node,   # resolve_point step 0 handles bare node IDs
+            start_token=start_node,  # resolve_point step 0 handles bare node IDs
             end_token=end_token,
             via=via,
             hint_lat=start_lat,
@@ -945,14 +992,14 @@ class AirportGraph:
         if "error" in result:
             print(f"❌ {result['error']}")
             return
-        
+
         print("\nRoute found:")
         print(f"Distance: {result['total_distance']:.1f}m")
         print(f"Taxiways: {result['taxiway_sequence']}")
         print(f"Path: {result['start_node']} → {result['end_node']} ({len(result['path'])} nodes)")
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     from pathlib import Path
 
     ICAO = "LEBL"
@@ -966,17 +1013,17 @@ if __name__ == "__main__":
         start_lat, start_lon = 41.294810, 2.079630
         end_lat, end_lon = 41.292172, 2.103167
         print(f"\n[1] Coordinate route ({start_lat}, {start_lon}) -> ({end_lat}, {end_lon})")
-        airport.print_route(
-            airport.find_shortest_path(start_lat, start_lon, end_lat, end_lon)
-        )
+        airport.print_route(airport.find_shortest_path(start_lat, start_lon, end_lat, end_lon))
 
         # 2. End-to-end via runway designator with no intermediate via points
         print("\n[2] find_route_via('B', '06R')")
         result = airport.find_route_via("B", "06R")
         if result.get("success"):
-            print(f"  nodes={len(result['path_node_ids'])} "
-                  f"distance={result['total_distance_m']}m "
-                  f"taxiways={result['taxiway_sequence']}")
+            print(
+                f"  nodes={len(result['path_node_ids'])} "
+                f"distance={result['total_distance_m']}m "
+                f"taxiways={result['taxiway_sequence']}"
+            )
         else:
             print(f"  ERROR: {result.get('error')}")
 
@@ -984,9 +1031,11 @@ if __name__ == "__main__":
         print("\n[3] find_route_via('B', '24L', via=['D','E'])")
         result = airport.find_route_via("B", "24L", via=["D", "E"])
         if result.get("success"):
-            print(f"  nodes={len(result['path_node_ids'])} "
-                  f"distance={result['total_distance_m']}m "
-                  f"taxiways={result['taxiway_sequence']}")
+            print(
+                f"  nodes={len(result['path_node_ids'])} "
+                f"distance={result['total_distance_m']}m "
+                f"taxiways={result['taxiway_sequence']}"
+            )
             print(f"  start={result['start']} end={result['end']}")
         else:
             print(f"  ERROR: {result.get('error')}")

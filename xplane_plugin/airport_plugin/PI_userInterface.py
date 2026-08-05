@@ -7,7 +7,6 @@ _window_manager = WindowManager()
 
 
 class PythonInterface:
-
     def XPluginStart(self) -> Tuple[str, str, str]:
         return _window_manager.register_plugin()
 

@@ -43,43 +43,28 @@ def captured_tts(monkeypatch):
 
 
 def test_handle_request_landing_pushes_tts_with_pilot_phrase(captured_tts):
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"})
 
-    event_bridge._handle_event(
-        "EC-NEW", {"event": "request_landing", "dme_nm": 4.0}
-    )
+    event_bridge._handle_event("EC-NEW", {"event": "request_landing", "dme_nm": 4.0})
 
     assert len(captured_tts) == 1
-    assert (
-        captured_tts[0]
-        == "Tower, VLG1234, 4 miles final runway 17, request landing."
-    )
+    assert captured_tts[0] == "Tower, VLG1234, 4 miles final runway 17, request landing."
 
 
 def test_handle_request_landing_rounds_dme_to_int(captured_tts):
     """DME from the mover is a float; the phrase must read as an integer mile count."""
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "35"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "35"})
 
-    event_bridge._handle_event(
-        "EC-NEW", {"event": "request_landing", "dme_nm": 3.8}
-    )
+    event_bridge._handle_event("EC-NEW", {"event": "request_landing", "dme_nm": 3.8})
 
     assert "4 miles final" in captured_tts[0]
 
 
 def test_handle_request_landing_accepts_string_dme(captured_tts):
     """A stringified DME from the JSON payload must still parse cleanly."""
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"})
 
-    event_bridge._handle_event(
-        "EC-NEW", {"event": "request_landing", "dme_nm": "4"}
-    )
+    event_bridge._handle_event("EC-NEW", {"event": "request_landing", "dme_nm": "4"})
 
     assert "4 miles final" in captured_tts[0]
 
@@ -90,14 +75,10 @@ def test_handle_invalid_dme_value_raises_or_skips_gracefully(captured_tts):
     The current implementation (float('not-a-num')) raises, so we just verify
     that the surrounding loop's exception handler (in run_bridge) would catch it.
     """
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"})
 
     with pytest.raises(ValueError):
-        event_bridge._handle_event(
-            "EC-NEW", {"event": "request_landing", "dme_nm": "not-a-num"}
-        )
+        event_bridge._handle_event("EC-NEW", {"event": "request_landing", "dme_nm": "not-a-num"})
 
 
 # ---------------------------------------------------------------------------
@@ -106,9 +87,7 @@ def test_handle_invalid_dme_value_raises_or_skips_gracefully(captured_tts):
 
 
 def test_handle_rolling_out_pushes_vacating_phrase(captured_tts):
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"})
 
     event_bridge._handle_event("EC-NEW", {"event": "rolling_out"})
 
@@ -121,9 +100,7 @@ def test_handle_rolling_out_pushes_vacating_phrase(captured_tts):
 
 
 def test_handle_reached_end_unregisters_arrival(captured_tts):
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"})
     assert "EC-NEW" in event_bridge._active_arrivals
 
     event_bridge._handle_event("EC-NEW", {"event": "reached_end"})
@@ -133,9 +110,7 @@ def test_handle_reached_end_unregisters_arrival(captured_tts):
 
 def test_handle_reached_end_notifies_scheduler():
     """If the scheduler module is importable, remove_arrival is called."""
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"})
 
     with patch("core.scheduler.get_scheduler") as mock_get:
         mock_scheduler = mock_get.return_value
@@ -145,9 +120,7 @@ def test_handle_reached_end_notifies_scheduler():
 
 def test_handle_reached_end_swallows_scheduler_failure():
     """Failure to notify the scheduler must NOT propagate."""
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"})
 
     with patch("core.scheduler.get_scheduler", side_effect=RuntimeError("no scheduler")):
         # Must not raise
@@ -164,16 +137,12 @@ def test_handle_reached_end_swallows_scheduler_failure():
 
 def test_handle_event_for_unregistered_reg_is_noop(captured_tts):
     """An event for an aircraft not registered as an arrival is ignored."""
-    event_bridge._handle_event(
-        "EC-UNKNOWN", {"event": "request_landing", "dme_nm": 4.0}
-    )
+    event_bridge._handle_event("EC-UNKNOWN", {"event": "request_landing", "dme_nm": 4.0})
     assert captured_tts == []
 
 
 def test_handle_event_with_unknown_event_kind_is_silent(captured_tts):
-    event_bridge.register_arrival(
-        {"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"}
-    )
+    event_bridge.register_arrival({"registration": "EC-NEW", "callsign": "VLG1234", "runway": "17"})
 
     event_bridge._handle_event("EC-NEW", {"event": "something_else"})
 

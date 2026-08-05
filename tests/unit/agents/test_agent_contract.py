@@ -128,9 +128,7 @@ EXPECTED_APPS = {
         "role": "tower",
         "title": "AIrport TWR Agent",
         "version": "0.1.0",
-        "description": (
-            "Pilot on Tower frequency — reads back lineup, takeoff and landing clearances"
-        ),
+        "description": ("Pilot on Tower frequency — reads back lineup, takeoff and landing clearances"),
         "data_key": "reply_data",
         "context_fields": ("clearance_data",),
     },

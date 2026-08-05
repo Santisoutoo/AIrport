@@ -31,4 +31,5 @@ def get_db():
 
 def init_db():
     from db.models import AircraftClearance
+
     Base.metadata.create_all(bind=engine)

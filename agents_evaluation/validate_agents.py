@@ -18,6 +18,7 @@ CLI:
 
 Reads endpoints from .env (DEL_AGENT_URL, GND_AGENT_URL, TWR_AGENT_URL).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -51,17 +52,46 @@ DEFAULT_TIMEOUT_S = int(os.environ.get("VALIDATE_TIMEOUT_S", "180"))
 RETRY_SLEEP_S = 5
 
 PHONETIC_DIGIT = {
-    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
-    "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "niner": 9,
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "niner": 9,
 }
 DIGIT_WORDS_RE = r"(?:zero|one|two|three|four|five|six|seven|eight|nine|niner)"
 
 PHONETIC_LETTER = {
-    "alpha": "A", "bravo": "B", "charlie": "C", "delta": "D", "echo": "E",
-    "foxtrot": "F", "golf": "G", "hotel": "H", "india": "I", "juliet": "J",
-    "kilo": "K", "lima": "L", "mike": "M", "november": "N", "oscar": "O",
-    "papa": "P", "quebec": "Q", "romeo": "R", "sierra": "S", "tango": "T",
-    "uniform": "U", "victor": "V", "whiskey": "W", "xray": "X", "yankee": "Y",
+    "alpha": "A",
+    "bravo": "B",
+    "charlie": "C",
+    "delta": "D",
+    "echo": "E",
+    "foxtrot": "F",
+    "golf": "G",
+    "hotel": "H",
+    "india": "I",
+    "juliet": "J",
+    "kilo": "K",
+    "lima": "L",
+    "mike": "M",
+    "november": "N",
+    "oscar": "O",
+    "papa": "P",
+    "quebec": "Q",
+    "romeo": "R",
+    "sierra": "S",
+    "tango": "T",
+    "uniform": "U",
+    "victor": "V",
+    "whiskey": "W",
+    "xray": "X",
+    "yankee": "Y",
     "zulu": "Z",
 }
 LETTER_WORDS_RE = (
@@ -74,18 +104,43 @@ RUNWAY_SIDE = {"left": "L", "right": "R", "center": "C", "centre": "C"}
 
 # City → ICAO. Only unambiguous mappings seen in the corpus.
 CITY_ICAO = {
-    "Dublin": "EIDW", "Barcelona": "LEBL", "Frankfurt": "EDDF",
-    "London Heathrow": "EGLL", "London Gatwick": "EGKK", "London Stansted": "EGSS",
-    "Zurich": "LSZH", "Paris Charles de Gaulle": "LFPG",
-    "Palma de Mallorca": "LEPA", "Oslo": "ENGM", "Lisbon": "LPPT",
-    "Amsterdam": "EHAM", "Helsinki": "EFHK", "Munich": "EDDM", "Bilbao": "LEBB",
-    "Manchester": "EGCC", "Cork": "EICK", "Bergen": "ENBR", "Budapest": "LHBP",
-    "Madrid": "LEMD", "Rome Fiumicino": "LIRF", "Sevilla": "LEZL",
-    "Trondheim": "ENVA", "Vienna": "LOWW", "Stockholm": "ESSA",
-    "Warsaw": "EPWA", "Zagreb": "LDZA", "Valencia": "LEVC", "Geneva": "LSGG",
-    "Bristol": "EGGD", "Alicante": "LEAL", "Bucharest": "LROP",
-    "Birmingham": "EGBB", "Naples": "LIRN", "Marseille": "LFML",
-    "Porto": "LPPR", "Rotterdam": "EHRD",
+    "Dublin": "EIDW",
+    "Barcelona": "LEBL",
+    "Frankfurt": "EDDF",
+    "London Heathrow": "EGLL",
+    "London Gatwick": "EGKK",
+    "London Stansted": "EGSS",
+    "Zurich": "LSZH",
+    "Paris Charles de Gaulle": "LFPG",
+    "Palma de Mallorca": "LEPA",
+    "Oslo": "ENGM",
+    "Lisbon": "LPPT",
+    "Amsterdam": "EHAM",
+    "Helsinki": "EFHK",
+    "Munich": "EDDM",
+    "Bilbao": "LEBB",
+    "Manchester": "EGCC",
+    "Cork": "EICK",
+    "Bergen": "ENBR",
+    "Budapest": "LHBP",
+    "Madrid": "LEMD",
+    "Rome Fiumicino": "LIRF",
+    "Sevilla": "LEZL",
+    "Trondheim": "ENVA",
+    "Vienna": "LOWW",
+    "Stockholm": "ESSA",
+    "Warsaw": "EPWA",
+    "Zagreb": "LDZA",
+    "Valencia": "LEVC",
+    "Geneva": "LSGG",
+    "Bristol": "EGGD",
+    "Alicante": "LEAL",
+    "Bucharest": "LROP",
+    "Birmingham": "EGBB",
+    "Naples": "LIRN",
+    "Marseille": "LFML",
+    "Porto": "LPPR",
+    "Rotterdam": "EHRD",
 }
 
 
@@ -166,13 +221,15 @@ def extract_ground_truth(dep: str, atc_text: str, expected_readback: str) -> dic
 
         m = re.search(
             rf"initial climb ((?:{DIGIT_WORDS_RE}\s+)*{DIGIT_WORDS_RE}\s+thousand)",
-            text, re.I,
+            text,
+            re.I,
         )
         gt["initial_altitude"] = phonetic_thousands(m.group(1)) if m else None
 
         m = re.search(
             rf"via (?:the\s+)?([A-Za-z]+)\s+({DIGIT_WORDS_RE})\s+({LETTER_WORDS_RE})\s+departure",
-            text, re.I,
+            text,
+            re.I,
         )
         gt["instrumental_departure"] = sid_code(m.group(1), m.group(2), m.group(3)) if m else None
 
@@ -222,19 +279,25 @@ def compare_fields(dep: str, ground_truth: dict, agent_block: dict | None) -> di
         returned = agent_block.get(field)
         if expected is None:
             results[field] = {
-                "expected": None, "returned": returned,
-                "match": None, "reason": "no_ground_truth",
+                "expected": None,
+                "returned": returned,
+                "match": None,
+                "reason": "no_ground_truth",
             }
         elif returned in (None, ""):
             results[field] = {
-                "expected": expected, "returned": returned,
-                "match": False, "reason": "missing",
+                "expected": expected,
+                "returned": returned,
+                "match": False,
+                "reason": "missing",
             }
         else:
             ok = normalize(expected) == normalize(returned)
             results[field] = {
-                "expected": expected, "returned": returned,
-                "match": ok, "reason": "ok" if ok else "mismatch",
+                "expected": expected,
+                "returned": returned,
+                "match": ok,
+                "reason": "ok" if ok else "mismatch",
             }
     return results
 
@@ -244,8 +307,10 @@ def call_agent_with_retry(url: str, session_id: str, message: str, timeout_s: in
 
     def _attempt():
         req = urllib.request.Request(
-            url, data=payload,
-            headers={"Content-Type": "application/json"}, method="POST",
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
         )
         t0 = time.perf_counter()
         with urllib.request.urlopen(req, timeout=timeout_s) as resp:
@@ -298,22 +363,24 @@ def run_dependency(dep: str, base_url: str, timeout_s: int, no_call: bool) -> li
                     break
         field_results = compare_fields(dep, gt, agent_block) if schema_valid else {}
 
-        rows.append({
-            "dep": dep,
-            "entry_id": entry_id,
-            "session_id": session_id,
-            "atc_text": atc_text,
-            "expected_readback": pilot_text,
-            "ground_truth": gt,
-            "agent_response": resp,
-            "structured_block": agent_block,
-            "status": status,
-            "latency_s": round(lat, 3),
-            "schema_valid": schema_valid,
-            "bloque_completo": bloque_completo,
-            "field_results": field_results,
-            "error": err,
-        })
+        rows.append(
+            {
+                "dep": dep,
+                "entry_id": entry_id,
+                "session_id": session_id,
+                "atc_text": atc_text,
+                "expected_readback": pilot_text,
+                "ground_truth": gt,
+                "agent_response": resp,
+                "structured_block": agent_block,
+                "status": status,
+                "latency_s": round(lat, 3),
+                "schema_valid": schema_valid,
+                "bloque_completo": bloque_completo,
+                "field_results": field_results,
+                "error": err,
+            }
+        )
         mark = "OK " if schema_valid else "ERR"
         print(f"[{dep}] [{i:3d}/{len(entries)}] {entry_id} {mark} ({lat:5.1f}s)", flush=True)
     return rows
@@ -342,8 +409,10 @@ def write_summary_csv(rows: list[dict], path: Path):
         w.writeheader()
         for r in rows:
             row = {
-                "dep": r["dep"], "entry_id": r["entry_id"],
-                "status": r["status"], "latency_s": r["latency_s"],
+                "dep": r["dep"],
+                "entry_id": r["entry_id"],
+                "status": r["status"],
+                "latency_s": r["latency_s"],
                 "schema_valid": r["schema_valid"],
                 "bloque_completo": r["bloque_completo"],
                 "error": r["error"],
@@ -382,7 +451,7 @@ def print_summary(rows: list[dict]):
 
     header = f"{'Dep':<5} {'n':>4} {'%schema':>9} {'%bloque':>9}"
     for f in all_fields:
-        header += f" {'%'+f:>14}"
+        header += f" {'%' + f:>14}"
     print(header)
     print("-" * len(header))
 
@@ -393,7 +462,7 @@ def print_summary(rows: list[dict]):
             continue
         schema_ok = sum(1 for r in sub if r["schema_valid"])
         bloque_ok = sum(1 for r in sub if r["bloque_completo"])
-        line = f"{dep:<5} {n:>4} {100*schema_ok/n:>8.1f}% {100*bloque_ok/n:>8.1f}%"
+        line = f"{dep:<5} {n:>4} {100 * schema_ok / n:>8.1f}% {100 * bloque_ok / n:>8.1f}%"
         for field in all_fields:
             if field not in fields_by_dep[dep]:
                 line += f" {'-':>14}"
@@ -410,7 +479,7 @@ def print_summary(rows: list[dict]):
                 elif m is False:
                     total += 1
             if total:
-                line += f" {100*ok/total:>13.1f}%"
+                line += f" {100 * ok / total:>13.1f}%"
             else:
                 line += f" {'n/a':>14}"
         print(line)
@@ -432,11 +501,15 @@ def preview_ground_truth(n: int = 3):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_S,
-                    help=f"Per-request timeout in seconds (default {DEFAULT_TIMEOUT_S}; "
-                         f"override with env VALIDATE_TIMEOUT_S)")
-    ap.add_argument("--no-call", action="store_true",
-                    help="Skip agent calls; exercise extraction/comparison pipeline only.")
+    ap.add_argument(
+        "--timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT_S,
+        help=f"Per-request timeout in seconds (default {DEFAULT_TIMEOUT_S}; override with env VALIDATE_TIMEOUT_S)",
+    )
+    ap.add_argument(
+        "--no-call", action="store_true", help="Skip agent calls; exercise extraction/comparison pipeline only."
+    )
     args = ap.parse_args()
 
     urls = load_env_urls()
@@ -452,8 +525,7 @@ def main():
     all_rows: list[dict] = []
     with ThreadPoolExecutor(max_workers=3) as ex:
         futures = {
-            ex.submit(run_dependency, dep, urls[dep], args.timeout, args.no_call): dep
-            for dep in ("DEL", "GND", "TWR")
+            ex.submit(run_dependency, dep, urls[dep], args.timeout, args.no_call): dep for dep in ("DEL", "GND", "TWR")
         }
         for fut in as_completed(futures):
             dep = futures[fut]

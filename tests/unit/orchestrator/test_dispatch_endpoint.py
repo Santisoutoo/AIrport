@@ -108,9 +108,7 @@ def stub_session_log(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_dispatch_returns_200_with_reply_and_agent(
-    client, stub_runner, stub_tts, stub_session_log
-):
+def test_dispatch_returns_200_with_reply_and_agent(client, stub_runner, stub_tts, stub_session_log):
     resp = client.post(
         "/dispatch",
         json={"session_id": "sess-1", "message": "request startup"},
@@ -124,9 +122,7 @@ def test_dispatch_returns_200_with_reply_and_agent(
     assert body["session_id"] == "sess-1"
 
 
-def test_dispatch_appends_transcript_before_orchestrator_call(
-    client, stub_runner, stub_tts, stub_session_log
-):
+def test_dispatch_appends_transcript_before_orchestrator_call(client, stub_runner, stub_tts, stub_session_log):
     client.post("/dispatch", json={"session_id": "sess-1", "message": "hello"})
 
     assert len(stub_session_log) == 1
@@ -135,9 +131,7 @@ def test_dispatch_appends_transcript_before_orchestrator_call(
     assert len(stub_runner.calls_list) == 1
 
 
-def test_dispatch_publishes_tts_on_success(
-    client, stub_runner, stub_tts, stub_session_log
-):
+def test_dispatch_publishes_tts_on_success(client, stub_runner, stub_tts, stub_session_log):
     client.post("/dispatch", json={"session_id": "sess-1", "message": "hello"})
 
     tts_queue = stub_tts.lists["tts:queue"]
@@ -151,22 +145,16 @@ def test_dispatch_publishes_tts_on_success(
 # ---------------------------------------------------------------------------
 
 
-def test_dispatch_returns_500_when_orchestrator_raises(
-    client, stub_runner, stub_tts, stub_session_log
-):
+def test_dispatch_returns_500_when_orchestrator_raises(client, stub_runner, stub_tts, stub_session_log):
     stub_runner.raise_exception(RuntimeError("agent boom"))
 
-    resp = client.post(
-        "/dispatch", json={"session_id": "sess-1", "message": "hello"}
-    )
+    resp = client.post("/dispatch", json={"session_id": "sess-1", "message": "hello"})
 
     assert resp.status_code == 500
     assert "Orchestrator error" in resp.json()["detail"]
 
 
-def test_dispatch_transcript_appended_even_when_orchestrator_raises(
-    client, stub_runner, stub_tts, stub_session_log
-):
+def test_dispatch_transcript_appended_even_when_orchestrator_raises(client, stub_runner, stub_tts, stub_session_log):
     """Transcript capture happens BEFORE the orchestrator call -- must persist on failure."""
     stub_runner.raise_exception(RuntimeError("agent boom"))
 
@@ -176,9 +164,7 @@ def test_dispatch_transcript_appended_even_when_orchestrator_raises(
     assert stub_session_log[0]["text"] == "msg"
 
 
-def test_dispatch_tts_failure_does_not_break_response(
-    client, stub_runner, stub_session_log, monkeypatch, fake_redis
-):
+def test_dispatch_tts_failure_does_not_break_response(client, stub_runner, stub_session_log, monkeypatch, fake_redis):
     """If TTS publish fails, the dispatch must still return 200."""
     import types
 
@@ -189,9 +175,7 @@ def test_dispatch_tts_failure_does_not_break_response(
     )
     monkeypatch.setattr(dispatch_mod, "_redis", fake_redis_module)
 
-    resp = client.post(
-        "/dispatch", json={"session_id": "sess-1", "message": "hello"}
-    )
+    resp = client.post("/dispatch", json={"session_id": "sess-1", "message": "hello"})
 
     assert resp.status_code == 200
 
@@ -216,9 +200,7 @@ def test_dispatch_request_validation_rejects_missing_session_id(client):
 # ---------------------------------------------------------------------------
 
 
-def test_dispatch_includes_callsign_in_response(
-    client, stub_runner, stub_tts, stub_session_log
-):
+def test_dispatch_includes_callsign_in_response(client, stub_runner, stub_tts, stub_session_log):
     stub_runner.set_result(
         {
             "reply": "ok",
@@ -231,9 +213,7 @@ def test_dispatch_includes_callsign_in_response(
     assert resp.json()["callsign"] == "IBE3421"
 
 
-def test_dispatch_handles_null_registration(
-    client, stub_runner, stub_tts, stub_session_log
-):
+def test_dispatch_handles_null_registration(client, stub_runner, stub_tts, stub_session_log):
     """A response with registration=None must still serialise (validates DispatchResponse nullable)."""
     stub_runner.set_result(
         {

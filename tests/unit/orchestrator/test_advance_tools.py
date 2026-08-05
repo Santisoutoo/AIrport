@@ -81,9 +81,7 @@ def test_advance_uses_registration_when_callsign_null(tool, advance_key, expecte
 
 
 @pytest.mark.parametrize("tool, advance_key, expected_dep", ADVANCE_TOOLS)
-def test_advance_unknown_registration_uses_registration_as_callsign(
-    tool, advance_key, expected_dep
-):
+def test_advance_unknown_registration_uses_registration_as_callsign(tool, advance_key, expected_dep):
     """Registration not present in known_aircraft -- readback uses registration."""
     ctx = _ctx([{"registration": "EC-AAA", "callsign": "IBE111"}])
 

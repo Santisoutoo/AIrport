@@ -62,7 +62,6 @@ class AircraftStateStore:
         """Initialise the InfluxDB write API."""
         self._influx_write_api = self._influx.write_api()
 
-
     def connect_influx(self) -> None:
         """Connect to InfluxDB. Called when the session starts."""
         try:
@@ -112,7 +111,9 @@ class AircraftStateStore:
             bucket = os.getenv("INFLUXDB_BUCKET", "airport")
             org = os.getenv("INFLUXDB_ORG", "airport")
             self._influx_write_api.write(
-                bucket=bucket, org=org, record=self._influx_buffer,
+                bucket=bucket,
+                org=org,
+                record=self._influx_buffer,
             )
         except Exception as e:
             print(f"AIrport: InfluxDB write error: {e}")
@@ -171,9 +172,9 @@ class AircraftStateStore:
             return []
 
         bucket = os.getenv("INFLUXDB_BUCKET", "airport")
-        start_clause = f', start: {start}' if start else ', start: -1h'
-        stop_clause = f', stop: {stop}' if stop else ''
-        reg_filter = ''
+        start_clause = f", start: {start}" if start else ", start: -1h"
+        stop_clause = f", stop: {stop}" if stop else ""
+        reg_filter = ""
         if registration:
             reg_filter = f'|> filter(fn: (r) => r["registration"] == "{registration}")'
 

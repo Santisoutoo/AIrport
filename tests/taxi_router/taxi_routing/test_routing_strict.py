@@ -8,6 +8,7 @@ LEBL adjacency used below (from `taxiway_intersections` on the fixture):
 D-K, D-M, D-N, E-J, E-K, E-L, E-M, E-N, J-Q, M-S. Taxiway B touches none
 of the sampled set.
 """
+
 import networkx as nx
 import pytest
 
@@ -24,13 +25,11 @@ def _start_node_on(graph, tw):
 
 
 def _edge_taxiways(graph, path):
-    return [
-        str(graph.graph.edges[path[i], path[i + 1]].get("taxiway_id", "")).upper()
-        for i in range(len(path) - 1)
-    ]
+    return [str(graph.graph.edges[path[i], path[i + 1]].get("taxiway_id", "")).upper() for i in range(len(path) - 1)]
 
 
 # ---- Happy path -------------------------------------------------------------
+
 
 def test_strict_route_uses_only_authorized_edges(lebl_graph):
     start = _start_node_on(lebl_graph, "D")
@@ -56,9 +55,7 @@ def test_strict_route_honors_sequence_order(lebl_graph):
     edge_tws = _edge_taxiways(lebl_graph, r["path_node_ids"])
     first_seen = {tw: edge_tws.index(tw) for tw in ("D", "M", "E") if tw in edge_tws}
     positions = [first_seen[tw] for tw in ("D", "M", "E") if tw in first_seen]
-    assert positions == sorted(positions), (
-        f"issued order not honored: {edge_tws}"
-    )
+    assert positions == sorted(positions), f"issued order not honored: {edge_tws}"
 
 
 def test_strict_route_repeated_taxiway_traversed_again(lebl_graph):
@@ -92,6 +89,7 @@ def test_strict_route_destination_on_last_taxiway(lebl_graph):
 
 
 # ---- Strict failure modes ---------------------------------------------------
+
 
 def test_strict_route_unknown_taxiway_fails_naming_token(lebl_graph):
     start = _start_node_on(lebl_graph, "D")
@@ -134,14 +132,20 @@ def test_strict_route_invalid_start_token(lebl_graph):
 
 # ---- Shape compatibility with find_route_via --------------------------------
 
+
 def test_strict_result_shape_matches_find_route_via(lebl_graph):
     start = _start_node_on(lebl_graph, "D")
     dest = _start_node_on(lebl_graph, "E")
     r = lebl_graph.find_route_strict(start, ["D", "M", "E"], dest)
     assert r["success"], r.get("error")
     for key in (
-        "success", "path_node_ids", "waypoints",
-        "taxiway_sequence", "total_distance_m", "start", "end",
+        "success",
+        "path_node_ids",
+        "waypoints",
+        "taxiway_sequence",
+        "total_distance_m",
+        "start",
+        "end",
     ):
         assert key in r, f"missing key: {key}"
     for sub in ("node_id", "lat", "lon", "token"):
@@ -163,12 +167,16 @@ def test_strict_path_nodes_are_connected(lebl_graph):
 
 # ---- find_route_strict_from_position ---------------------------------------
 
+
 def test_strict_from_position_snaps_and_delegates(lebl_graph):
     start = _start_node_on(lebl_graph, "Q")
     n = lebl_graph.graph.nodes[start]
     dest = _start_node_on(lebl_graph, "J")
     r = lebl_graph.find_route_strict_from_position(
-        n["lat"], n["lon"], ["Q", "J"], dest,
+        n["lat"],
+        n["lon"],
+        ["Q", "J"],
+        dest,
     )
     assert r["success"] is True, r.get("error")
     assert r["start"]["node_id"] == start

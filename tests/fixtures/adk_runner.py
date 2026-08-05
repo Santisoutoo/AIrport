@@ -64,9 +64,7 @@ class FakeADKRunner:
         self._next_final_text = final_text
 
     async def run_async(self, *, user_id: str, session_id: str, new_message: Any):
-        self.calls.append(
-            {"user_id": user_id, "session_id": session_id, "new_message": new_message}
-        )
+        self.calls.append({"user_id": user_id, "session_id": session_id, "new_message": new_message})
 
         # Apply scripted state mutations to the live session before yielding
         # the final event -- this is the same observable effect a real tool

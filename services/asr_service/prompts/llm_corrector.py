@@ -35,4 +35,4 @@ OUT: Speedbird 223 line up and wait
 IN:  easy jet four eight zero descend flight level one eight zero
 OUT: EasyJet 480 descend flight level 180"""
 
-INVALID_OUTPUT_PATTERN = re.compile(r'https?://|www\.|\.gov|\.com|\.org', re.IGNORECASE)
+INVALID_OUTPUT_PATTERN = re.compile(r"https?://|www\.|\.gov|\.com|\.org", re.IGNORECASE)

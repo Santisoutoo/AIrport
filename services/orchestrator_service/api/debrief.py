@@ -45,6 +45,7 @@ def _load_com_frequencies() -> list[dict]:
     """
     try:
         from shared.services.airport_data_store import AirportDataStore
+
         return AirportDataStore().get_com_frequencies() or []
     except Exception as exc:
         logger.warning("[debrief] could not load COM frequencies: %s", exc)
@@ -60,18 +61,20 @@ def _load_clearances(db: Session, session_id: str) -> list[dict]:
     )
     out: list[dict] = []
     for r in rows:
-        out.append({
-            "aircraft_registration": r.aircraft_registration,
-            "dependency": r.dependency,
-            "squawk": r.squawk,
-            "initial_altitude": r.initial_altitude,
-            "instrumental_departure": r.instrumental_departure,
-            "runway_in_use": r.runway_in_use,
-            "destination_icao": r.destination_icao,
-            "clearance_text": r.clearance_text,
-            "updated_at": r.updated_at.timestamp() if r.updated_at else None,
-            "cleared_at": r.cleared_at.timestamp() if r.cleared_at else None,
-        })
+        out.append(
+            {
+                "aircraft_registration": r.aircraft_registration,
+                "dependency": r.dependency,
+                "squawk": r.squawk,
+                "initial_altitude": r.initial_altitude,
+                "instrumental_departure": r.instrumental_departure,
+                "runway_in_use": r.runway_in_use,
+                "destination_icao": r.destination_icao,
+                "clearance_text": r.clearance_text,
+                "updated_at": r.updated_at.timestamp() if r.updated_at else None,
+                "cleared_at": r.cleared_at.timestamp() if r.cleared_at else None,
+            }
+        )
     return out
 
 

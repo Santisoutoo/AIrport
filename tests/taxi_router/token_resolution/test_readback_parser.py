@@ -6,6 +6,7 @@ from shared.services.taxi_router.readback_parser import (
 
 # ---- extract_taxiway_tokens -------------------------------------------------
 
+
 def test_structured_taxi_route_letters():
     got = extract_taxiway_tokens("Bravo, Delta, Echo")
     assert got == ["B", "D", "E"]
@@ -16,10 +17,7 @@ def test_structured_taxi_route_with_and():
 
 
 def test_fallback_from_instruction_text():
-    text = (
-        "Iberia 3421, pushback approved face north, taxi via Bravo Delta Echo, "
-        "holding short runway 06R, wilco."
-    )
+    text = "Iberia 3421, pushback approved face north, taxi via Bravo Delta Echo, holding short runway 06R, wilco."
     # No structured route provided -> parser scans the full phrase
     got = extract_taxiway_tokens(None, fallback_text=text)
     # The parser should capture the via taxiways (plus any extra capitalised
@@ -57,9 +55,12 @@ def test_empty_inputs():
 
 # ---- dedup=False (strict-routing path, issue #68) ---------------------------
 
+
 def test_no_dedup_preserves_non_adjacent_repeat():
     got = extract_taxiway_tokens(
-        "via alpha bravo alpha", known_tokens=["A", "B"], dedup=False,
+        "via alpha bravo alpha",
+        known_tokens=["A", "B"],
+        dedup=False,
     )
     assert got == ["A", "B", "A"]
 
@@ -71,20 +72,20 @@ def test_no_dedup_collapses_consecutive_stutter():
 
 def test_no_dedup_known_tokens_filter_still_applies():
     got = extract_taxiway_tokens(
-        "Bravo, Zulu, Bravo", known_tokens=["B", "D"], dedup=False,
+        "Bravo, Zulu, Bravo",
+        known_tokens=["B", "D"],
+        dedup=False,
     )
     # After Zulu is filtered the two Bravos become consecutive -> collapse
     assert got == ["B"]
 
 
 def test_no_dedup_numeric_suffix_repeat():
-    assert (
-        extract_taxiway_tokens("Golf one zero, Hotel, Golf one zero", dedup=False)
-        == ["G10", "H", "G10"]
-    )
+    assert extract_taxiway_tokens("Golf one zero, Hotel, Golf one zero", dedup=False) == ["G10", "H", "G10"]
 
 
 # ---- parse_pushback_direction ----------------------------------------------
+
 
 def test_cardinal_directions():
     assert parse_pushback_direction("pushback approved face north") == 0.0

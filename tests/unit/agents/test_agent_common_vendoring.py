@@ -22,8 +22,7 @@ def test_vendored_copy_matches_the_source_of_truth(agent, module):
 
     assert target.is_file(), f"{target} is missing — run scripts/sync_agent_common.py"
     assert target.read_bytes() == source.read_bytes(), (
-        f"{target} drifted from agents/common/{module} — "
-        "edit agents/common/ and run scripts/sync_agent_common.py"
+        f"{target} drifted from agents/common/{module} — edit agents/common/ and run scripts/sync_agent_common.py"
     )
 
 

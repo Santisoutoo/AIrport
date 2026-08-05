@@ -130,9 +130,7 @@ class _StubInMemorySessionService:
         self._sessions: dict = {}
 
     async def create_session(self, app_name: str, user_id: str, session_id: str, state=None):  # noqa: D401
-        sess = types.SimpleNamespace(
-            app_name=app_name, user_id=user_id, id=session_id, state=dict(state or {})
-        )
+        sess = types.SimpleNamespace(app_name=app_name, user_id=user_id, id=session_id, state=dict(state or {}))
         self._sessions[(app_name, user_id, session_id)] = sess
         return sess
 

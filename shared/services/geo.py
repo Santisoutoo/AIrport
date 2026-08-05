@@ -38,10 +38,7 @@ def advance(lat: float, lon: float, bearing_deg: float, dist_m: float) -> tuple[
     lam1 = math.radians(lon)
     theta = math.radians(bearing_deg)
     delta = dist_m / EARTH_R_M
-    phi2 = math.asin(
-        math.sin(phi1) * math.cos(delta)
-        + math.cos(phi1) * math.sin(delta) * math.cos(theta)
-    )
+    phi2 = math.asin(math.sin(phi1) * math.cos(delta) + math.cos(phi1) * math.sin(delta) * math.cos(theta))
     lam2 = lam1 + math.atan2(
         math.sin(theta) * math.sin(delta) * math.cos(phi1),
         math.cos(delta) - math.sin(phi1) * math.sin(phi2),
@@ -54,9 +51,12 @@ def shortest_angle(cur: float, target: float) -> float:
     return ((target - cur) + 540.0) % 360.0 - 180.0
 
 
-def project_on_localizer(threshold_lat: float, threshold_lon: float,
-                          runway_hdg_deg: float, distance_nm: float,
-                          ) -> tuple[float, float]:
+def project_on_localizer(
+    threshold_lat: float,
+    threshold_lon: float,
+    runway_hdg_deg: float,
+    distance_nm: float,
+) -> tuple[float, float]:
     """Project a point `distance_nm` out on the localizer of a runway.
 
     The runway heading is the direction aircraft fly inbound (e.g. 167°

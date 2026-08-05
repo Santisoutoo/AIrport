@@ -77,9 +77,7 @@ async def get_clearance(registration: str, db: Session = Depends(get_db)):
 
 
 @router.patch("/{registration}/dependency")
-async def update_dependency(
-    registration: str, body: DependencyUpdate, db: Session = Depends(get_db)
-):
+async def update_dependency(registration: str, body: DependencyUpdate, db: Session = Depends(get_db)):
     """Update which controller currently owns the aircraft (DEL → GND → TWR)."""
     valid = {"DEL", "GND", "TWR"}
     if body.dependency not in valid:

@@ -48,24 +48,31 @@ def _redis_client() -> redis.Redis:
     return redis.from_url(_REDIS_URL, decode_responses=True)
 
 
-def _spawn_point(runway: RunwayConfig,
-                 spawn_distance_nm: float) -> tuple[float, float, float]:
+def _spawn_point(runway: RunwayConfig, spawn_distance_nm: float) -> tuple[float, float, float]:
     """Return (lat, lon, altitude MSL ft) of the spawn point on the localizer.
 
     Altitude scales proportionally with distance so every staggered slot sits
     on the same glideslope.
     """
     spawn_lat, spawn_lon = project_on_localizer(
-        runway.threshold_lat, runway.threshold_lon,
-        runway.heading_deg, spawn_distance_nm,
+        runway.threshold_lat,
+        runway.threshold_lon,
+        runway.heading_deg,
+        spawn_distance_nm,
     )
     agl = SPAWN_ALTITUDE_AGL_FT * (spawn_distance_nm / SPAWN_DISTANCE_NM)
     return spawn_lat, spawn_lon, agl + runway.elevation_ft
 
 
-def _build_spawn_request(reg: str, callsign: str, aircraft_type: str,
-                         runway: RunwayConfig, spawn_lat: float, spawn_lon: float,
-                         spawn_alt_msl: float) -> dict:
+def _build_spawn_request(
+    reg: str,
+    callsign: str,
+    aircraft_type: str,
+    runway: RunwayConfig,
+    spawn_lat: float,
+    spawn_lon: float,
+    spawn_alt_msl: float,
+) -> dict:
     """Payload the X-Plane plugin needs to create the .obj airborne."""
     return {
         "aircraft_registration": reg,
@@ -109,7 +116,7 @@ def _build_move_cmd(plan_id: str, runway: RunwayConfig, spawn_alt_msl: float) ->
             #    aircraft rolls straight here before turning off.
             {"lat": runway.vacate_abeam_lat, "lon": runway.vacate_abeam_lon},
             # 2. the actual taxiway exit (E3) — sharp turn off the runway.
-            {"lat": runway.vacate_exit_lat,  "lon": runway.vacate_exit_lon},
+            {"lat": runway.vacate_exit_lat, "lon": runway.vacate_exit_lon},
         ],
         "speed_kts": VACATE_TAXI_KTS,
         "stop_at_end": True,
@@ -151,8 +158,7 @@ def _register_hmi_strip(plan: dict, reg: str, callsign: str, aircraft_type: str)
         logger.warning("Could not register arrival strip in HMI for %s: %s", reg, exc)
 
 
-def _register_in_orchestrator(reg: str, callsign: str, aircraft_type: str,
-                              runway: RunwayConfig) -> None:
+def _register_in_orchestrator(reg: str, callsign: str, aircraft_type: str, runway: RunwayConfig) -> None:
     """Register the arrival in the orchestrator's DB so dependency='APP'.
 
     This is what makes the orchestrator correctly route the reverse handoff
@@ -175,8 +181,7 @@ def _register_in_orchestrator(reg: str, callsign: str, aircraft_type: str,
         logger.warning("Could not register arrival %s in orchestrator: %s", reg, exc)
 
 
-def dispatch_arrival(plan: dict, runway: RunwayConfig,
-                     spawn_distance_nm: float = SPAWN_DISTANCE_NM) -> dict:
+def dispatch_arrival(plan: dict, runway: RunwayConfig, spawn_distance_nm: float = SPAWN_DISTANCE_NM) -> dict:
     """Publish the spawn request and the multi-leg move plan to Redis.
 
     `spawn_distance_nm` allows callers to stagger multiple simultaneous
@@ -194,8 +199,7 @@ def dispatch_arrival(plan: dict, runway: RunwayConfig,
 
     _publish_to_redis(
         reg,
-        _build_spawn_request(reg, callsign, aircraft_type, runway,
-                             spawn_lat, spawn_lon, spawn_alt_msl),
+        _build_spawn_request(reg, callsign, aircraft_type, runway, spawn_lat, spawn_lon, spawn_alt_msl),
         _build_move_cmd(plan_id, runway, spawn_alt_msl),
     )
 
@@ -204,7 +208,13 @@ def dispatch_arrival(plan: dict, runway: RunwayConfig,
 
     logger.info(
         "Dispatched arrival %s (%s, %s): spawn at (%.5f, %.5f) %.0f ft, plan_id=%s",
-        reg, callsign, aircraft_type, spawn_lat, spawn_lon, spawn_alt_msl, plan_id,
+        reg,
+        callsign,
+        aircraft_type,
+        spawn_lat,
+        spawn_lon,
+        spawn_alt_msl,
+        plan_id,
     )
 
     return {

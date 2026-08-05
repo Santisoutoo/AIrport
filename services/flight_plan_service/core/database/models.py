@@ -12,7 +12,7 @@ class FlightPlanModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     aircraft_registration = Column(String(10), unique=True, index=True, nullable=False)
     flight_rules = Column(String(1), nullable=False)  # I or V
-    flight_type = Column(String(1), nullable=False)   # G, S, N, M
+    flight_type = Column(String(1), nullable=False)  # G, S, N, M
     aircraft_type = Column(String(10), nullable=False)
     wake_turbulence_category = Column(String(1))
     equipment = Column(String(50))

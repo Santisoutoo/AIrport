@@ -6,20 +6,22 @@ THE DATA IS UPDATED BY ENTHUSIASTS WHO VOLUNTEER THEIR TIME TO UPDATE SCENERY'S 
 from dataclasses import dataclass
 from typing import List, Optional
 
+
 @dataclass
-class AirportInfo():
+class AirportInfo:
     """
     CODES: 1 and 1302
     """
 
     metdata: List
 
+
 @dataclass
 class Runway:
     """
     CODE: 100
     Represents a land runway in X-Plane airport data.
-    
+
     Attributes:
         number_1 (str): First runway end number.
         lat_1 (float): First runway end latitude.
@@ -28,6 +30,7 @@ class Runway:
         lat_2 (float): Second runway end latitude.
         lon_2 (float): Second runway end longitude.
     """
+
     runway_1_id: str
     lat: float
     lon: float
@@ -35,12 +38,13 @@ class Runway:
     lat_2: float
     lon_2: float
 
+
 @dataclass
 class TaxiNode:
     """
     CODE: 1201
     Represents a node in the taxiway network of an airport.
-    
+
     Attributes:
         lat (float): Latitude of the node.
         lon (float): Longitude of the node.
@@ -52,18 +56,20 @@ class TaxiNode:
             - "junc": Junction node.
         name (str): Name or label of the node.
     """
+
     lat: float
     lon: float
     node_id: int
     usage: str
     name: str
 
+
 @dataclass
 class TaxiEdge:
     """
     CODE: 1202
     Represents an edge (taxiway segment) connecting two taxi nodes.
-    
+
     Attributes:
         start_node_id (int): ID of the starting node.
         end_node_id (int): ID of the ending node.
@@ -77,23 +83,25 @@ class TaxiEdge:
         taxiway_id (Optional[str]): Optional identifier for the specific taxiway.
             Defaults to None if not specified.
     """
+
     start_node_id: int
     end_node_id: int
     direction: str
     atc_restriction: str
     taxiway_id: Optional[str] = None
 
+
 @dataclass
 class Stand:
     """
     CODE: 1300
-    Represents a start or end point for aircraft. Not linked to taxi routing 
+    Represents a start or end point for aircraft. Not linked to taxi routing
     network by edges (row code 1202).
-    
+
     Attributes:
-        latitude (float): Latitude of location in decimal degrees. 
+        latitude (float): Latitude of location in decimal degrees.
                          Eight decimal places supported.
-        longitude (float): Longitude of location in decimal degrees. 
+        longitude (float): Longitude of location in decimal degrees.
                           Eight decimal places supported.
         true_hdg (float): Heading (true) of airplane positioned at this location.
                          Decimal degrees, true heading.
@@ -104,20 +112,22 @@ class Stand:
                          - "tie-down": Tie-down position for aircraft parking
         allowed_aircraft_types (str): Airplane types that can use this location.
                                      Pipe-separated list (e.g., "A320|B737|jets").
-        id (str): Unique name of location. Text string, must be unique within 
+        id (str): Unique name of location. Text string, must be unique within
                  a single airport.
     """
+
     latitude: float
     longitude: float
     true_hdg: float
     stand_type: str
     allowed_aircraft_types: str
     stand_id: str
-    icao_width_code: str = ""       # Row 1301: A, B, C, D, E, F
-    operation_type: str = ""         # Row 1301: general_aviation, airline, cargo, military, none
+    icao_width_code: str = ""  # Row 1301: A, B, C, D, E, F
+    operation_type: str = ""  # Row 1301: general_aviation, airline, cargo, military, none
+
 
 @dataclass
-class TrafficPattern():
+class TrafficPattern:
     """
     CODE 1101
 
@@ -129,8 +139,10 @@ class TrafficPattern():
         runway_id (str): Identifier of the runways
         side (str): traffic patterns avalible for the rwy
     """
+
     runway_id: str
     side: str
+
 
 @dataclass
 class ComFrequency:
@@ -140,6 +152,7 @@ class ComFrequency:
 
     service: one of "ATIS", "UNICOM", "DEL", "GND", "TWR", "APP", "DEP".
     """
+
     service: str
     frequency_mhz: float
     name: str

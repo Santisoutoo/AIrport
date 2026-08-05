@@ -23,9 +23,7 @@ from pathlib import Path
 
 import pytest
 
-_ASR_CORE_DIR = (
-    Path(__file__).resolve().parents[3] / "services" / "asr_service" / "core"
-)
+_ASR_CORE_DIR = Path(__file__).resolve().parents[3] / "services" / "asr_service" / "core"
 _PKG = "asr_core"
 
 
@@ -62,13 +60,19 @@ def test_span_needs_at_least_three_tokens(text):
 
 def test_span_at_start_single_word_airline():
     assert _span("Vueling three two alpha cleared to Madrid", at_end=False) == (
-        0, 23, "Vueling", "32A",
+        0,
+        23,
+        "Vueling",
+        "32A",
     )
 
 
 def test_span_at_start_two_word_airline():
     assert _span("Air Nostrum one two three go", at_end=False) == (
-        0, 25, "Air Nostrum", "123",
+        0,
+        25,
+        "Air Nostrum",
+        "123",
     )
 
 
@@ -79,7 +83,8 @@ def test_span_at_start_requires_two_code_words():
 def test_span_at_start_stops_after_five_code_words():
     # Only the first five phonetic words are consumed as the code.
     assert _span(
-        "Vueling one two three four five six seven eight", at_end=False,
+        "Vueling one two three four five six seven eight",
+        at_end=False,
     ) == (0, 31, "Vueling", "12345")
 
 
@@ -93,7 +98,10 @@ def test_span_at_end_reads_code_then_airline():
     # ("..., Ryanair four seven three"). See the note in the issue #58 PR.
     assert _span("cleared one two three roger", at_end=True) == (8, 27, "roger", "123")
     assert _span("cleared one two three air europa", at_end=True) == (
-        8, 32, "air europa", "123",
+        8,
+        32,
+        "air europa",
+        "123",
     )
 
 
@@ -113,9 +121,7 @@ def test_normalize_numbers_known_contexts():
         "climb five thousand flight level one zero zero "
         "contact one two one decimal six five five"
     )
-    assert pp.normalize_numbers(text) == (
-        "squawk 1234 QNH 1013 runway 17L climb 5000 FL100 contact 121.655"
-    )
+    assert pp.normalize_numbers(text) == ("squawk 1234 QNH 1013 runway 17L climb 5000 FL100 contact 121.655")
 
 
 def test_normalize_numbers_leaves_unknown_contexts_alone():
@@ -172,7 +178,9 @@ def test_pipeline_overlapping_start_and_end_spans():
 
 def test_pipeline_sid_phrase_snaps_to_session_sid():
     out = pp.postprocess_transcription(
-        "cleared via BELEN one golf departure", None, ["BELEN1G"],
+        "cleared via BELEN one golf departure",
+        None,
+        ["BELEN1G"],
     )
     assert out["final"] == "cleared via BELEN1G departure"
     assert out["sid_fuzzy_candidate"] == "BELEN1G"
@@ -185,6 +193,9 @@ def test_pipeline_expands_isolated_phonetic_letters_last():
 
 
 def test_normalize_reference_returns_final_string():
-    assert pp.normalize_reference(
-        "Vueling three two alpha squawk one two three four",
-    ) == "VLG32A squawk 1234"
+    assert (
+        pp.normalize_reference(
+            "Vueling three two alpha squawk one two three four",
+        )
+        == "VLG32A squawk 1234"
+    )

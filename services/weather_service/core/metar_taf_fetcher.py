@@ -78,9 +78,7 @@ async def _fetch(endpoint: str, params: Dict[str, Any], output_format: str) -> D
         response.raise_for_status()
     except httpx.TimeoutException as exc:
         logger.warning("aviationweather %s timed out for %s: %s", endpoint, ids, exc)
-        raise WeatherUpstreamError(
-            f"Weather upstream timed out for {ids}", status_code=504
-        ) from exc
+        raise WeatherUpstreamError(f"Weather upstream timed out for {ids}", status_code=504) from exc
     except httpx.HTTPStatusError as exc:
         logger.warning(
             "aviationweather %s returned HTTP %s for %s",
@@ -88,9 +86,7 @@ async def _fetch(endpoint: str, params: Dict[str, Any], output_format: str) -> D
             exc.response.status_code,
             ids,
         )
-        raise WeatherUpstreamError(
-            f"Weather upstream returned HTTP {exc.response.status_code} for {ids}"
-        ) from exc
+        raise WeatherUpstreamError(f"Weather upstream returned HTTP {exc.response.status_code} for {ids}") from exc
     except httpx.RequestError as exc:
         logger.warning("aviationweather %s unreachable for %s: %s", endpoint, ids, exc)
         raise WeatherUpstreamError(f"Weather upstream unreachable for {ids}") from exc
@@ -101,12 +97,8 @@ async def _fetch(endpoint: str, params: Dict[str, Any], output_format: str) -> D
     try:
         return response.json()
     except ValueError as exc:
-        logger.warning(
-            "aviationweather %s returned a non-JSON payload for %s: %s", endpoint, ids, exc
-        )
-        raise WeatherUpstreamError(
-            f"Weather upstream returned an undecodable payload for {ids}"
-        ) from exc
+        logger.warning("aviationweather %s returned a non-JSON payload for %s: %s", endpoint, ids, exc)
+        raise WeatherUpstreamError(f"Weather upstream returned an undecodable payload for {ids}") from exc
 
 
 async def get_metar(

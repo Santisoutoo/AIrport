@@ -29,6 +29,7 @@ with engine.connect() as conn:
 
 PREFIX = "/api/v1/flight-plan"
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
@@ -75,4 +76,5 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

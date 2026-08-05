@@ -15,6 +15,7 @@ split (issue #55) — are the degenerate and fallback branches:
 These capture the behaviour as it is today; they assert nothing about whether
 that behaviour is desirable.
 """
+
 import json
 
 import pytest
@@ -59,6 +60,7 @@ def _dispatch(fake_redis, *, controller, readback="", clearance=None):
 
 # ---- Degenerate inputs ------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "state",
     [
@@ -77,7 +79,8 @@ def test_missing_heading_defaults_to_zero(fake_redis, lebl_graph):
     node = sorted(_tw_nodes(lebl_graph, "E") & lebl_graph._main_cc)[0]
     n = lebl_graph.graph.nodes[node]
     fake_redis.hashes[f"aircraft:state:{REG}"] = {
-        "latitude": str(n["lat"]), "longitude": str(n["lon"]),
+        "latitude": str(n["lat"]),
+        "longitude": str(n["lon"]),
     }
     result = _dispatch(
         fake_redis,
@@ -89,7 +92,8 @@ def test_missing_heading_defaults_to_zero(fake_redis, lebl_graph):
 
 def test_graph_unavailable_aborts_without_publishing(monkeypatch, fake_redis):
     monkeypatch.setattr(
-        router_mod, "_load_graph",
+        router_mod,
+        "_load_graph",
         lambda: (_ for _ in ()).throw(RouteNotFoundError("airport graph not loaded in Redis")),
     )
     result = _dispatch(fake_redis, controller="TST123 taxi to runway 02 via echo mike delta")
@@ -100,8 +104,9 @@ def test_graph_unavailable_aborts_without_publishing(monkeypatch, fake_redis):
 
 # ---- Implicit destination (no endpoint spoken) ------------------------------
 
+
 def test_last_spoken_taxiway_becomes_the_destination(fake_redis):
-    """"taxi via echo mike delta" with no endpoint: the route still runs
+    """ "taxi via echo mike delta" with no endpoint: the route still runs
     strict over E -> M and terminates on D, which is consumed as destination
     rather than as part of the authorized sequence."""
     result = _dispatch(fake_redis, controller="TST123 taxi via echo mike delta")
@@ -125,6 +130,7 @@ def test_single_spoken_taxiway_is_a_lenient_destination_only_clearance(fake_redi
 
 # ---- Route succeeds but yields nothing to fly -------------------------------
 
+
 class _EmptyRouteGraph:
     """Graph stub whose strict router reports success with no waypoints."""
 
@@ -145,6 +151,7 @@ def test_route_without_waypoints_is_rejected_silently(monkeypatch, fake_redis):
 
 # ---- Rejection publishing is best-effort ------------------------------------
 
+
 def test_rejection_survives_a_broken_chat_publish(fake_redis, caplog):
     def _boom(*_args, **_kwargs):
         raise RuntimeError("redis pubsub down")
@@ -158,6 +165,7 @@ def test_rejection_survives_a_broken_chat_publish(fake_redis, caplog):
 
 
 # ---- compute_taxi_route -----------------------------------------------------
+
 
 class _SpyGraph:
     """Records which routing entry point was used and with what arguments."""
@@ -179,7 +187,9 @@ class _SpyGraph:
 def positioned_redis():
     r = FakeRedis()
     r.hashes["aircraft:state:TST123"] = {
-        "latitude": "41.3", "longitude": "2.08", "heading": "45.0",
+        "latitude": "41.3",
+        "longitude": "2.08",
+        "heading": "45.0",
     }
     return r
 
@@ -205,7 +215,8 @@ def test_compute_taxi_route_reports_missing_position(monkeypatch):
 def test_compute_taxi_route_reports_graph_failure(monkeypatch, positioned_redis):
     monkeypatch.setattr(router_mod, "_get_redis_client", lambda: positioned_redis)
     monkeypatch.setattr(
-        router_mod, "_load_graph",
+        router_mod,
+        "_load_graph",
         lambda: (_ for _ in ()).throw(RouteNotFoundError("airport graph not loaded in Redis")),
     )
     result = compute_taxi_route("02", ["E"], "TST123")
@@ -213,7 +224,8 @@ def test_compute_taxi_route_reports_graph_failure(monkeypatch, positioned_redis)
 
 
 def test_compute_taxi_route_with_vias_goes_strict_and_is_not_tagged(
-    monkeypatch, positioned_redis,
+    monkeypatch,
+    positioned_redis,
 ):
     spy = _SpyGraph({"success": True, "waypoints": [{"lat": 1.0, "lon": 2.0}]})
     monkeypatch.setattr(router_mod, "_get_redis_client", lambda: positioned_redis)
@@ -230,7 +242,9 @@ def test_compute_taxi_route_with_vias_goes_strict_and_is_not_tagged(
 
 @pytest.mark.parametrize("via", [None, []], ids=["none", "empty"])
 def test_compute_taxi_route_without_vias_is_lenient_and_tagged(
-    monkeypatch, positioned_redis, via,
+    monkeypatch,
+    positioned_redis,
+    via,
 ):
     spy = _SpyGraph({"success": True, "waypoints": [{"lat": 1.0, "lon": 2.0}]})
     monkeypatch.setattr(router_mod, "_get_redis_client", lambda: positioned_redis)
@@ -252,6 +266,7 @@ def test_compute_taxi_route_lenient_failure_is_not_tagged(monkeypatch, positione
 
 
 # ---- Pilot-facing phrase fallback -------------------------------------------
+
 
 def test_via_point_failure_without_a_matching_token_is_generic():
     got = router_mod._shorten_reason("Could not resolve via point", ["E"], ["M"])

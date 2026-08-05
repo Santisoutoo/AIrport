@@ -66,9 +66,7 @@ def _sent_text(fake) -> str:
 
 def test_context_is_omitted_when_nothing_was_attached():
     assert build_agent_context("Iberia 123, taxi?", DEL_CONFIG, {}) == "Iberia 123, taxi?"
-    assert (
-        build_agent_context("msg", DEL_CONFIG, {"flight_plan": None, "atis": {}}) == "msg"
-    )
+    assert build_agent_context("msg", DEL_CONFIG, {"flight_plan": None, "atis": {}}) == "msg"
 
 
 def test_context_renders_only_the_fields_that_are_present():
@@ -78,13 +76,9 @@ def test_context_renders_only_the_fields_that_are_present():
 
 
 def test_context_renders_fields_in_declaration_order():
-    enriched = build_agent_context(
-        "msg", DEL_CONFIG, {"flight_plan": {"id": 1}, "atis": {"letter": "C"}}
-    )
+    enriched = build_agent_context("msg", DEL_CONFIG, {"flight_plan": {"id": 1}, "atis": {"letter": "C"}})
 
-    assert enriched == (
-        "msg\n\n\n[CONTEXT]\nFlight plan: {'id': 1}\nATIS: {'letter': 'C'}"
-    )
+    assert enriched == ("msg\n\n\n[CONTEXT]\nFlight plan: {'id': 1}\nATIS: {'letter': 'C'}")
 
 
 def test_gnd_keeps_its_single_newline_context_header():
@@ -99,9 +93,7 @@ def test_run_agent_sends_the_enriched_message_to_the_adk_runner(monkeypatch):
 
     run_agent("s1", "Iberia 123, request clearance", flight_plan={"id": 7})
 
-    assert _sent_text(fake) == (
-        "Iberia 123, request clearance\n\n\n[CONTEXT]\nFlight plan: {'id': 7}"
-    )
+    assert _sent_text(fake) == ("Iberia 123, request clearance\n\n\n[CONTEXT]\nFlight plan: {'id': 7}")
 
 
 # ---------------------------------------------------------------------------
@@ -110,10 +102,7 @@ def test_run_agent_sends_the_enriched_message_to_the_adk_runner(monkeypatch):
 
 
 def test_returns_reply_and_data_under_the_configured_keys(monkeypatch):
-    raw = (
-        'Here you go: {"clearance_text": "Cleared to LEPA, squawk 2341", '
-        '"clearance_data": {"squawk": "2341"}}'
-    )
+    raw = 'Here you go: {"clearance_text": "Cleared to LEPA, squawk 2341", "clearance_data": {"squawk": "2341"}}'
     run_agent, _ = _build(monkeypatch, DEL_CONFIG, final_text=raw)
 
     result = run_agent("s1", "msg")

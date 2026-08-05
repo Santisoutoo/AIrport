@@ -64,10 +64,7 @@ _static_dir = Path(__file__).resolve().parent / "static"
 _asr_url = os.getenv("ASR_URL", "")
 _orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8007")
 (_static_dir / "config.js").write_text(
-    f"window.HMI_CONFIG = {{\n"
-    f'  ASR_URL: "{_asr_url}",\n'
-    f'  ORCHESTRATOR_URL: "{_orchestrator_url}"\n'
-    f"}};\n",
+    f'window.HMI_CONFIG = {{\n  ASR_URL: "{_asr_url}",\n  ORCHESTRATOR_URL: "{_orchestrator_url}"\n}};\n',
     encoding="utf-8",
 )
 
@@ -87,4 +84,5 @@ async def api_root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -3,8 +3,12 @@ from datetime import datetime, timedelta
 
 from models.schemas import FlightPlanResponse
 from core.data import (
-    AIRCRAFT_DATA, AIRPORT_DATA, DISTANCES, PILOT_NAMES,
-    AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX,
+    AIRCRAFT_DATA,
+    AIRPORT_DATA,
+    DISTANCES,
+    PILOT_NAMES,
+    AIRLINE_DATA,
+    AIRLINE_REGISTRATION_PREFIX,
 )
 from core.registration import generate_registration
 
@@ -102,10 +106,7 @@ class FlightPlanGenerator:
 
     def _select_airline(self, aircraft_type: str) -> str:
         """Select a random airline that operates the given aircraft type"""
-        compatible = [
-            icao for icao, data in AIRLINE_DATA.items()
-            if aircraft_type in data["aircraft_types"]
-        ]
+        compatible = [icao for icao, data in AIRLINE_DATA.items() if aircraft_type in data["aircraft_types"]]
         return random.choice(compatible)
 
     def _generate_callsign(self, airline_icao: str) -> str:

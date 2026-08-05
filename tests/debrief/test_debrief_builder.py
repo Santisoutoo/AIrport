@@ -16,11 +16,19 @@ T0 = 1_776_800_000.0  # 2026-04-22 13:33:20 UTC
 def test_timeline_ordering_mixes_sources():
     text = build_timeline(
         transcripts=[{"ts": T0, "text": "Iberia 3421 ready"}],
-        agent_replies=[{"ts": T0 + 5, "dep": "DEL", "registration": "EC-IYV",
-                        "callsign": "IBE3421", "reply": "IBE3421, cleared."}],
+        agent_replies=[
+            {"ts": T0 + 5, "dep": "DEL", "registration": "EC-IYV", "callsign": "IBE3421", "reply": "IBE3421, cleared."}
+        ],
         events=[{"ts": T0 + 10, "registration": "EC-IYV", "event": "pushback_started"}],
-        clearances=[{"updated_at": T0 + 3, "aircraft_registration": "EC-IYV",
-                     "dependency": "DEL", "squawk": 2000, "runway_in_use": "06R"}],
+        clearances=[
+            {
+                "updated_at": T0 + 3,
+                "aircraft_registration": "EC-IYV",
+                "dependency": "DEL",
+                "squawk": 2000,
+                "runway_in_use": "06R",
+            }
+        ],
     )
     lines = text.splitlines()
     assert len(lines) == 4
@@ -45,8 +53,7 @@ def test_timeline_event_extra_rendered():
     text = build_timeline(
         transcripts=[],
         agent_replies=[],
-        events=[{"ts": T0, "registration": "EC-VBT", "event": "pushback_started",
-                 "extra": {"plan_id": "abc123"}}],
+        events=[{"ts": T0, "registration": "EC-VBT", "event": "pushback_started", "extra": {"plan_id": "abc123"}}],
         clearances=[],
     )
     assert "EVENT (EC-VBT): pushback_started" in text
@@ -59,7 +66,7 @@ def test_empty_inputs_return_empty_string():
 
 
 def test_truncate_keeps_tail_and_prepends_marker():
-    long_block = "\n".join(f"[00:00:{i:02d}] CTRL: \"line {i}\"" for i in range(200))
+    long_block = "\n".join(f'[00:00:{i:02d}] CTRL: "line {i}"' for i in range(200))
     out = truncate_timeline(long_block, max_chars=400)
     assert out.startswith("[... ")
     # Last line preserved

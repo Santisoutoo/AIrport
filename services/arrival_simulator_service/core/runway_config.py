@@ -13,11 +13,11 @@ class RunwayConfig:
     runway_id: str
     threshold_lat: float
     threshold_lon: float
-    heading_deg: float          # true heading aircraft fly inbound
-    elevation_ft: float         # field elevation MSL
-    vacate_abeam_lat: float     # point on the centerline, perpendicular to the exit
+    heading_deg: float  # true heading aircraft fly inbound
+    elevation_ft: float  # field elevation MSL
+    vacate_abeam_lat: float  # point on the centerline, perpendicular to the exit
     vacate_abeam_lon: float
-    vacate_exit_lat: float      # E3 or E4 turnoff node
+    vacate_exit_lat: float  # E3 or E4 turnoff node
     vacate_exit_lon: float
     vacate_exit_name: str
 
