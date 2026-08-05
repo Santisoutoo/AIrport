@@ -175,10 +175,7 @@ with `jiwer` against the phase corpora.
 harness: it drives a *deployed* ASR endpoint over an external voice dataset per model/tier/
 context-mode combination and reports WER (S/D/I breakdown), latency, real-time factor and
 per-transcription cost to a CSV trace. See
-[data-and-testing](../data-and-testing.md) for how these fit the rest of the test suite. The
-root-level [`transcription/`](../../transcription/) directory is an earlier, simpler prototype of
-this service — the same Whisper-plus-corrections idea, without `postprocess.py`'s multi-stage
-pipeline or the LLM fallback — superseded by this one.
+[data-and-testing](../data-and-testing.md) for how these fit the rest of the test suite.
 
 ## Related
 [architecture](../architecture.md) · [orchestrator](orchestrator_service.md) · [controller_hmi](controller_hmi_service.md) · [data-and-testing](../data-and-testing.md) · [index](../index.md)

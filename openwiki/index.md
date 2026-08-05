@@ -115,7 +115,6 @@ Compose; they deploy independently to **Google Cloud Run** and are reached via
 | `services/analytics_service/`, `services/nlp_service/`, `services/xplane_manager/` | Empty placeholders — only a `.gitkeep` |
 | `services/tts_service/` | Empty placeholder — speech actually happens in the sim: the plugin's window manager drains `tts:queue` into X-Plane's built-in TTS (see [xplane.md](xplane.md)) |
 | `services/database/` | A scratch Redis test script, not a service |
-| `transcription/` (repo root) | Superseded prototype of the [ASR service](services/asr_service.md) — real code, not in Compose |
 | `services/pilots_communication/` | Superseded prototype of what ASR + orchestrator now do together — real code, not in Compose |
 
 ## Related

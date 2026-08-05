@@ -50,7 +50,6 @@ behavior (entrypoints, routers, prompts, models). Cover:
 - `shared/` — cross-service `models/` and `services/` (taxi_router, aircraft_state_store,
   stand_assigner, geo, ...).
 - `xplane_plugin/` and `plugins/` — in-sim plugin and deployable X-Plane files.
-- `transcription/` — standalone ASR module.
 - `agents_evaluation/` — benchmarking (WER, agent validation) and corpora.
 - `data/` — airport data (LEBL), scripts, notebooks.
 - `tests/` — pytest suite layout.
