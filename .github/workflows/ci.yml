@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [ main, dev, test ]
+  # `branches` here matches the PR's BASE ref, not its head. Listing only
+  # main/dev meant a stacked PR -- one whose base is another feature branch --
+  # never triggered CI at all, so a whole stack could be merged unverified.
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, 'feat/**', 'fix/**', 'chore/**', 'docs/**', 'refactor/**' ]
 
 concurrency:
   group: ci-${{ github.ref }}
