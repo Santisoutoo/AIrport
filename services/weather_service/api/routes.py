@@ -5,7 +5,14 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from models.schemas import ATISResponse, ATISRequest, MetarResponse, HealthResponse, CloudLayer
+from models.schemas import (
+    ATISOptions,
+    ATISRequest,
+    ATISResponse,
+    CloudLayer,
+    HealthResponse,
+    MetarResponse,
+)
 from core.atis_generator import ATISGenerator
 from core.metar_taf_fetcher import (
     NoWeatherDataError,
@@ -45,29 +52,12 @@ async def health_check():
 @router.get("/atis/{icao_code}", response_model=ATISResponse, tags=["ATIS"])
 async def generate_atis(
     icao_code: str,
-    departure_runway: Optional[str] = Query(None, description="Departure runway"),
-    arrival_runway: Optional[str] = Query(None, description="Arrival runway"),
-    approach: Optional[str] = Query(None, description="Approach type"),
-    qfe: Optional[int] = Query(None, description="QFE in hPa (set by ATC)"),
-    include_tl: bool = Query(True, description="Include Transition Level in ATIS"),
-    include_ta: bool = Query(True, description="Include Transition Altitude in ATIS"),
-    remarks: Optional[str] = Query(None, description="ATC remarks (appended as RMK)"),
-    preview: bool = Query(False, description="Preview mode: no DB save, letter not incremented"),
-    db: Session = Depends(get_db)
+    options: ATISOptions = Depends(ATISOptions.as_query),
+    db: Session = Depends(get_db),
 ):
     """Generate ATIS for an airport"""
     try:
-        atis = await generator.generate(
-            icao_code=icao_code,
-            departure_runway=departure_runway,
-            arrival_runway=arrival_runway,
-            approach=approach,
-            qfe=qfe,
-            include_tl=include_tl,
-            include_ta=include_ta,
-            remarks=remarks,
-            preview=preview,
-        )
+        atis = await generator.generate(icao_code=icao_code, **options.model_dump())
     except NoWeatherDataError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except WeatherUpstreamError as e:
@@ -78,7 +68,7 @@ async def generate_atis(
             status_code=502, detail=f"Malformed METAR data for {icao_code.upper()}"
         )
 
-    if not preview:
+    if not options.preview:
         try:
             repo = ATISRepository(db)
             repo.create(atis)

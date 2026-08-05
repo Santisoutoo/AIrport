@@ -45,7 +45,10 @@ LEVC, LEAL, LEZL, LEMG); anything else falls back to a generic two-runway defaul
 five-step lookup for transition level — FL65 when pressure is high, stepping up to FL90 as QNH
 drops below 978 hPa — and an in-memory counter per ICAO hands out a sequential ATIS letter with
 its phonetic name ("information ALFA"), wrapping back to A after Z. ATC can override the
-auto-picked runway, approach, QFE and remarks through query params on `GET /atis/{icao}`; a
+auto-picked runway, approach, QFE and remarks through query params on `GET /atis/{icao}` — they are
+grouped in the `ATISOptions` model
+([`models/schemas.py`](../../services/weather_service/models/schemas.py)) and bound with
+`Depends(ATISOptions.as_query)`, so the query string itself is unchanged; a
 `preview=true` flag runs the same generation without saving to PostgreSQL or advancing the letter —
 the HMI's own `/atis/generate` proxy exposes that same flag to the ATC-facing form.
 
