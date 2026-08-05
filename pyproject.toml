@@ -240,24 +240,36 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-# Only modules that the test battery is intended to cover. Other modules
-# (aircraft_mover FSM, debrief endpoint, shared/services/aircraft_*) are
-# tracked but excluded from the fail_under threshold since they are out of
-# scope for the current phase — see memoria 5.3.3 for the deferred items.
+# The three units the test battery is written against: the orchestrator
+# service, the arrival simulator's core, and the shared taxi router.
+#
+# ONLY DIRECTORIES BELONG HERE — never individual .py paths. coverage.py
+# resolves every `source` entry as an importable package/module name or as a
+# directory; a bare file path matches neither, so it is dropped with a
+# `module-not-imported` CoverageWarning and silently vanishes from the
+# denominator. That is exactly what used to happen: ten of the fourteen
+# entries here were file paths, so the reported total was measured over the
+# four directory entries alone. Two of those paths (core/phases.py,
+# core/geo.py) did not even exist any more and nobody noticed.
+#
+# Directory entries also fix the `runner.py` blind spot: tests import it as a
+# bare top-level module (`import runner`, via the sys.path entry that
+# tests/conftest.py installs), so no module-name-based rule could ever match
+# it. A directory entry matches on the file's path instead, which is stable
+# regardless of how the module was imported.
+#
+# DELIBERATELY OUT OF THE GATE (untested or not importable under pytest):
+#   xplane_plugin/          runs inside X-Plane's embedded interpreter; never
+#                           imported by the suite, so it would enter at 0%
+#   agents/{del,gnd,twr}/   Cloud Run agent images, no test modules
+#   services/flight_plan_service, controller_hmi_service, pilots_communication
+#                           no test modules
+# Genuinely exercised but not gated yet (widen in a follow-up, deliberately —
+# measured on this branch): services/weather_service 83.6%, plugins/GND 45.0%,
+# services/asr_service/core 75.1%, agents/common 100%.
 source = [
-    "services/orchestrator_service/agent",
-    "services/orchestrator_service/api",
-    "services/orchestrator_service/db",
-    "services/orchestrator_service/frequency_audit.py",
-    "services/orchestrator_service/runner.py",
-    "services/orchestrator_service/session_log.py",
-    "services/orchestrator_service/debrief_builder.py",
-    "services/orchestrator_service/config.py",
-    "services/arrival_simulator_service/core/event_bridge.py",
-    "services/arrival_simulator_service/core/arrival_planner.py",
-    "services/arrival_simulator_service/core/runway_config.py",
-    "services/arrival_simulator_service/core/phases.py",
-    "services/arrival_simulator_service/core/geo.py",
+    "services/orchestrator_service",
+    "services/arrival_simulator_service/core",
     "shared/services/taxi_router",
 ]
 omit = [
@@ -278,14 +290,23 @@ omit = [
 ]
 
 [tool.coverage.report]
+# Guard against a second flavour of the silent-omission bug above: when
+# scanning a `source` directory for files that were never imported, coverage
+# skips any subdirectory without an __init__.py. A new subpackage added
+# without one would quietly leave the denominator. No-op today (every
+# subdirectory in scope has an __init__.py) — it is here so it stays that way.
+include_namespace_packages = true
 exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
 ]
-# Real gate, enforced in CI (issue #47). Measured baseline on the branch point
-# for this change: 86.29% (773 statements, 106 missed). The threshold is
-# baseline - 2, rounded down, as a buffer against line-count noise; raise it in
-# follow-up PRs as coverage grows.
+# Real gate, enforced in CI (issue #47). Re-baselined on the corrected
+# `source` above: 86.05% (1541 statements, 215 missed). The previous baseline
+# (91.71%) was measured over 808 statements because ten `source` entries were
+# being dropped — the new figure is lower over nearly twice the surface, and
+# the difference is a measurement correction, not a coverage regression.
+# Threshold is baseline - 2, rounded down, as a buffer against line-count
+# noise; raise it in follow-up PRs as coverage grows.
 fail_under = 84
