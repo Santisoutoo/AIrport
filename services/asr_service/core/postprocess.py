@@ -211,50 +211,90 @@ def _phonetic_code(words: list[str]) -> str:
     return "".join(out)
 
 
-def _find_callsign_span(
-    tokens: list[tuple[str, int, int]], at_end: bool,
-) -> tuple[int, int, str, str] | None:
-    """Find "<airline word(s)> <phonetic code>" at the start or end of the token list.
+# Airline names are at most two words ("Air Europa"); the longer form is tried
+# first so "Air Nostrum" is not truncated to "Nostrum".
+_AIRLINE_LENGTHS = (2, 1)
+_MIN_CODE_WORDS = 2
+_MAX_CODE_WORDS = 5
 
-    ATC phraseology always puts the airline name before the phonetic code
-    ("Vueling three two alpha ..." / "..., Ryanair four seven three."), so
-    both the start and the end case look for the same airline-then-code
-    order, just anchored at a different edge of the sentence.
-    """
+# A span is (start_char, end_char, airline words, phonetic code).
+_Span = tuple[int, int, str, str]
+
+
+def _airline_words(tokens: list[tuple[str, int, int]], start: int, stop: int) -> list[str] | None:
+    """Words of a candidate airline name, or None if any of them is phonetic."""
+    words = [t[0] for t in tokens[start:stop]]
+    if any(_is_phonetic_word(w) for w in words):
+        return None
+    return words
+
+
+def _span_at_start(tokens: list[tuple[str, int, int]], airline_len: int) -> _Span | None:
+    """Match "<airline> <phonetic code>" anchored at the first token."""
     n = len(tokens)
-    if n < 3:
+    if airline_len >= n:
         return None
 
-    for airline_len in (2, 1):
-        if not at_end:
-            if airline_len >= n:
-                continue
-            airline_words = [t[0] for t in tokens[:airline_len]]
-            if any(_is_phonetic_word(w) for w in airline_words):
-                continue
-            k = airline_len
-            while k < n and (k - airline_len) < 5 and _is_phonetic_word(tokens[k][0]):
-                k += 1
-            if (k - airline_len) >= 2:
-                code = _phonetic_code([t[0] for t in tokens[airline_len:k]])
-                if code:
-                    return tokens[0][1], tokens[k - 1][2], " ".join(airline_words), code
-        else:
-            airline_start = n - airline_len
-            if airline_start <= 0:
-                continue
-            airline_words = [t[0] for t in tokens[airline_start:n]]
-            if any(_is_phonetic_word(w) for w in airline_words):
-                continue
-            k = airline_start
-            code_len = 0
-            while k > 0 and code_len < 5 and _is_phonetic_word(tokens[k - 1][0]):
-                k -= 1
-                code_len += 1
-            if code_len >= 2:
-                code = _phonetic_code([t[0] for t in tokens[k:airline_start]])
-                if code:
-                    return tokens[k][1], tokens[n - 1][2], " ".join(airline_words), code
+    words = _airline_words(tokens, 0, airline_len)
+    if words is None:
+        return None
+
+    # Consume the phonetic code that follows the airline name.
+    k = airline_len
+    while k < n and (k - airline_len) < _MAX_CODE_WORDS and _is_phonetic_word(tokens[k][0]):
+        k += 1
+    if (k - airline_len) < _MIN_CODE_WORDS:
+        return None
+
+    code = _phonetic_code([t[0] for t in tokens[airline_len:k]])
+    if not code:
+        return None
+    return tokens[0][1], tokens[k - 1][2], " ".join(words), code
+
+
+def _span_at_end(tokens: list[tuple[str, int, int]], airline_len: int) -> _Span | None:
+    """Match "<phonetic code> <airline>" anchored at the last token."""
+    n = len(tokens)
+    airline_start = n - airline_len
+    if airline_start <= 0:
+        return None
+
+    words = _airline_words(tokens, airline_start, n)
+    if words is None:
+        return None
+
+    # Walk backwards from the airline name over the phonetic code.
+    k = airline_start
+    code_len = 0
+    while k > 0 and code_len < _MAX_CODE_WORDS and _is_phonetic_word(tokens[k - 1][0]):
+        k -= 1
+        code_len += 1
+    if code_len < _MIN_CODE_WORDS:
+        return None
+
+    code = _phonetic_code([t[0] for t in tokens[k:airline_start]])
+    if not code:
+        return None
+    return tokens[k][1], tokens[n - 1][2], " ".join(words), code
+
+
+def _find_callsign_span(tokens: list[tuple[str, int, int]], at_end: bool) -> _Span | None:
+    """Find an "<airline> <phonetic code>" pair at one edge of the token list.
+
+    With ``at_end=False`` the airline name must be the first token(s), followed
+    by the code ("Vueling three two alpha ..."). With ``at_end=True`` the
+    airline name must be the *last* token(s), preceded by the code. Callers
+    filter the result through ``_NON_AIRLINE_WORDS`` because the trailing form
+    also matches plain ATC tails ("... one golf departure").
+    """
+    if len(tokens) < 3:
+        return None
+
+    scan = _span_at_end if at_end else _span_at_start
+    for airline_len in _AIRLINE_LENGTHS:
+        span = scan(tokens, airline_len)
+        if span is not None:
+            return span
     return None
 
 
