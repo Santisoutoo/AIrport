@@ -96,14 +96,28 @@ back to the orchestrator today.
 ## Anatomy of an agent
 
 ```
+agents/common/                 # single source of truth for the shared code
+  agent_runner.py             # build_run_agent(): ADK Runner + sessions + JSON extraction
+  agent_app.py                # create_app(): the FastAPI wrapper
 agents/<phase>/
-  main.py                   # FastAPI: POST /agents/<role>/run, GET /health, GET /agents/<role>/info
-  runner.py                 # ADK Runner + InMemorySessionService, JSON extraction
+  main.py                   # AgentAppConfig + create_app() + the uvicorn entry point
+  runner.py                 # AgentRunnerConfig + build_run_agent(), wrapped in a typed run_agent
   agent/agent.py             # Agent(model=AGENT_MODEL, tools=[], instruction=SYSTEM_PROMPT)
   agent/prompts/system.py     # ICAO phraseology rules + the JSON output contract
   agent/tools/                # gnd, twr only - present but empty, nothing registered on the Agent
+  shared/agent_runner.py       # vendored copy of agents/common/agent_runner.py
+  shared/agent_app.py          # vendored copy of agents/common/agent_app.py
   shared/callbacks.py          # log_before / log_after - a local copy per agent
 ```
+
+The `shared/` package inside each agent is **vendored**, not imported: every agent is
+deployed on its own with `gcloud run deploy --source agents/<phase>`, so the Docker build
+context is that one directory (`COPY . .`) and nothing above it exists at runtime. The
+generic runner and app factory therefore live once in `agents/common/` and are copied into
+all three by [`scripts/sync_agent_common.py`](../scripts/sync_agent_common.py);
+`tests/unit/agents/test_agent_common_vendoring.py` fails the suite if a copy drifts. Edit
+`agents/common/`, never the copies. `shared/callbacks.py` is the exception — it is not
+generated, because each agent's version is tuned to its own state field names.
 
 The prompt in `agent/prompts/system.py` is where all the ATC knowledge actually lives:
 message-type classification (a clearance versus a greeting versus "say again"), the exact ICAO
