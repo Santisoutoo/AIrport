@@ -21,9 +21,7 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 import respx
-
 from agent.tools import forward as forward_mod
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

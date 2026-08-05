@@ -3,8 +3,8 @@ import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional, cast
-import redis
 
+import redis
 
 _PREFIX = "airport:current"
 

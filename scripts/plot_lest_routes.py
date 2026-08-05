@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 
 from plugins.GND.graph import AirportGraph
 
-
 OUTPUT = Path(
     r"c:/Users/santi/Documents/documentos_tfg/memoria/"
     r"capitulos/05_resultados/diagramas/lest_rutas.png"

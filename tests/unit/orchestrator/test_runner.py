@@ -17,11 +17,10 @@ from __future__ import annotations
 import httpx
 import pytest
 import respx
-
 import runner as runner_mod
 from db.models import AircraftClearance
-from tests.fixtures.adk_runner import install_fake_runner
 
+from tests.fixtures.adk_runner import install_fake_runner
 
 # ---------------------------------------------------------------------------
 # _fetch_known_aircraft

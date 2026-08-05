@@ -50,11 +50,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from benchmark_agents import STRUCTURED_KEY, SUFFIX, load_env_urls, parse_corpus
-from validate_agents import call_agent_with_retry
-
 from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
+from validate_agents import call_agent_with_retry
 
 CORPUS_DIR = Path("agents_evaluation/corpus_wer")
 OUT_DIR = Path("agents_evaluation/output")

@@ -9,7 +9,6 @@ across LEST and LEIB (different sizes, different runway counts) using the
 
 import pytest
 
-
 # ---- Runway resolution (via the index, not via resolve_point step 0) -------
 #
 # In LEST and LEIB the parser assigns sequential numeric node_ids, which means

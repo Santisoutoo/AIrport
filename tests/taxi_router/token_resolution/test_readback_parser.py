@@ -3,7 +3,6 @@ from shared.services.taxi_router.readback_parser import (
     parse_pushback_direction,
 )
 
-
 # ---- extract_taxiway_tokens -------------------------------------------------
 
 

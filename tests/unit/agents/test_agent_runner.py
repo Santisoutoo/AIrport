@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import pytest
 
+import agents.common.agent_runner as agent_runner_mod
 from agents.common.agent_runner import (
     AgentRunnerConfig,
     ContextField,
@@ -22,8 +23,6 @@ from agents.common.agent_runner import (
     build_run_agent,
 )
 from tests.fixtures.adk_runner import install_fake_runner
-import agents.common.agent_runner as agent_runner_mod
-
 
 DEL_CONFIG = AgentRunnerConfig(
     label="DEL",

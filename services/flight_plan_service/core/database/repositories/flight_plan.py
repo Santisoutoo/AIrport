@@ -1,7 +1,7 @@
+from models.schemas import FlightPlanResponse
 from sqlalchemy.orm import Session
 
 from core.database.models import FlightPlanModel
-from models.schemas import FlightPlanResponse
 
 
 class FlightPlanRepository:

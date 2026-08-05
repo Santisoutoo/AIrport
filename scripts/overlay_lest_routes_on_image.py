@@ -16,7 +16,6 @@ from PIL import Image, ImageDraw
 
 from plugins.GND.graph import AirportGraph
 
-
 IMG_IN = Path(
     r"c:/Users/santi/Documents/documentos_tfg/memoria/"
     r"capitulos/05_resultados/cap/image.png"

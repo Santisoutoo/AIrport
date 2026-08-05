@@ -332,6 +332,6 @@ if __name__ == "__main__":
 
         store = AirportDataStore()
         store.store(ICAO, airport_data)
-        print(f"Data stored in Redis under airport:current:*")
+        print("Data stored in Redis under airport:current:*")
     except Exception as e:
         print(f"Redis storage skipped: {e}")

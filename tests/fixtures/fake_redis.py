@@ -18,7 +18,6 @@ unless a test calls ``fake.fail_next("rpush")`` to make the next call raise.
 from __future__ import annotations
 
 import fnmatch
-import json
 from collections import defaultdict
 from typing import Any
 

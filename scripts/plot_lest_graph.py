@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 
 from plugins.GND.graph import AirportGraph
 
-
 OUT = Path(
     r"c:/Users/santi/Documents/documentos_tfg/memoria/"
     r"capitulos/05_resultados/diagramas/lest_grafo.png"
@@ -81,7 +80,7 @@ def main():
     ]
     ax.legend(handles=legend_items, loc="lower left", fontsize=8, framealpha=0.92)
 
-    from matplotlib.ticker import MaxNLocator, FormatStrFormatter
+    from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 
     ax.set_xlabel("Longitud (grados)")
     ax.set_ylabel("Latitud (grados)")

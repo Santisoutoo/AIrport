@@ -11,7 +11,7 @@
 ╚═════════════════════════════════════════════════════════════════════════════════╝
 """
 
-from typing import List, Set, Dict
+from typing import Dict, List
 
 from models import (
     AirportInfo,

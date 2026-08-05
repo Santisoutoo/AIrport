@@ -1,11 +1,11 @@
+import logging
 import os
 import sys
-import logging
 from pathlib import Path
 
+import httpx
 import redis as redis_lib
 from fastapi import APIRouter, HTTPException, Request
-import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,8 @@ else:
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from airport_graph_builder import AirportMapVisualizer
 from airport_data_fetcher import XPlaneAirportDownloader
+from airport_graph_builder import AirportMapVisualizer
 
 # Cache parsed airport graphs: { "ICAO": graph_data_dict }
 _airport_graph_cache: dict = {}

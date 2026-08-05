@@ -16,7 +16,6 @@ import pytest
 from shared.services.taxi_router import router as router_mod
 from shared.services.taxi_router.router import dispatch_taxi_plan
 
-
 # ---- Fakes ------------------------------------------------------------------
 
 

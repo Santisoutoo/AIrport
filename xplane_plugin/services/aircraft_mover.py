@@ -28,10 +28,20 @@ from ...shared.models.phases import Phase
 from ...shared.services.aircraft_state_store import AircraftStateStore
 from ...shared.services.geo import (
     FT_TO_M,
+)
+from ...shared.services.geo import (
     KT_TO_MPS as _KT_TO_MPS,
+)
+from ...shared.services.geo import (
     advance as _advance,
+)
+from ...shared.services.geo import (
     bearing as _bearing,
+)
+from ...shared.services.geo import (
     haversine as _haversine,
+)
+from ...shared.services.geo import (
     shortest_angle as _shortest_angle,
 )
 
@@ -106,6 +116,7 @@ class AircraftMover:
     @staticmethod
     def _make_redis():
         import os
+
         import redis
 
         host = os.getenv("REDIS_HOST", "localhost")

@@ -25,9 +25,7 @@ if str(_ORCH) not in sys.path:
     sys.path.insert(0, str(_ORCH))
 
 import pytest
-
 from debrief_builder import build_timeline
-
 
 # 2026-04-22 13:33:20 UTC — fixed so the rendered HH:MM:SS is deterministic.
 # (Note: the T0 in test_debrief_builder.py is a different, rounder epoch whose

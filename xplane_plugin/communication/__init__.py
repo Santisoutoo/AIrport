@@ -2,7 +2,6 @@ import re
 
 from XPPython3 import xp
 
-
 _AIRLINE_NAMES = {
     "RYR": "Ryanair",
     "VLG": "Vueling",

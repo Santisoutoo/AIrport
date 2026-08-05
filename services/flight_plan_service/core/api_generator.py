@@ -1,13 +1,13 @@
+import logging
 import os
 import random
-import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
 import httpx
-
 from models.schemas import FlightPlanResponse
-from core.data import AIRCRAFT_DATA, PILOT_NAMES, AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX
+
+from core.data import AIRCRAFT_DATA, AIRLINE_DATA, AIRLINE_REGISTRATION_PREFIX, PILOT_NAMES
 from core.registration import generate_registration
 
 logger = logging.getLogger(__name__)

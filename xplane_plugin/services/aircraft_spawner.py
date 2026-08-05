@@ -1,4 +1,5 @@
 from XPPython3 import xp
+
 from .aircraft_obj_mapper import get_obj_path
 
 _FT_TO_M = 0.3048

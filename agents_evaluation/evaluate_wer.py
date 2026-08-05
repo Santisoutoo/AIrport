@@ -1,10 +1,11 @@
 import csv
 import os
 import sys
+from pathlib import Path
+
 import httpx
 from dotenv import load_dotenv
 from jiwer import wer
-from pathlib import Path
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 

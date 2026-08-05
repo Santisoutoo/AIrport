@@ -3,9 +3,9 @@
 import logging
 import os
 
-from shared.agent_app import AgentAppConfig, create_app
-
 from runner import run_agent
+
+from shared.agent_app import AgentAppConfig, create_app
 
 logger = logging.getLogger(__name__)
 

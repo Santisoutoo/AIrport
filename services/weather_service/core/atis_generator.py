@@ -1,10 +1,10 @@
-from datetime import datetime
-from typing import Optional
 import logging
 import string
+from datetime import datetime
+from typing import Optional
 
-from models.schemas import ATISResponse, CloudLayer
 from core.metar_taf_fetcher import NoWeatherDataError, get_metar
+from models.schemas import ATISResponse, CloudLayer
 
 logger = logging.getLogger(__name__)
 

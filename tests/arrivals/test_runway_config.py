@@ -1,5 +1,4 @@
 import pytest
-
 from core.runway_config import LEST_RWY_17, get_active_runway
 
 

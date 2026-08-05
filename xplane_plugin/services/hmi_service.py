@@ -1,6 +1,6 @@
 import os
-import requests
 
+import requests
 
 HMI_URL = os.getenv("HMI_SERVICE_URL", "http://localhost:8005")
 

@@ -8,7 +8,6 @@ if str(_ORCH) not in sys.path:
 
 from debrief_builder import build_timeline, summarise_stats, truncate_timeline
 
-
 # Fixed epoch timestamps so formatting is deterministic (UTC)
 T0 = 1_776_800_000.0  # 2026-04-22 13:33:20 UTC
 

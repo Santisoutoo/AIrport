@@ -1,6 +1,6 @@
-from typing import Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, List, Optional
 
 
 class Intent(Enum):

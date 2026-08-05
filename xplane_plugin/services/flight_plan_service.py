@@ -1,5 +1,6 @@
-import requests
 from typing import Tuple
+
+import requests
 
 
 class FlightPlanService:

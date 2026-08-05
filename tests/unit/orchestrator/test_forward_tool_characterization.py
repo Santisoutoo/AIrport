@@ -27,9 +27,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 import respx
-
 from agent.tools import forward as forward_mod
-
 
 # ---------------------------------------------------------------------------
 # Fixtures (local to this module — tests/conftest.py is intentionally untouched)

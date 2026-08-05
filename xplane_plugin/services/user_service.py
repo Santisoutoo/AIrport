@@ -3,7 +3,6 @@ import os
 from typing import Optional, Tuple
 
 import psycopg2
-from psycopg2 import sql
 
 
 class UserService:

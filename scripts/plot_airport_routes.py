@@ -20,7 +20,6 @@ import matplotlib.pyplot as plt
 
 from plugins.GND.graph import AirportGraph
 
-
 FIG_DIR = Path(
     r"c:/Users/santi/Documents/documentos_tfg/memoria/"
     r"capitulos/05_resultados/diagramas"

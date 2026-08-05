@@ -17,10 +17,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
-
 from agent.tools import taxi_route as taxi_route_mod
-
 
 # ---------------------------------------------------------------------------
 # Helpers

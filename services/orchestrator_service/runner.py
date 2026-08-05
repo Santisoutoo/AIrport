@@ -17,14 +17,13 @@ from typing import Any
 
 import httpx
 import redis as redis_lib
+from agent.agent import orch_agent
+from db.models import AircraftClearance
+from db.repository import ClearanceRepository
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
 from sqlalchemy.orm import Session
-
-from agent.agent import orch_agent
-from db.models import AircraftClearance
-from db.repository import ClearanceRepository
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,6 @@ nodes between consecutive taxiways in a controller clearance.
 
 import pytest
 
-
 # ---- _edges_by_taxiway index ------------------------------------------------
 
 

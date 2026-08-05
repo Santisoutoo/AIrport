@@ -6,9 +6,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+from core.config import get_model_backend, get_settings
 from fastapi import HTTPException
-
-from core.config import get_settings, get_model_backend
 
 logger = logging.getLogger(__name__)
 

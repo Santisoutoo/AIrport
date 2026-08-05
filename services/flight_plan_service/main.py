@@ -1,21 +1,22 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from api.routes import (
+    api_generation_router,
     api_generator,
     health_router,
-    api_generation_router,
     local_generation_router,
     plans_router,
     reference_router,
 )
-from sqlalchemy import inspect, text
+from core.database.connection import Base, engine
 
-from core.database.connection import engine, Base
-from core.database.models import FlightPlanModel
+# Imported for its side effect: registers FlightPlanModel on Base.metadata so
+# the create_all() below actually creates the table. Do not remove.
+from core.database.models import FlightPlanModel  # noqa: F401
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect, text
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

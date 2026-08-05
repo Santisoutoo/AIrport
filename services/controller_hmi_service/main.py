@@ -19,14 +19,13 @@ def _load_env_file():
 
 _load_env_file()
 
+from api.chat import router as chat_router
+from api.plugin_routes import router as plugin_router
+from api.routes import router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
-from api.routes import router
-from api.plugin_routes import router as plugin_router
-from api.chat import router as chat_router
 
 PREFIX = "/api/v1/hmi"
 

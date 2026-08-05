@@ -17,7 +17,6 @@ Usage:
 """
 
 import csv
-import re
 from pathlib import Path
 
 import matplotlib

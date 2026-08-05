@@ -11,7 +11,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 OUT = Path(
     r"c:/Users/santi/Documents/documentos_tfg/memoria/"
     r"capitulos/05_resultados/diagramas/agent_benchmark.png"

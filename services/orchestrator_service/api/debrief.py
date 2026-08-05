@@ -5,16 +5,15 @@ import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
 from agent.debrief_agent import generate_debrief, render_markdown
 from db.connection import get_db
 from db.models import AircraftClearance
 from debrief_builder import build_timeline, summarise_stats, truncate_timeline
+from fastapi import APIRouter, Depends, HTTPException
 from frequency_audit import audit_frequencies
+from pydantic import BaseModel
 from session_log import get_agent_replies, get_events, get_transcripts
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +119,7 @@ async def generate(req: DebriefRequest, db: Session = Depends(get_db)):
 
     try:
         markdown = render_markdown(result, freq_audit)
-    except Exception as exc:
+    except Exception:
         logger.exception("[debrief] markdown render failed")
         markdown = f"# Session debrief\n\n```json\n{result}\n```"
 

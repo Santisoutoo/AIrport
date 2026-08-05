@@ -24,21 +24,20 @@ import json
 import sys
 import types
 
+import api.dispatch as dispatch_mod
 import httpx
 import pytest
 import respx
-
-import api.dispatch as dispatch_mod
 import runner as runner_mod
 import session_log as session_log_mod
 from agent.tools import forward as forward_mod
+from api.dispatch import router as dispatch_router
+from db.connection import get_db
 from db.models import AircraftClearance
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from api.dispatch import router as dispatch_router
-from db.connection import get_db
-from tests.fixtures.adk_runner import install_fake_runner
 
+from tests.fixtures.adk_runner import install_fake_runner
 
 pytestmark = pytest.mark.slow
 

@@ -13,11 +13,11 @@ import logging
 import os
 from typing import Optional
 
+from frequency_audit import render_audit_for_prompt, render_audit_markdown
 from google import genai
 from google.genai import types
 
 from agent.debrief_prompt import DEBRIEF_SYSTEM_PROMPT
-from frequency_audit import render_audit_for_prompt, render_audit_markdown
 
 logger = logging.getLogger(__name__)
 

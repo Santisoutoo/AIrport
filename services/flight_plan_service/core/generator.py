@@ -2,13 +2,14 @@ import random
 from datetime import datetime, timedelta
 
 from models.schemas import FlightPlanResponse
+
 from core.data import (
     AIRCRAFT_DATA,
+    AIRLINE_DATA,
+    AIRLINE_REGISTRATION_PREFIX,
     AIRPORT_DATA,
     DISTANCES,
     PILOT_NAMES,
-    AIRLINE_DATA,
-    AIRLINE_REGISTRATION_PREFIX,
 )
 from core.registration import generate_registration
 

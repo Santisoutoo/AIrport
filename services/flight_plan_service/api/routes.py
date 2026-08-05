@@ -1,15 +1,14 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy.orm import Session
-
-from models.schemas import FlightPlanResponse, HealthResponse
-from core.data import AIRCRAFT_DATA, AIRPORT_DATA
-from core.generator import FlightPlanGenerator
 from core.api_generator import APIFlightPlanGenerator
-from core.database.connection import get_db, check_connection
+from core.data import AIRCRAFT_DATA, AIRPORT_DATA
+from core.database.connection import check_connection, get_db
 from core.database.repositories.flight_plan import FlightPlanRepository
+from core.generator import FlightPlanGenerator
+from fastapi import APIRouter, Depends, HTTPException, Query
+from models.schemas import FlightPlanResponse, HealthResponse
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

@@ -1,11 +1,10 @@
 from typing import Optional
 
+from db.connection import get_db
+from db.repository import ClearanceRepository
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-
-from db.connection import get_db
-from db.repository import ClearanceRepository
 
 router = APIRouter(prefix="/clearances", tags=["clearances"])
 

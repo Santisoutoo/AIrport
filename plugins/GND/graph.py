@@ -1,7 +1,8 @@
 import json
-import re
-import networkx as nx
 import math
+import re
+
+import networkx as nx
 
 EARTH_R_M = 6371000.0
 

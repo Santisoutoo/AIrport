@@ -13,7 +13,6 @@ import pytest
 
 from plugins.GND.graph import AirportGraph
 
-
 # ---- Construction entry points ---------------------------------------------
 
 

@@ -2,19 +2,19 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
+from api.aircraft import router as aircraft_router
+from api.arrivals import router as arrivals_router
+from api.clearances import router as clearances_router
+from api.debrief import router as debrief_router
+from api.dispatch import router as dispatch_router
+from api.events_subscriber import start_subscriber, stop_subscriber
+from api.flight_plans import router as flight_plans_router
+from api.weather import router as weather_router
+from db.connection import init_db
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import config
-from db.connection import init_db
-from api.flight_plans import router as flight_plans_router
-from api.weather import router as weather_router
-from api.clearances import router as clearances_router
-from api.aircraft import router as aircraft_router
-from api.dispatch import router as dispatch_router
-from api.debrief import router as debrief_router
-from api.arrivals import router as arrivals_router
-from api.events_subscriber import start_subscriber, stop_subscriber
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "info").upper()
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s — %(message)s")

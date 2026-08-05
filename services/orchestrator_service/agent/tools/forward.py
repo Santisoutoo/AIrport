@@ -18,7 +18,6 @@ from typing import Any
 
 import httpx
 from google.adk.tools import ToolContext
-
 from session_log import append_agent_reply
 
 logger = logging.getLogger(__name__)

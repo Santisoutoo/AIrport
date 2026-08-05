@@ -322,7 +322,7 @@ def call_agent_with_retry(url: str, session_id: str, message: str, timeout_s: in
         return _attempt()
     except urllib.error.HTTPError as e:
         return e.code, 0.0, None, f"HTTPError: {e}"
-    except (socket.timeout, urllib.error.URLError, TimeoutError) as e:
+    except (socket.timeout, urllib.error.URLError, TimeoutError):
         time.sleep(RETRY_SLEEP_S)
         try:
             return _attempt()

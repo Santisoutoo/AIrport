@@ -2,7 +2,7 @@ import json
 import os
 import traceback
 import webbrowser
-from typing import Optional, Any
+from typing import Any, Optional
 
 # El plugin corre en el host (no en Docker) — forzar Redis a localhost
 os.environ["REDIS_HOST"] = "localhost"
@@ -116,14 +116,14 @@ class WindowManager:
 
     def _execute_start_from_redis(self, r, data: dict):
         """Ejecuta el inicio de sesion leyendo los parametros de Redis."""
-        from ..services.aircraft_spawner import AircraftSpawner
-        from ..services.aircraft_mover import AircraftMover, set_mover
-        from ..services.flight_plan_service import FlightPlanService
-        from ...shared.services.aircraft_tracker import AircraftTracker
+        from ...shared.models.aircraft_state import AircraftState
         from ...shared.services.aircraft_state_store import AircraftStateStore
+        from ...shared.services.aircraft_tracker import AircraftTracker
         from ...shared.services.airport_data_store import AirportDataStore
         from ...shared.services.stand_assigner import StandAssigner
-        from ...shared.models.aircraft_state import AircraftState
+        from ..services.aircraft_mover import AircraftMover, set_mover
+        from ..services.aircraft_spawner import AircraftSpawner
+        from ..services.flight_plan_service import FlightPlanService
 
         icao = data.get("icao", "")
         aircraft_count = int(data.get("aircraft_count", 5))

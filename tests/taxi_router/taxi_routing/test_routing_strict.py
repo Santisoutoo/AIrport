@@ -9,9 +9,6 @@ D-K, D-M, D-N, E-J, E-K, E-L, E-M, E-N, J-Q, M-S. Taxiway B touches none
 of the sampled set.
 """
 
-import networkx as nx
-import pytest
-
 
 def _tw_nodes(graph, tw):
     return {n for uv in graph._edges_by_taxiway[tw.upper()] for n in uv}

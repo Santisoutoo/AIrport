@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 
 from agents.common.agent_app import AgentAppConfig, create_app
 
-
 DEL_CONFIG = AgentAppConfig(
     label="DEL",
     role="delivery",

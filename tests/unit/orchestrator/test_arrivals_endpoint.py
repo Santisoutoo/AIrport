@@ -9,12 +9,11 @@ correctly when the controller releases it to ground.
 from __future__ import annotations
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
 from api.arrivals import router as arrivals_router
 from db.connection import get_db
 from db.models import AircraftClearance
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture

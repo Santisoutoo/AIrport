@@ -7,15 +7,13 @@ PostgreSQL (aircraft_clearances) stores the lifecycle state (dependency, taxi_ro
 
 import json
 import os
-from typing import Optional
 
 import redis as redis_lib
+from db.connection import get_db
+from db.repository import ClearanceRepository
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-
-from db.connection import get_db
-from db.repository import ClearanceRepository
 
 router = APIRouter(prefix="/aircraft", tags=["aircraft"])
 

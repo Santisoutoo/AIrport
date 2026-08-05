@@ -8,8 +8,6 @@ engine on a large, complex airport layout.
 import math
 
 import networkx as nx
-import pytest
-
 
 # ---- Helpers ---------------------------------------------------------------
 

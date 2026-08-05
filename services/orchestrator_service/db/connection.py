@@ -1,7 +1,7 @@
 import os
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
 def _build_db_url() -> str:
@@ -30,6 +30,8 @@ def get_db():
 
 
 def init_db():
-    from db.models import AircraftClearance
+    # Imported for its side effect: registers AircraftClearance on
+    # Base.metadata so create_all() below actually creates the table.
+    from db.models import AircraftClearance  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

@@ -1,5 +1,4 @@
 from typing import Tuple
-from XPPython3 import xp
 
 from ..ui.windows_manager import WindowManager
 

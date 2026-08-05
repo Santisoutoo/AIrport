@@ -27,7 +27,7 @@ from typing import Any, Optional, cast
 from ..geo import KT_TO_MPS, haversine
 from . import config
 from .destination_parser import extract_destination
-from .errors import RouteNotFoundError, UnknownTaxiwayError
+from .errors import RouteNotFoundError
 from .hmi_chat import format_readback_rejected, publish_pilot_message
 from .pushback import PushbackLeg, plan_pushback_leg
 from .readback_parser import extract_taxiway_tokens, parse_pushback_direction
@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 def _get_redis_client() -> Any:
     # redis-py types the sync client as `Awaitable[T] | T`; keep it `Any`.
     import os
+
     import redis  # local import
 
     host = os.getenv("REDIS_HOST", "localhost")
@@ -61,6 +62,7 @@ def _load_graph() -> Any:
         sys.path.insert(0, str(gnd_dir))
 
     from graph import AirportGraph
+
     from shared.services.airport_data_store import AirportDataStore
 
     data = AirportDataStore().load()

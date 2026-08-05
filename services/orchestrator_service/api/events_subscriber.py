@@ -13,7 +13,6 @@ import os
 from typing import Optional
 
 import redis.asyncio as redis_async
-
 from session_log import append_event, get_active_session_id
 
 logger = logging.getLogger(__name__)

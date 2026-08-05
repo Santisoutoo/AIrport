@@ -18,11 +18,9 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-
 from agent.tools.advance_to_gnd import advance_to_gnd
 from agent.tools.advance_to_gnd_arrival import advance_to_gnd_arrival
 from agent.tools.advance_twr import advance_to_twr
-
 
 # (callable, state_advance_key, expected_dependency)
 ADVANCE_TOOLS = [

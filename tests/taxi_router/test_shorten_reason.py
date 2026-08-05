@@ -8,7 +8,6 @@ alternative.").
 
 from shared.services.taxi_router.router import _shorten_reason
 
-
 # ---- Strict-routing failures (issue #70) ------------------------------------
 
 

@@ -1,27 +1,25 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
-
-from models.schemas import (
-    ATISOptions,
-    ATISRequest,
-    ATISResponse,
-    CloudLayer,
-    HealthResponse,
-    MetarResponse,
-)
 from core.atis_generator import ATISGenerator
+from core.database.connection import check_connection, get_db
+from core.database.repositories.atis import ATISRepository
 from core.metar_taf_fetcher import (
     NoWeatherDataError,
     WeatherUpstreamError,
     get_metar,
     get_taf,
 )
-from core.database.connection import get_db, check_connection
-from core.database.repositories.atis import ATISRepository
+from fastapi import APIRouter, Depends, HTTPException, Query
+from models.schemas import (
+    ATISOptions,
+    ATISResponse,
+    CloudLayer,
+    HealthResponse,
+    MetarResponse,
+)
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

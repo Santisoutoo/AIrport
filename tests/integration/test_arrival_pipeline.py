@@ -19,13 +19,10 @@ from __future__ import annotations
 import json
 import types
 
+import api.dispatch as dispatch_mod
 import httpx
 import pytest
 import respx
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
-import api.dispatch as dispatch_mod
 import runner as runner_mod
 import session_log as session_log_mod
 from agent.tools import forward as forward_mod
@@ -35,8 +32,10 @@ from api.dispatch import router as dispatch_router
 from core import event_bridge
 from db.connection import get_db
 from db.models import AircraftClearance
-from tests.fixtures.adk_runner import install_fake_runner
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
+from tests.fixtures.adk_runner import install_fake_runner
 
 pytestmark = pytest.mark.slow
 

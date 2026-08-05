@@ -14,14 +14,12 @@ from __future__ import annotations
 
 import json
 
-import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
 import api.dispatch as dispatch_mod
-import session_log
+import pytest
 from api.dispatch import router as dispatch_router
 from db.connection import get_db
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
