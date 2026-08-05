@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,9 +7,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router
 from core.database.connection import engine, Base
 from core.database.models import ATISModel
+from core.metar_taf_fetcher import close_client
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Release the shared httpx client used for METAR/TAF on shutdown."""
+    yield
+    await close_client()
+
 
 app = FastAPI(
     title="Weather Service",
@@ -16,6 +26,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 _cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "http://localhost:8005").split(",") if o.strip()]

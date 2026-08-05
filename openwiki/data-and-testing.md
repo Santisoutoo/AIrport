@@ -124,6 +124,7 @@ socket anywhere in the run.
 | Taxi routing | [`tests/taxi_router/`](../tests/taxi_router/) | graph construction, token resolution, routing e2e, pushback leg, HMI chat |
 | Arrivals | [`tests/arrivals/`](../tests/arrivals/) | phases, runway config, arrival planner, geo |
 | Debrief | [`tests/debrief/`](../tests/debrief/) | debrief builder |
+| Weather | [`tests/weather/`](../tests/weather/) | METAR/TAF fetcher over `respx`, `_parse_metar` characterization, ATIS generation, route error mapping |
 
 Run with `uv run pytest` (or plain `pytest`). The honest gap sits outside this table entirely:
 `xplane_plugin/` — the in-sim motion engine — appears nowhere in the coverage `source` list and

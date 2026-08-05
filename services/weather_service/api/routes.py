@@ -1,15 +1,31 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy.orm import Session
+import logging
 from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Depends, Query
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from models.schemas import ATISResponse, ATISRequest, MetarResponse, HealthResponse, CloudLayer
 from core.atis_generator import ATISGenerator
-from core.metar_taf_fetcher import get_metar, get_taf
+from core.metar_taf_fetcher import (
+    NoWeatherDataError,
+    WeatherUpstreamError,
+    get_metar,
+    get_taf,
+)
 from core.database.connection import get_db, check_connection
 from core.database.repositories.atis import ATISRepository
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 generator = ATISGenerator()
+
+#: Exceptions raised while decoding an aviationweather.gov JSON payload whose
+#: shape does not match what we expect (missing key, wrong type, unparsable
+#: number or timestamp, ``None`` where a string was promised). They mean "bad
+#: upstream data", i.e. a 502, never a 500.
+MALFORMED_PAYLOAD_ERRORS = (AttributeError, IndexError, KeyError, TypeError, ValueError)
 
 
 #  Health
@@ -41,7 +57,7 @@ async def generate_atis(
 ):
     """Generate ATIS for an airport"""
     try:
-        atis = generator.generate(
+        atis = await generator.generate(
             icao_code=icao_code,
             departure_runway=departure_runway,
             arrival_runway=arrival_runway,
@@ -52,14 +68,25 @@ async def generate_atis(
             remarks=remarks,
             preview=preview,
         )
-        if not preview:
+    except NoWeatherDataError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except WeatherUpstreamError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except MALFORMED_PAYLOAD_ERRORS:
+        logger.exception("Malformed METAR payload while generating ATIS for %s", icao_code)
+        raise HTTPException(
+            status_code=502, detail=f"Malformed METAR data for {icao_code.upper()}"
+        )
+
+    if not preview:
+        try:
             repo = ATISRepository(db)
             repo.create(atis)
-        return atis
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        except SQLAlchemyError:
+            logger.exception("Failed to persist ATIS for %s", icao_code)
+            raise HTTPException(status_code=500, detail="Failed to store the generated ATIS")
+
+    return atis
 
 
 @router.get("/atis/{icao_code}/latest", response_model=ATISResponse, tags=["ATIS"])
@@ -97,10 +124,14 @@ async def delete_atis_by_airport(icao_code: str, db: Session = Depends(get_db)):
 async def get_metar_data(icao_code: str):
     """Fetch current METAR for an airport"""
     try:
-        data = get_metar(icao_code, output_format="json")
-        if not data or len(data) == 0:
-            raise HTTPException(status_code=404, detail=f"No METAR for {icao_code.upper()}")
+        data = await get_metar(icao_code, output_format="json")
+    except WeatherUpstreamError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
 
+    if not data or len(data) == 0:
+        raise HTTPException(status_code=404, detail=f"No METAR for {icao_code.upper()}")
+
+    try:
         metar = data[0]
 
         # Wind
@@ -151,20 +182,21 @@ async def get_metar_data(icao_code: str):
             qnh_hpa=qnh,
             flight_category=flight_cat
         )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except MALFORMED_PAYLOAD_ERRORS:
+        logger.exception("Malformed METAR payload for %s", icao_code)
+        raise HTTPException(
+            status_code=502, detail=f"Malformed METAR data for {icao_code.upper()}"
+        )
 
 
 @router.get("/metar/{icao_code}/raw", tags=["METAR"])
 async def get_metar_raw(icao_code: str):
     """Get raw METAR string"""
     try:
-        data = get_metar(icao_code, output_format="raw")
-        return {"icao_code": icao_code.upper(), "raw_metar": data.get("data", "")}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        data = await get_metar(icao_code, output_format="raw")
+    except WeatherUpstreamError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return {"icao_code": icao_code.upper(), "raw_metar": data.get("data", "")}
 
 
 #  TAF 
@@ -172,24 +204,23 @@ async def get_metar_raw(icao_code: str):
 async def get_taf_data(icao_code: str):
     """Fetch TAF for an airport"""
     try:
-        data = get_taf(icao_code, output_format="json", include_metar=False)
-        if not data or len(data) == 0:
-            raise HTTPException(status_code=404, detail=f"No TAF for {icao_code.upper()}")
-        return {"icao_code": icao_code.upper(), "taf": data}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        data = await get_taf(icao_code, output_format="json", include_metar=False)
+    except WeatherUpstreamError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+
+    if not data or len(data) == 0:
+        raise HTTPException(status_code=404, detail=f"No TAF for {icao_code.upper()}")
+    return {"icao_code": icao_code.upper(), "taf": data}
 
 
 @router.get("/taf/{icao_code}/raw", tags=["TAF"])
 async def get_taf_raw(icao_code: str):
     """Get raw TAF string"""
     try:
-        data = get_taf(icao_code, output_format="raw")
-        return {"icao_code": icao_code.upper(), "raw_taf": data.get("data", "")}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        data = await get_taf(icao_code, output_format="raw")
+    except WeatherUpstreamError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return {"icao_code": icao_code.upper(), "raw_taf": data.get("data", "")}
 
 
 #  Helpers

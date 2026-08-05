@@ -20,10 +20,18 @@ aviationweather.gov directly.
 ## From METAR to ATIS
 
 Two thin layers sit around one real upstream API. `core/metar_taf_fetcher.py` is a small,
-key-less client with a 10 s timeout that hits `/api/data/metar` and `/api/data/taf` on
-aviationweather.gov; `api/routes.py` exposes both as pass-through endpoints
-(`/metar/{icao}`, `/metar/{icao}/raw`, `/taf/{icao}`, `/taf/{icao}/raw`) that reshape the JSON —
-or hand back the raw string — without ever touching the database.
+key-less **async** client — one shared `httpx.AsyncClient` with a 10 s timeout, closed by the
+FastAPI lifespan — that hits `/api/data/metar` and `/api/data/taf` on aviationweather.gov;
+`api/routes.py` exposes both as pass-through endpoints (`/metar/{icao}`, `/metar/{icao}/raw`,
+`/taf/{icao}`, `/taf/{icao}/raw`) that reshape the JSON — or hand back the raw string — without
+ever touching the database.
+
+Upstream failures are typed, not swallowed: the fetcher raises `WeatherUpstreamError`
+(carrying the status the API should answer with — 502 for an unreachable host, a bad status or an
+undecodable body; 504 for a timeout) and `NoWeatherDataError` when the upstream is healthy but has
+no observation for that airport. `routes.py` maps them to 502/504/404 respectively, and turns a
+payload it cannot parse into a 502 rather than a 500 — an outage upstream is never reported as a
+bug here.
 
 The real work happens one layer up, in `core/atis_generator.py`. `ATISGenerator.generate()`
 fetches the current METAR for the requested ICAO and parses wind direction/speed/gust,
