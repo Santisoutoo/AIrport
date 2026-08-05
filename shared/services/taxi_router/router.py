@@ -21,7 +21,7 @@ import logging
 import random
 import time
 import uuid
-from typing import Optional
+from typing import Any, Optional, cast
 
 from . import config
 from .destination_parser import extract_destination
@@ -35,7 +35,8 @@ logger = logging.getLogger(__name__)
 
 # -- Shared helpers (lazy imports so unit tests don't need redis/networkx) ----
 
-def _get_redis_client():
+def _get_redis_client() -> Any:
+    # redis-py types the sync client as `Awaitable[T] | T`; keep it `Any`.
     import os
     import redis  # local import
 
@@ -45,7 +46,7 @@ def _get_redis_client():
     return redis.Redis(host=host, port=port, db=db, decode_responses=True)
 
 
-def _load_graph():
+def _load_graph() -> Any:
     """Load the airport graph from Redis. Imports are kept local so the
     pure-Python modules in this package can be unit-tested standalone."""
     import sys
@@ -56,8 +57,8 @@ def _load_graph():
     if str(gnd_dir) not in sys.path:
         sys.path.insert(0, str(gnd_dir))
 
-    from graph import AirportGraph  # type: ignore
-    from shared.services.airport_data_store import AirportDataStore  # type: ignore
+    from graph import AirportGraph
+    from shared.services.airport_data_store import AirportDataStore
 
     data = AirportDataStore().load()
     if data is None:
@@ -65,7 +66,7 @@ def _load_graph():
     return AirportGraph(data=data)
 
 
-def _aircraft_position(redis_client, registration: str) -> Optional[tuple[float, float, float]]:
+def _aircraft_position(redis_client: Any, registration: str) -> Optional[tuple[float, float, float]]:
     """Return (lat, lon, heading) from `aircraft:state:{reg}` or None."""
     state = redis_client.hgetall(f"aircraft:state:{registration}")
     if not state:
@@ -91,7 +92,7 @@ def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def _pushback_distance_from_apt(graph, lat: float, lon: float) -> Optional[float]:
+def _pushback_distance_from_apt(graph: Any, lat: float, lon: float) -> Optional[float]:
     """Find the nearest init/both taxi-route node (per apt.dat row 1201) and
     return the haversine distance to it. That's where X-Plane's ATC engine
     assumes an aircraft enters/exits the taxi network from a stand -- the
@@ -147,17 +148,17 @@ def compute_taxi_route(
     lat, lon, _hdg = pos
     via = list(via or [])
     if via:
-        return graph.find_route_strict_from_position(
+        return cast(dict, graph.find_route_strict_from_position(
             start_lat=lat, start_lon=lon,
             sequence=via, destination_token=destination,
-        )
+        ))
     result = graph.find_route_from_position(
         start_lat=lat, start_lon=lon,
         end_token=destination, via=[],
     )
     if result.get("success"):
         result["strict"] = False
-    return result
+    return cast(dict, result)
 
 
 def dispatch_taxi_plan(
@@ -170,7 +171,7 @@ def dispatch_taxi_plan(
     delay_range_s: Optional[tuple[float, float]] = None,
     taxi_speed_kts: Optional[float] = None,
     session_id: Optional[str] = None,
-    redis_client=None,
+    redis_client: Any = None,
 ) -> dict:
     """Build and publish the full taxi plan after GND has produced a readback.
 
@@ -398,7 +399,7 @@ def _shorten_reason(
 
 
 def _reject(
-    redis_client,
+    redis_client: Any,
     *,
     callsign: str,
     registration: str,

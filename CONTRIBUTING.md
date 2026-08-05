@@ -15,3 +15,88 @@ In the meantime, feel free to:
 - Fork the project for personal experimentation
 
 We appreciate your patience and support.
+
+## Development setup
+
+The project is managed with [uv](https://github.com/astral-sh/uv) and a single
+lockfile at the repo root.
+
+```bash
+uv sync                  # runtime deps only
+uv sync --extra test     # + the pytest stack
+uv sync --extra analysis # + notebooks, plots and ASR benchmarking
+uv run pytest
+```
+
+## Linting
+
+[Ruff](https://docs.astral.sh/ruff/) is configured in `pyproject.toml` under
+`[tool.ruff]` and installed with the `dev` dependency group (`uv sync` pulls it
+in by default):
+
+```bash
+uv run ruff check          # lint
+uv run ruff check --fix    # autofix, on the files you touched
+uv run ruff format         # format, on the files you touched
+```
+
+The ruleset is deliberately small for now (`E`, `W`, `F`, `I`) and the CI lint
+job is **non-blocking**: the codebase has not been reformatted yet, so ruff
+reports drift without gating merges. Please do not run `ruff format` or
+`ruff check --fix` across the whole repo in a feature branch — the repo-wide
+pass is its own PR. The job becomes blocking once that lands.
+
+## Type checking
+
+[Mypy](https://mypy.readthedocs.io/) is configured in `pyproject.toml` under
+`[tool.mypy]` and ships in the same `dev` group:
+
+```bash
+uv run mypy shared
+```
+
+Adoption is **gradual**. The global settings are lax so unannotated modules
+never block work; strictness is opted into one package at a time through a
+`[[tool.mypy.overrides]]` block. `shared/` is strict today and the `typecheck`
+CI job enforces it.
+
+To add a package to the check:
+
+1. Add its module pattern to the `module = ["shared.*"]` list in the strict
+   `[[tool.mypy.overrides]]` block in `pyproject.toml`.
+2. Add the path to the `mypy` invocation in the `typecheck` job of
+   `.github/workflows/ci.yml`.
+3. Run `uv run mypy <path>` and fix what it reports before opening the PR —
+   annotations only, no logic changes.
+
+If you develop the X-Plane plugin locally and want the XPPython3 stubs
+resolved, export `MYPYPATH` instead of committing a machine-specific path:
+
+```bash
+export MYPYPATH="/path/to/X-Plane 12/Resources/plugins/XPPython3"
+```
+
+## Dependency layout
+
+The root `pyproject.toml` is the **single source of truth** for Python
+dependencies:
+
+- `[project].dependencies` — what the backend needs to run and be tested.
+  Research/notebook packages are deliberately **not** here.
+- `[project.optional-dependencies]` — one extra per deployable unit
+  (`orchestrator`, `agents`, `asr`, `weather`, …) plus `service-core` (the
+  FastAPI stack shared by every service image), `analysis` (notebooks, plots,
+  WER benchmarking) and `test`.
+
+The per-service `requirements.txt` files that the Dockerfiles install are
+**generated** from those extras — they carry a `GENERATED FILE -- DO NOT EDIT`
+header. To change a service's dependencies, edit the matching extra and
+regenerate:
+
+```bash
+python scripts/sync_requirements.py
+```
+
+CI runs `python scripts/sync_requirements.py --check` and fails if a generated
+file drifts from `pyproject.toml`. The mapping of service directory to extras
+lives in `SERVICES` at the top of that script.

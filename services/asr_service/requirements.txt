@@ -1,10 +1,16 @@
-fastapi>=0.111
-uvicorn[standard]
-python-multipart
-pydantic-settings
-python-dotenv
-faster-whisper
-transformers
-accelerate
-rapidfuzz
-google-genai
+# GENERATED FILE -- DO NOT EDIT.
+#
+# Source of truth: root pyproject.toml, extras: service-core, asr
+# Regenerate with: python scripts/sync_requirements.py
+
+fastapi>=0.111,<1.0
+uvicorn[standard]>=0.27,<1.0
+pydantic>=2.5,<3
+python-multipart>=0.0.9
+pydantic-settings>=2.0
+python-dotenv>=1.0
+faster-whisper>=1.0
+transformers>=4.40
+accelerate>=0.30
+rapidfuzz>=3.0
+google-genai>=1.0

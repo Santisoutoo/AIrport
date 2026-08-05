@@ -1,5 +1,5 @@
 [project]
-name = "AIrport-atc-simulator"
+name = "airport-atc-simulator"
 version = "0.1.0"
 description = "AI-powered Air Traffic Control training platform with X-Plane 12 integration"
 readme = "README.md"
@@ -27,38 +27,202 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 
+# Default install (`uv sync`): the runtime the backend actually needs to run
+# the services and the test suite locally. Research/notebook packages live in
+# the `analysis` extra and are NOT installed by default.
 dependencies = [
-    "xplane-airports",
-    "folium",
-    "networkx",
-    "matplotlib",
-    "jupyter",
-    "redis",
-    "ipykernel",
-    "psycopg2-binary",
-    "transformers",
-    "jiwer",
-    "httpx",
-    "python-dotenv",
+    "fastapi>=0.111,<1.0",
+    "uvicorn[standard]>=0.27,<1.0",
+    "pydantic>=2.5,<3",
+    "httpx>=0.26,<1.0",
+    "python-dotenv>=1.0",
+    "redis>=5.0,<7",
+    "networkx>=3.0,<4",
+    "sqlalchemy>=2.0,<3",
+    "psycopg2-binary>=2.9",
 ]
 
 [project.urls]
-Homepage = "https://github.com/airport-sim/airport-atc-simulator"
-Repository = "https://github.com/airport-sim/airport-atc-simulator"
+Homepage = "https://github.com/Santisoutoo/AIrport"
+Repository = "https://github.com/Santisoutoo/AIrport"
+Issues = "https://github.com/Santisoutoo/AIrport/issues"
+Documentation = "https://github.com/Santisoutoo/AIrport/wiki"
 
+# ---------------------------------------------------------------------------
+# Dependency extras — single source of truth for every deployable unit.
+#
+# The per-service `requirements.txt` files that the Dockerfiles install are
+# GENERATED from these extras by `scripts/sync_requirements.py`; never edit
+# them by hand. Each service image installs `service-core` plus its own extra
+# (see SERVICES in that script), so the extras below list only the delta on
+# top of the shared FastAPI stack.
+# ---------------------------------------------------------------------------
 [project.optional-dependencies]
+# Shared FastAPI stack baked into every service image.
+service-core = [
+    "fastapi>=0.111,<1.0",
+    "uvicorn[standard]>=0.27,<1.0",
+    "pydantic>=2.5,<3",
+]
+
+# Cloud Run pilot agents (agents/del, agents/gnd, agents/twr).
+agents = [
+    "google-adk>=1.0",
+]
+
+orchestrator = [
+    "httpx>=0.26,<1.0",
+    "sqlalchemy>=2.0,<3",
+    "psycopg2-binary>=2.9",
+    "redis>=5.0,<7",
+    "networkx>=3.0,<4",
+    "google-adk>=1.0",
+]
+
+asr = [
+    "python-multipart>=0.0.9",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "faster-whisper>=1.0",
+    "transformers>=4.40",
+    "accelerate>=0.30",
+    "rapidfuzz>=3.0",
+    "google-genai>=1.0",
+]
+
+arrival-simulator = [
+    "redis>=5.0,<7",
+    "httpx>=0.26,<1.0",
+]
+
+flight-plan = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg2-binary>=2.9",
+    "httpx>=0.26,<1.0",
+]
+
+weather = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg2-binary>=2.9",
+    "httpx>=0.26,<1.0",
+    "requests>=2.31,<3",
+]
+
+pilots-communication = [
+    "python-multipart>=0.0.9",
+    "python-dotenv>=1.0",
+    "httpx>=0.26,<1.0",
+]
+
+controller-hmi = [
+    "httpx>=0.26,<1.0",
+    "requests>=2.31,<3",
+    "psycopg2-binary>=2.9",
+    "redis>=5.0,<7",
+    "folium>=0.15",
+    "xplane-airports>=4.0",
+]
+
+# Notebooks, plots and ASR benchmarking under data/ and agents_evaluation/.
+# Deliberately out of the default install: heavy and not needed to run or test
+# the backend.
+analysis = [
+    "jupyter>=1.0",
+    "ipykernel>=6.0",
+    "matplotlib>=3.8",
+    "folium>=0.15",
+    "xplane-airports>=4.0",
+    "transformers>=4.40",
+    "jiwer>=3.0",
+]
+
 test = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "pytest-mock>=3.12",
     "pytest-cov>=5.0",
     "respx>=0.20",
-    "fastapi>=0.110",
-    "sqlalchemy>=2.0",
+]
+
+# Tooling installed for development only; never shipped in a service image.
+# `uv sync` installs this group by default.
+[dependency-groups]
+dev = [
+    "ruff>=0.14",
+    "mypy>=1.11",
 ]
 
 [tool.setuptools.packages.find]
 include = ["xplane_plugin*"]
+
+# ---------------------------------------------------------------------------
+# Ruff — deliberately lax first pass (issue #48).
+#
+# The goal is a signal, not a wall: the CI lint job is non-blocking and the
+# repo has NOT been reformatted yet. A repo-wide `ruff format` + `ruff check
+# --fix` lands as its own PR once the branches currently in flight are merged,
+# so the diff does not collide with them.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = [
+    "data",
+    "logs",
+    "output",
+    "transcription",
+]
+
+[tool.ruff.lint]
+# pycodestyle (E/W), pyflakes (F), isort (I). Nothing opinionated yet;
+# UP/B/SIM come later, one rule family per PR.
+select = ["E", "W", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Re-export surfaces: names are imported to be part of the public API.
+"**/__init__.py" = ["F401"]
+# The X-Plane plugins run inside the simulator's own interpreter and must
+# patch sys.path before importing anything from the repo.
+"plugins/**" = ["E402"]
+"xplane_plugin/**" = ["E402"]
+# pytest fixtures shadow their own names; conftest patches sys.path too.
+"tests/**" = ["E402", "F811"]
+"**/conftest.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shared", "plugins", "xplane_plugin"]
+
+# ---------------------------------------------------------------------------
+# Mypy — gradual adoption, package by package (issue #50).
+#
+# The global settings are lax so type checking never blocks work on modules
+# that have not been annotated yet. Strictness is opted into per package with
+# an override block; `shared/` is the first one because it has the highest
+# fan-in. To add a package, append its module pattern to the strict override
+# below and to the `mypy` invocation in the CI type-check job.
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+# Third-party packages here ship no stubs (google-adk, xplane-airports,
+# faster-whisper, ...); do not fail on that.
+ignore_missing_imports = true
+follow_imports = "silent"
+warn_unused_configs = true
+show_error_codes = true
+pretty = true
+warn_redundant_casts = true
+
+# Strict for shared/ only.
+[[tool.mypy.overrides]]
+module = ["shared.*"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+warn_return_any = true
+warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 pythonpath = [".", "services/orchestrator_service", "services/arrival_simulator_service"]
@@ -118,4 +282,8 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
 ]
-fail_under = 70
+# Real gate, enforced in CI (issue #47). Measured baseline on the branch point
+# for this change: 86.29% (773 statements, 106 missed). The threshold is
+# baseline - 2, rounded down, as a buffer against line-count noise; raise it in
+# follow-up PRs as coverage grows.
+fail_under = 84

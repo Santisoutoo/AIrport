@@ -16,30 +16,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-          cache: pip
+          enable-cache: true
 
-      # Minimal dependency set: only what the test suite imports at collection
-      # and run time. The heavy base deps in pyproject.toml (transformers,
-      # jupyter, matplotlib, folium, xplane-airports, jiwer) are intentionally
-      # NOT installed — the taxi-router graph fixture is committed as JSON, so
-      # xplane-airports is not needed to build it here.
-      - name: Install minimal test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install \
-            "pytest>=8" "pytest-asyncio>=0.23" "pytest-mock>=3.12" \
-            "pytest-cov>=5" "respx>=0.20" "fastapi>=0.110" \
-            "sqlalchemy>=2.0" httpx redis pydantic networkx psycopg2-binary
+      # Default deps + the `test` extra, resolved from the committed uv.lock.
+      # The research/notebook stack lives in the `analysis` extra and is not
+      # installed here — the taxi-router graph fixture is committed as JSON, so
+      # xplane-airports is not needed to build it.
+      - name: Install dependencies
+        run: uv sync --extra test
 
-      # Coverage is informational for now: --cov-fail-under=0 overrides the
-      # fail_under=70 gate in pyproject.toml so the build never fails on the
-      # coverage number while we establish a baseline.
-      - name: Run test suite (coverage informational)
-        run: pytest --cov --cov-report=xml --cov-report=term --cov-fail-under=0
+      # The coverage gate comes from [tool.coverage.report] fail_under in
+      # pyproject.toml and is enforced here: a drop below it fails the build.
+      - name: Run test suite
+        run: uv run pytest --cov --cov-report=xml --cov-report=term
 
       - name: Upload coverage report
         if: always()
@@ -48,6 +40,68 @@ jobs:
           name: coverage-report
           path: coverage.xml
           if-no-files-found: warn
+
+  # Non-blocking on purpose (issue #48): ruff is configured here but the repo
+  # has not been reformatted yet, so this job reports style drift without
+  # gating anything. It becomes blocking in the follow-up PR that applies
+  # `ruff check --fix` + `ruff format` across the codebase.
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install lint tooling
+        run: uv sync --only-group dev
+
+      - name: ruff check
+        continue-on-error: true
+        run: uv run ruff check --output-format=github
+
+      # Reported only, never enforced yet — the repo-wide reformat is a
+      # separate PR so it does not collide with the branches in flight.
+      - name: ruff format (report only)
+        continue-on-error: true
+        run: uv run ruff format --check
+
+  # Blocking, but narrow: only the packages listed below are strict-checked
+  # (see the [[tool.mypy.overrides]] block in pyproject.toml). Widen the scope
+  # one package at a time.
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: mypy
+        run: uv run mypy shared
+
+  # The per-service requirements.txt files are generated from the extras in
+  # pyproject.toml; this catches a change to one that was not propagated.
+  deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check generated requirements.txt files are in sync
+        run: python scripts/sync_requirements.py --check
 
   frontend:
     runs-on: ubuntu-latest

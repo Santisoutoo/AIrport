@@ -7,13 +7,13 @@ used when a pilot readback is unroutable ("unable, request alternative").
 
 import json
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from . import config
 
 
 def publish_pilot_message(
-    redis_client,
+    redis_client: Any,
     *,
     callsign: str,
     registration: str,

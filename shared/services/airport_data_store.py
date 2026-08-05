@@ -2,14 +2,18 @@ import json
 import os
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional, cast
 import redis
 
 
 _PREFIX = "airport:current"
 
 
-def _get_redis_client():
+# NOTE: redis-py types its sync commands as `Awaitable[T] | T` (the same
+# stubs serve the asyncio client), so a precise annotation here would make
+# every call site a union. The client stays `Any` and the public methods
+# below carry the real return types.
+def _get_redis_client() -> Any:
     """Create a Redis client from environment variables."""
     host = os.getenv("REDIS_HOST", "localhost")
     port = int(os.getenv("REDIS_PORT", 6379))
@@ -20,7 +24,7 @@ def _get_redis_client():
 class AirportDataStore:
     """Read/write parsed airport data in Redis."""
 
-    def __init__(self, client=None):
+    def __init__(self, client: Any = None) -> None:
         self._r = client or _get_redis_client()
 
     def store(self, icao: str, parsed_data: dict) -> None:
@@ -74,7 +78,7 @@ class AirportDataStore:
 
     def get_icao(self) -> Optional[str]:
         """Return the ICAO code of the currently stored airport."""
-        return self._r.get(f"{_PREFIX}:icao")
+        return cast(Optional[str], self._r.get(f"{_PREFIX}:icao"))
 
     def get_com_frequencies(self) -> list:
         """Return parsed COM frequencies for the current airport, or []."""
@@ -107,7 +111,7 @@ class AirportDataStore:
 
     def is_stand_occupied(self, stand_id: str) -> bool:
         """Return True if the stand is currently occupied."""
-        return self._r.hget(self._OCCUPANCY_KEY, stand_id) == "1"
+        return bool(self._r.hget(self._OCCUPANCY_KEY, stand_id) == "1")
 
     def get_stands_with_occupancy(self) -> list:
         """Return stands list with an 'occupied' bool field added to each."""
@@ -128,7 +132,7 @@ class AirportDataStore:
             else:
                 stand["occupied"] = False
 
-        return stands
+        return cast(list, stands)
 
     # Session management
     _SESSION_KEY = "session:current"
@@ -155,7 +159,7 @@ class AirportDataStore:
         data = self._r.hgetall(self._SESSION_KEY)
         return data if data else None
 
-    def _delete_current(self, pipe) -> None:
+    def _delete_current(self, pipe: Any) -> None:
         """Delete all keys under the current airport prefix."""
         keys = self._r.keys(f"{_PREFIX}:*")
         if keys:
