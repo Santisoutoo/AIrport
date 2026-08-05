@@ -1,8 +1,0 @@
-fastapi
-uvicorn[standard]
-python-multipart
-python-dotenv
-litellm
-faster-whisper
-transformers
-accelerate
