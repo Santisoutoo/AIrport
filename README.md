@@ -159,7 +159,7 @@ Full walkthrough — verification steps and known `.env` gaps — in the wiki: [
 
 ## X-Plane Plugin Setup
 
-The in-sim plugin is **not** installed automatically: install [XPPython3](https://xppython3.readthedocs.io/), copy [plugins/PI_spawn_obj.py](plugins/PI_spawn_obj.py) and [plugins/GND/](plugins/GND/) into `<X-Plane 12>/Resources/plugins/PythonPlugins/`, and install the pip dependencies into the simulator's bundled Python. Full walkthrough (scripted or manual): [X-Plane Plugin Setup](https://github.com/Santisoutoo/AIrport/wiki/X-Plane-Plugin-Setup). Start the backend (Orchestrator on port `8007`) before flying.
+The in-sim plugin is **not** installed automatically: install [XPPython3](https://xppython3.readthedocs.io/), copy [plugins/GND/](plugins/GND/) into `<X-Plane 12>/Resources/plugins/PythonPlugins/`, and install the pip dependencies into the simulator's bundled Python. Full walkthrough (scripted or manual): [X-Plane Plugin Setup](https://github.com/Santisoutoo/AIrport/wiki/X-Plane-Plugin-Setup). Start the backend (Orchestrator on port `8007`) before flying.
 
 ---
 

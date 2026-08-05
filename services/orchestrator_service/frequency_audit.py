@@ -19,9 +19,8 @@ import re
 from datetime import datetime, timezone
 from typing import Iterable, Optional
 
-# Fallback when the airport has no parsed COM frequencies in Redis. Same
-# values as shared.models.communications.Frequencies — duplicated here to
-# keep this module dependency-free and unit-testable in isolation.
+# Fallback when the airport has no parsed COM frequencies in Redis. Kept
+# inline so this module stays dependency-free and unit-testable in isolation.
 _DEFAULT_FREQS_MHZ: dict[str, float] = {
     "ATIS": 121.980,
     "DEL":  121.805,

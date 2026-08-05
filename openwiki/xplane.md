@@ -33,9 +33,7 @@ lines that instantiate one `WindowManager` and forward `XPluginStart` / `XPlugin
 [`plugins/`](../plugins/) is what you copy into `<X-Plane 12>/Resources/plugins/PythonPlugins/` —
 see [X-Plane Plugin Setup](guides/xplane-plugin-setup.md) for install steps. `PI_` is XPPython3's
 entry-point convention: every top-level file it loads as a plugin is named that way.
-[`plugins/PI_spawn_obj.py`](../plugins/PI_spawn_obj.py) is an early throwaway spike — it hardcodes
-one `.obj` path and one `(lat, lon)` and spawns a single aircraft on `XPluginEnable`; nothing in the
-session flow touches it. What matters is [`plugins/GND/`](../plugins/GND/): `data_parser.py` turns
+What matters is [`plugins/GND/`](../plugins/GND/): `data_parser.py` turns
 apt.dat rows into typed records, and `graph.py`'s `AirportGraph` turns those into a routable
 networkx graph. The backend taxi router doesn't reimplement any of this — its `_load_graph()` pushes
 `plugins/GND` onto `sys.path` and imports `graph.AirportGraph` directly, the same file the plugin

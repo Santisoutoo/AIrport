@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 
 class FlightPlanResponse(BaseModel):
-    """Response model matching shared/models/aircraft.py FlightPlan"""
+    """ICAO flight plan fields returned by the flight plan service."""
 
     aircraft_registration: str
     flight_rules: str
