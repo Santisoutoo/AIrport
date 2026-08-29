@@ -33,9 +33,7 @@ lines that instantiate one `WindowManager` and forward `XPluginStart` / `XPlugin
 [`plugins/`](../plugins/) is what you copy into `<X-Plane 12>/Resources/plugins/PythonPlugins/` —
 see [X-Plane Plugin Setup](guides/xplane-plugin-setup.md) for install steps. `PI_` is XPPython3's
 entry-point convention: every top-level file it loads as a plugin is named that way.
-[`plugins/PI_spawn_obj.py`](../plugins/PI_spawn_obj.py) is an early throwaway spike — it hardcodes
-one `.obj` path and one `(lat, lon)` and spawns a single aircraft on `XPluginEnable`; nothing in the
-session flow touches it. What matters is [`plugins/GND/`](../plugins/GND/): `data_parser.py` turns
+What matters is [`plugins/GND/`](../plugins/GND/): `data_parser.py` turns
 apt.dat rows into typed records, and `graph.py`'s `AirportGraph` turns those into a routable
 networkx graph. The backend taxi router doesn't reimplement any of this — its `_load_graph()` pushes
 `plugins/GND` onto `sys.path` and imports `graph.AirportGraph` directly, the same file the plugin
@@ -203,13 +201,13 @@ never backtrack once it has already passed Bravo. It's consumed on both sides of
 
 ## Superseded prototypes
 
-Two older trees still carry real code but sit outside the active pipeline, kept for history and not
-wired into `docker-compose.yml`. Root-level [`transcription/`](../transcription/) was an earlier
-standalone Whisper transcription service — its own Dockerfile, the same callsign-correction and
-phonetics ideas — superseded by [`services/asr_service`](services/asr_service.md).
+One older tree still carries real code but sits outside the active pipeline, kept for history and
+not wired into `docker-compose.yml`.
 [`services/pilots_communication/`](../services/pilots_communication/) was an earlier ASR-plus-forward
 prototype: a `/process` endpoint that transcribed audio and forwarded it straight to a DEL/GND/TWR
-agent, before the orchestrator existed to sit in between.
+agent, before the orchestrator existed to sit in between. Its transcription step still points at the
+old root-level `transcription/` service, which has been removed — see
+[`services/asr_service`](services/asr_service.md) for the live implementation.
 
 ## Related
 [architecture](architecture.md) · [shared](shared.md) · [arrival simulator](services/arrival_simulator_service.md) · [X-Plane Plugin Setup](guides/xplane-plugin-setup.md) · [index](index.md)

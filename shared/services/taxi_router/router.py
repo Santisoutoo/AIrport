@@ -21,13 +21,15 @@ import logging
 import random
 import time
 import uuid
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Any, Optional, cast
 
+from ..geo import KT_TO_MPS, haversine
 from . import config
 from .destination_parser import extract_destination
 from .errors import RouteNotFoundError, UnknownTaxiwayError
 from .hmi_chat import format_readback_rejected, publish_pilot_message
-from .pushback import plan_pushback_leg
+from .pushback import PushbackLeg, plan_pushback_leg
 from .readback_parser import extract_taxiway_tokens, parse_pushback_direction
 
 logger = logging.getLogger(__name__)
@@ -35,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 # -- Shared helpers (lazy imports so unit tests don't need redis/networkx) ----
 
-def _get_redis_client():
+def _get_redis_client() -> Any:
+    # redis-py types the sync client as `Awaitable[T] | T`; keep it `Any`.
     import os
     import redis  # local import
 
@@ -45,7 +48,7 @@ def _get_redis_client():
     return redis.Redis(host=host, port=port, db=db, decode_responses=True)
 
 
-def _load_graph():
+def _load_graph() -> Any:
     """Load the airport graph from Redis. Imports are kept local so the
     pure-Python modules in this package can be unit-tested standalone."""
     import sys
@@ -56,8 +59,8 @@ def _load_graph():
     if str(gnd_dir) not in sys.path:
         sys.path.insert(0, str(gnd_dir))
 
-    from graph import AirportGraph  # type: ignore
-    from shared.services.airport_data_store import AirportDataStore  # type: ignore
+    from graph import AirportGraph
+    from shared.services.airport_data_store import AirportDataStore
 
     data = AirportDataStore().load()
     if data is None:
@@ -65,7 +68,7 @@ def _load_graph():
     return AirportGraph(data=data)
 
 
-def _aircraft_position(redis_client, registration: str) -> Optional[tuple[float, float, float]]:
+def _aircraft_position(redis_client: Any, registration: str) -> Optional[tuple[float, float, float]]:
     """Return (lat, lon, heading) from `aircraft:state:{reg}` or None."""
     state = redis_client.hgetall(f"aircraft:state:{registration}")
     if not state:
@@ -80,18 +83,7 @@ def _aircraft_position(redis_client, registration: str) -> Optional[tuple[float,
         return None
 
 
-def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    import math
-    R = 6371000.0
-    phi1 = math.radians(lat1)
-    phi2 = math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dl = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dl / 2) ** 2
-    return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-
-def _pushback_distance_from_apt(graph, lat: float, lon: float) -> Optional[float]:
+def _pushback_distance_from_apt(graph: Any, lat: float, lon: float) -> Optional[float]:
     """Find the nearest init/both taxi-route node (per apt.dat row 1201) and
     return the haversine distance to it. That's where X-Plane's ATC engine
     assumes an aircraft enters/exits the taxi network from a stand -- the
@@ -103,7 +95,7 @@ def _pushback_distance_from_apt(graph, lat: float, lon: float) -> Optional[float
             continue
         if node_id not in graph._main_cc:
             continue
-        d = _haversine_m(lat, lon, data["lat"], data["lon"])
+        d = haversine(lat, lon, data["lat"], data["lon"])
         if best_dist is None or d < best_dist:
             best_dist = d
     return best_dist
@@ -147,17 +139,17 @@ def compute_taxi_route(
     lat, lon, _hdg = pos
     via = list(via or [])
     if via:
-        return graph.find_route_strict_from_position(
+        return cast(dict, graph.find_route_strict_from_position(
             start_lat=lat, start_lon=lon,
             sequence=via, destination_token=destination,
-        )
+        ))
     result = graph.find_route_from_position(
         start_lat=lat, start_lon=lon,
         end_token=destination, via=[],
     )
     if result.get("success"):
         result["strict"] = False
-    return result
+    return cast(dict, result)
 
 
 def dispatch_taxi_plan(
@@ -170,7 +162,7 @@ def dispatch_taxi_plan(
     delay_range_s: Optional[tuple[float, float]] = None,
     taxi_speed_kts: Optional[float] = None,
     session_id: Optional[str] = None,
-    redis_client=None,
+    redis_client: Any = None,
 ) -> dict:
     """Build and publish the full taxi plan after GND has produced a readback.
 
@@ -178,19 +170,152 @@ def dispatch_taxi_plan(
       {"success": True, "plan_id": str, "ttl_s": int}
       {"success": False, "error": "...", "reason_to_pilot_chat": bool}
     """
+    r = redis_client or _get_redis_client()
+
+    # Phase 1 -- parse and validate everything the plan is built from.
+    ctx, error = _prepare_dispatch(
+        r, clearance_data, pilot_readback_text,
+        registration=registration, callsign=callsign,
+        controller_instruction=controller_instruction,
+        delay_range_s=delay_range_s, taxi_speed_kts=taxi_speed_kts,
+        session_id=session_id,
+    )
+    if error is not None:
+        return error
+    # `_prepare_dispatch` returns a context whenever it returns no error.
+    ctx = cast(DispatchContext, ctx)
+
+    # Phase 2 -- a pushback-only clearance never reaches the router.
+    clearance = ctx.clearance
+    if clearance.pushback_approved and not clearance.has_taxi_clearance:
+        return _dispatch_pushback_only(r, ctx)
+    if not clearance.has_taxi_clearance:
+        return {"success": False, "error": "no taxi clearance and no pushback"}
+
+    _log_readback_mismatch(ctx)
+
+    # Phase 3 -- resolve the route the controller issued, or say unable.
+    route_result = _resolve_route(ctx)
+    if not route_result.get("success"):
+        return _reject_route(r, ctx, route_result)
+    if not route_result["waypoints"]:
+        return {"success": False, "error": "empty route"}
+
+    # Phase 4 -- assemble the legs and publish the plan.
+    return _dispatch_taxi_legs(r, ctx, route_result)
+
+
+# -- Phase 1: input parsing and validation ------------------------------------
+
+@dataclass(frozen=True)
+class Stand:
+    """Where the aircraft physically is when the clearance is dispatched."""
+    lat: float
+    lon: float
+    heading_deg: float
+
+
+@dataclass(frozen=True)
+class TaxiClearance:
+    """What the controller issued, distilled from the spoken instruction.
+
+    `controller_seq` is the authorized taxiway sequence with the destination
+    token already removed; `readback_via` is what the pilot echoed back and is
+    never used for routing (issue #69), only for the mismatch warning.
+    """
+    controller_seq: list[str] = field(default_factory=list)
+    destination: Optional[str] = None
+    readback_via: list[str] = field(default_factory=list)
+    pushback_approved: bool = False
+    pushback_dir: Optional[float] = None
+
+    @property
+    def has_taxi_clearance(self) -> bool:
+        """A clearance can carry pushback, taxi, or both. Three legitimate
+        cases: pushback only -> one pushback leg; pushback + taxi via X ->
+        pushback + waypoints; taxi only (follow-up) -> waypoints, no pushback.
+        """
+        return bool(self.controller_seq) or bool(self.destination)
+
+    @property
+    def strict(self) -> bool:
+        """True when there is a spoken sequence to follow edge by edge."""
+        return bool(self.controller_seq)
+
+
+@dataclass(frozen=True)
+class DispatchContext:
+    """Everything phase 1 resolves before any routing happens: where the
+    aircraft is, which graph to route on, what the controller cleared, and
+    the timing/identity parameters the plan is stamped with."""
+    stand: Stand
+    graph: Any
+    clearance: TaxiClearance
+    registration: str
+    callsign: str
+    delay: float
+    taxi_speed: float
+    session_id: Optional[str] = None
+
+
+def _prepare_dispatch(
+    redis_client: Any,
+    clearance_data: dict,
+    pilot_readback_text: str,
+    *,
+    registration: str,
+    callsign: Optional[str],
+    controller_instruction: Optional[str],
+    delay_range_s: Optional[tuple[float, float]],
+    taxi_speed_kts: Optional[float],
+    session_id: Optional[str],
+) -> tuple[Optional[DispatchContext], Optional[dict]]:
+    """Resolve the dispatch context, or the failure dict that aborts it.
+
+    Returns `(context, None)` on success and `(None, error)` when the aircraft
+    has no live position or the airport graph is not loaded -- the two states
+    in which no plan can be produced at all.
+    """
     callsign = callsign or clearance_data.get("aircraft_registration") or registration
     delay_range = delay_range_s or (config.DELAY_MIN_S, config.DELAY_MAX_S)
     taxi_speed = float(taxi_speed_kts or config.TAXI_SPEED_KTS)
 
-    r = redis_client or _get_redis_client()
-
-    pos = _aircraft_position(r, registration)
+    pos = _aircraft_position(redis_client, registration)
     if pos is None:
         logger.warning("[taxi_router] no live position for %s", registration)
-        return {"success": False, "error": "no live position"}
-    stand_lat, stand_lon, stand_hdg = pos
+        return None, {"success": False, "error": "no live position"}
 
-    # Extract readback waypoints and pushback direction
+    try:
+        graph = _load_graph()
+    except RouteNotFoundError as exc:
+        logger.error("[taxi_router] graph load failed: %s", exc)
+        return None, {"success": False, "error": str(exc)}
+
+    clearance = _parse_clearance(
+        clearance_data, pilot_readback_text,
+        controller_instruction=controller_instruction,
+        known_tokens=list(graph._nodes_by_taxiway.keys()),
+    )
+    return DispatchContext(
+        stand=Stand(*pos),
+        graph=graph,
+        clearance=clearance,
+        registration=registration,
+        callsign=callsign,
+        delay=random.uniform(*delay_range),
+        taxi_speed=taxi_speed,
+        session_id=session_id,
+    ), None
+
+
+def _parse_clearance(
+    clearance_data: dict,
+    pilot_readback_text: str,
+    *,
+    controller_instruction: Optional[str],
+    known_tokens: list[str],
+) -> TaxiClearance:
+    """Distil the controller instruction (and the readback) into a clearance."""
     taxi_data = (clearance_data or {}).get("taxi_data") or {}
     spoken_route = taxi_data.get("taxi_route") if isinstance(taxi_data, dict) else None
     instruction_text = (
@@ -200,13 +325,6 @@ def dispatch_taxi_plan(
         or ""
     )
 
-    try:
-        graph = _load_graph()
-    except RouteNotFoundError as exc:
-        logger.error("[taxi_router] graph load failed: %s", exc)
-        return {"success": False, "error": str(exc)}
-
-    known_tokens = list(graph._nodes_by_taxiway.keys())
     readback_via = extract_taxiway_tokens(
         spoken_route, fallback_text=instruction_text,
         known_tokens=known_tokens,
@@ -234,125 +352,151 @@ def dispatch_taxi_plan(
         destination = controller_seq[-1]
         controller_seq = controller_seq[:-1]
 
-    # A clearance can carry pushback, taxi, or both. Three legitimate cases:
-    #   - pushback only             -> one pushback leg
-    #   - pushback + taxi via X     -> pushback + waypoints
-    #   - taxi only (follow-up)     -> waypoints leg, no pushback
-    pushback_approved = bool(taxi_data.get("pushback_approved")) if isinstance(taxi_data, dict) else False
-    has_taxi_clearance = bool(controller_seq) or bool(destination)
-    pushback_dir = parse_pushback_direction(instruction_text)
-    delay = random.uniform(*delay_range)
+    return TaxiClearance(
+        controller_seq=controller_seq,
+        destination=destination,
+        readback_via=readback_via,
+        pushback_approved=(
+            bool(taxi_data.get("pushback_approved")) if isinstance(taxi_data, dict) else False
+        ),
+        pushback_dir=parse_pushback_direction(instruction_text),
+    )
 
-    if pushback_approved and not has_taxi_clearance:
-        apt_dist = _pushback_distance_from_apt(graph, stand_lat, stand_lon)
-        pushback_leg = plan_pushback_leg(
-            stand_lat=stand_lat, stand_lon=stand_lon, stand_heading_deg=stand_hdg,
-            direction_deg=pushback_dir,
-            override_distance_m=apt_dist,
-        )
-        pushback_eta = pushback_leg.distance_m / max(0.5, pushback_leg.speed_kts * 0.514444)
-        ttl = int(delay + pushback_eta + 60.0)
-        plan = {
-            "version": 2,
-            "plan_id": str(uuid.uuid4()),
-            "started_at": time.time(),
-            "delay_before_start_s": round(delay, 2),
-            "legs": [pushback_leg.to_dict()],
-        }
-        key = config.MOVE_CMD_KEY.format(registration=registration)
-        r.set(key, json.dumps(plan), ex=ttl)
-        logger.info(
-            "[taxi_router] dispatched pushback-only %s for %s: delay=%.1fs pushback=%.1fm face=%.0f",
-            plan["plan_id"], registration, delay, pushback_leg.distance_m,
-            pushback_leg.final_heading_deg,
-        )
-        return {"success": True, "plan_id": plan["plan_id"], "ttl_s": ttl, "legs": 1}
 
-    if not has_taxi_clearance:
-        return {"success": False, "error": "no taxi clearance and no pushback"}
-
-    # The pilot readback never alters the flown route: it is only compared
-    # against the controller sequence and a mismatch is logged for debrief.
-    if readback_via and readback_via != list(dict.fromkeys(controller_seq)):
+def _log_readback_mismatch(ctx: DispatchContext) -> None:
+    """The pilot readback never alters the flown route: it is only compared
+    against the controller sequence and a mismatch is logged for debrief."""
+    clearance = ctx.clearance
+    if clearance.readback_via and clearance.readback_via != list(
+        dict.fromkeys(clearance.controller_seq)
+    ):
         logger.warning(
             "[taxi_router] readback mismatch for %s: controller=%s readback=%s",
-            registration, controller_seq, readback_via,
+            ctx.registration, clearance.controller_seq, clearance.readback_via,
         )
 
-    strict = bool(controller_seq)
-    if strict:
-        route_result = graph.find_route_strict_from_position(
-            start_lat=stand_lat, start_lon=stand_lon,
-            sequence=controller_seq, destination_token=destination,
-        )
-    else:
-        # Destination-only clearance ("taxi to runway 24L"): there is no
-        # sequence to follow strictly, so fall back to the lenient A* and
-        # tag the plan explicitly.
-        route_result = graph.find_route_from_position(
-            start_lat=stand_lat, start_lon=stand_lon,
-            end_token=destination, via=[],
-        )
-    if not route_result.get("success"):
-        reason_detail = route_result.get("error", "route unavailable")
-        logger.warning(
-            "[taxi_router] route rejected for %s seq=%s dest=%s strict=%s: %s",
-            registration, controller_seq, destination, strict, reason_detail,
-        )
-        short_reason = _shorten_reason(reason_detail, controller_seq, readback_via)
-        _reject(
-            r, callsign=callsign, registration=registration,
-            reason=short_reason, session_id=session_id,
-        )
-        return {"success": False, "error": reason_detail, "reason_to_pilot_chat": True}
 
-    waypoints = route_result["waypoints"]
-    if not waypoints:
-        return {"success": False, "error": "empty route"}
+# -- Phase 3: route resolution ------------------------------------------------
 
-    legs: list[dict] = []
-    pushback_dist = 0.0
-    pushback_eta = 0.0
-    if pushback_approved:
-        apt_dist = _pushback_distance_from_apt(graph, stand_lat, stand_lon)
-        first = waypoints[0]
-        pushback_leg = plan_pushback_leg(
-            stand_lat=stand_lat, stand_lon=stand_lon, stand_heading_deg=stand_hdg,
-            first_wp_lat=first["lat"], first_wp_lon=first["lon"],
-            direction_deg=pushback_dir,
-            override_distance_m=apt_dist,
-        )
-        legs.append(pushback_leg.to_dict())
-        pushback_dist = pushback_leg.distance_m
-        pushback_eta = pushback_leg.distance_m / max(0.5, pushback_leg.speed_kts * 0.514444)
+def _resolve_route(ctx: DispatchContext) -> dict:
+    """Run the strict router on the spoken sequence, or the lenient A* when
+    the controller only named a destination ("taxi to runway 24L")."""
+    stand, clearance = ctx.stand, ctx.clearance
+    if clearance.strict:
+        return cast(dict, ctx.graph.find_route_strict_from_position(
+            start_lat=stand.lat, start_lon=stand.lon,
+            sequence=clearance.controller_seq,
+            destination_token=clearance.destination,
+        ))
+    return cast(dict, ctx.graph.find_route_from_position(
+        start_lat=stand.lat, start_lon=stand.lon,
+        end_token=clearance.destination, via=[],
+    ))
 
-    legs.append({
-        "mode": "waypoints",
-        "waypoints": waypoints,
-        "taxiway_sequence": route_result.get("taxiway_sequence", []),
-        "speed_kts": taxi_speed,
-        "stop_at_end": True,
-    })
 
-    speed_mps = max(0.5, taxi_speed * 0.514444)
-    taxi_eta = float(route_result["total_distance_m"]) / speed_mps
-    ttl = int(delay + pushback_eta + taxi_eta + 60.0)
+def _reject_route(redis_client: Any, ctx: DispatchContext, route_result: dict) -> dict:
+    """Log the routing failure and make the simulated pilot say unable."""
+    clearance = ctx.clearance
+    reason_detail = route_result.get("error", "route unavailable")
+    logger.warning(
+        "[taxi_router] route rejected for %s seq=%s dest=%s strict=%s: %s",
+        ctx.registration, clearance.controller_seq, clearance.destination,
+        clearance.strict, reason_detail,
+    )
+    short_reason = _shorten_reason(
+        reason_detail, clearance.controller_seq, clearance.readback_via,
+    )
+    _reject(
+        redis_client, callsign=ctx.callsign, registration=ctx.registration,
+        reason=short_reason, session_id=ctx.session_id,
+    )
+    return {"success": False, "error": reason_detail, "reason_to_pilot_chat": True}
 
+
+# -- Phase 4: leg assembly and publication ------------------------------------
+
+def _plan_pushback(ctx: DispatchContext, first_wp: Optional[dict] = None) -> PushbackLeg:
+    """Pushback leg aimed at `first_wp` when a taxi clearance follows, or a
+    plain back-out when it doesn't. The distance is capped by the nearest
+    apt.dat init/both node -- where X-Plane assumes the taxi network starts."""
+    stand = ctx.stand
+    return plan_pushback_leg(
+        stand_lat=stand.lat, stand_lon=stand.lon, stand_heading_deg=stand.heading_deg,
+        first_wp_lat=first_wp["lat"] if first_wp else None,
+        first_wp_lon=first_wp["lon"] if first_wp else None,
+        direction_deg=ctx.clearance.pushback_dir,
+        override_distance_m=_pushback_distance_from_apt(ctx.graph, stand.lat, stand.lon),
+    )
+
+
+def _eta_s(distance_m: float, speed_kts: float) -> float:
+    """Seconds to cover `distance_m`, with a floor on the speed."""
+    return distance_m / max(0.5, speed_kts * KT_TO_MPS)
+
+
+def _build_plan(delay: float, legs: list[dict], *, strict: Optional[bool] = None) -> dict:
     plan = {
         "version": 2,
         "plan_id": str(uuid.uuid4()),
         "started_at": time.time(),
         "delay_before_start_s": round(delay, 2),
-        "strict": strict,
-        "legs": legs,
     }
+    if strict is not None:
+        plan["strict"] = strict
+    plan["legs"] = legs
+    return plan
 
+
+def _store_plan(redis_client: Any, registration: str, plan: dict, ttl: int) -> None:
     key = config.MOVE_CMD_KEY.format(registration=registration)
-    r.set(key, json.dumps(plan), ex=ttl)
+    redis_client.set(key, json.dumps(plan), ex=ttl)
+
+
+def _dispatch_pushback_only(redis_client: Any, ctx: DispatchContext) -> dict:
+    """Publish the single-leg plan for a "pushback approved" with no taxi."""
+    pushback_leg = _plan_pushback(ctx)
+    ttl = int(ctx.delay + _eta_s(pushback_leg.distance_m, pushback_leg.speed_kts) + 60.0)
+    plan = _build_plan(ctx.delay, [pushback_leg.to_dict()])
+    _store_plan(redis_client, ctx.registration, plan, ttl)
+    logger.info(
+        "[taxi_router] dispatched pushback-only %s for %s: delay=%.1fs pushback=%.1fm face=%.0f",
+        plan["plan_id"], ctx.registration, ctx.delay, pushback_leg.distance_m,
+        pushback_leg.final_heading_deg,
+    )
+    return {"success": True, "plan_id": plan["plan_id"], "ttl_s": ttl, "legs": 1}
+
+
+def _dispatch_taxi_legs(redis_client: Any, ctx: DispatchContext, route_result: dict) -> dict:
+    """Publish the taxi plan: an optional pushback leg followed by the
+    waypoints leg, with a TTL covering the whole maneuver."""
+    waypoints = route_result["waypoints"]
+
+    legs: list[dict] = []
+    pushback_dist = 0.0
+    pushback_eta = 0.0
+    if ctx.clearance.pushback_approved:
+        pushback_leg = _plan_pushback(ctx, first_wp=waypoints[0])
+        legs.append(pushback_leg.to_dict())
+        pushback_dist = pushback_leg.distance_m
+        pushback_eta = _eta_s(pushback_leg.distance_m, pushback_leg.speed_kts)
+
+    legs.append({
+        "mode": "waypoints",
+        "waypoints": waypoints,
+        "taxiway_sequence": route_result.get("taxiway_sequence", []),
+        "speed_kts": ctx.taxi_speed,
+        "stop_at_end": True,
+    })
+
+    taxi_eta = _eta_s(float(route_result["total_distance_m"]), ctx.taxi_speed)
+    ttl = int(ctx.delay + pushback_eta + taxi_eta + 60.0)
+
+    plan = _build_plan(ctx.delay, legs, strict=ctx.clearance.strict)
+    _store_plan(redis_client, ctx.registration, plan, ttl)
     logger.info(
         "[taxi_router] dispatched plan %s for %s: delay=%.1fs pushback=%.1fm taxi=%dwp dest=%s legs=%d strict=%s",
-        plan["plan_id"], registration, delay, pushback_dist,
-        len(waypoints), destination, len(legs), strict,
+        plan["plan_id"], ctx.registration, ctx.delay, pushback_dist,
+        len(waypoints), ctx.clearance.destination, len(legs), ctx.clearance.strict,
     )
     return {"success": True, "plan_id": plan["plan_id"], "ttl_s": ttl, "legs": len(legs)}
 
@@ -398,7 +542,7 @@ def _shorten_reason(
 
 
 def _reject(
-    redis_client,
+    redis_client: Any,
     *,
     callsign: str,
     registration: str,

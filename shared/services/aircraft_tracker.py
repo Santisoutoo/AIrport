@@ -1,3 +1,5 @@
+from typing import Any
+
 from XPPython3 import xp
 
 from ..models.aircraft_state import AircraftState
@@ -23,9 +25,9 @@ class AircraftTracker:
     Tracks aircraft positions at 2 Hz using X-Plane flight loops.
     """
 
-    def __init__(self, store: AircraftStateStore):
+    def __init__(self, store: AircraftStateStore) -> None:
         self._store = store
-        self._flight_loop_id = None
+        self._flight_loop_id: Any = None
         self._running = False
 
         # Session metadata
@@ -35,10 +37,10 @@ class AircraftTracker:
         self._user_callsign = "USER"
 
         # Cached dataref handles (resolved once on start)
-        self._user_dref_handles = {}
+        self._user_dref_handles: dict[str, Any] = {}
 
         # AI aircraft registry: registration -> {datarefs, metadata}
-        self._ai_aircraft = {}
+        self._ai_aircraft: dict[str, dict[str, Any]] = {}
 
 
     def set_session(self, session_id: str) -> None:
@@ -143,7 +145,13 @@ class AircraftTracker:
 
     # -- Flight loop callback -------------------------------------------------
 
-    def _flight_loop_cb(self, sinceLast, elapsedTime, counter, refCon):
+    def _flight_loop_cb(
+        self,
+        sinceLast: float,
+        elapsedTime: float,
+        counter: int,
+        refCon: Any,
+    ) -> float:
         """Called by X-Plane at 2 Hz. Returns -2 to keep 2 Hz schedule."""
         if not self._running:
             return 0  # stop

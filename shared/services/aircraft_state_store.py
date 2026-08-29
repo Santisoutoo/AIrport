@@ -1,7 +1,7 @@
 import json
 import os
 import threading
-from typing import Optional
+from typing import Any, Optional, cast
 
 import redis
 from influxdb_client import InfluxDBClient
@@ -9,7 +9,7 @@ from influxdb_client import InfluxDBClient
 from ..models.aircraft_state import AircraftState
 
 
-def _load_env():
+def _load_env() -> None:
     """Load .env file into os.environ"""
     env_path = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
     try:
@@ -33,7 +33,9 @@ _UPDATES_CHANNEL = "aircraft:updates"
 _STATE_TTL_SECONDS = 3600
 
 
-def _get_redis_client():
+# See the note in airport_data_store: redis-py's stubs type the sync client
+# as `Awaitable[T] | T`, so it stays `Any` here too.
+def _get_redis_client() -> Any:
     host = os.getenv("REDIS_HOST", "localhost")
     port = int(os.getenv("REDIS_PORT", 6379))
     db = int(os.getenv("REDIS_DB", 0))
@@ -43,25 +45,25 @@ def _get_redis_client():
 class AircraftStateStore:
     """Manages aircraft state in Redis and InfluxDB."""
 
-    def __init__(self, redis_client=None, influx_client=None):
+    def __init__(self, redis_client: Any = None, influx_client: Any = None) -> None:
         self._r = redis_client or _get_redis_client()
         self._influx = influx_client
         self._influx_write_api = None
 
         # Buffer for batching InfluxDB writes
-        self._influx_buffer = []
+        self._influx_buffer: list[Any] = []
         self._influx_buffer_lock = threading.Lock()
         self._influx_flush_size = 20  # flush every N points
 
         if self._influx is not None:
             self._init_influx()
 
-    def _init_influx(self):
+    def _init_influx(self) -> None:
         """Initialise the InfluxDB write API."""
         self._influx_write_api = self._influx.write_api()
 
 
-    def connect_influx(self):
+    def connect_influx(self) -> None:
         """Connect to InfluxDB. Called when the session starts."""
         try:
             url = os.getenv("INFLUXDB_URL", "http://localhost:8087")
@@ -102,7 +104,7 @@ class AircraftStateStore:
                 if len(self._influx_buffer) >= self._influx_flush_size:
                     self._flush_influx()
 
-    def _flush_influx(self):
+    def _flush_influx(self) -> None:
         """Write buffered points to InfluxDB. Must hold _influx_buffer_lock."""
         if not self._influx_buffer or self._influx_write_api is None:
             return
@@ -117,7 +119,7 @@ class AircraftStateStore:
         finally:
             self._influx_buffer.clear()
 
-    def flush(self):
+    def flush(self) -> None:
         """Force-flush any remaining InfluxDB buffer (call on session end)."""
         with self._influx_buffer_lock:
             self._flush_influx()
@@ -142,7 +144,7 @@ class AircraftStateStore:
 
     def get_active_registrations(self) -> set[str]:
         """Return the set of currently tracked aircraft registrations."""
-        return self._r.smembers(_ACTIVE_SET_KEY)
+        return cast(set, self._r.smembers(_ACTIVE_SET_KEY))
 
     # Read (historical from InfluxDB)
 
@@ -213,7 +215,7 @@ class AircraftStateStore:
         pipe.delete(_ACTIVE_SET_KEY)
         pipe.execute()
 
-    def close(self):
+    def close(self) -> None:
         """Flush buffers and close connections."""
         self.flush()
         if self._influx is not None:

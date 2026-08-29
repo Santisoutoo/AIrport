@@ -1,9 +1,12 @@
 from datetime import datetime
 from typing import Optional
+import logging
 import string
 
 from models.schemas import ATISResponse, CloudLayer
-from core.metar_taf_fetcher import get_metar
+from core.metar_taf_fetcher import NoWeatherDataError, get_metar
+
+logger = logging.getLogger(__name__)
 
 
 # dummy data
@@ -128,7 +131,7 @@ class ATISGenerator:
         self.airports = AIRPORT_DATA
         self._atis_counters: dict[str, int] = {}
 
-    def generate(
+    async def generate(
         self,
         icao_code: str,
         departure_runway = None,
@@ -155,7 +158,7 @@ class ATISGenerator:
         icao_code = icao_code.upper()
 
         # Fetch current METAR
-        metar_data = self._fetch_metar(icao_code)
+        metar_data = await self._fetch_metar(icao_code)
 
         # Parse METAR data
         parsed = self._parse_metar(metar_data)
@@ -229,15 +232,21 @@ class ATISGenerator:
             atis_text=atis_text
         )
 
-    def _fetch_metar(self, icao_code: str) -> dict:
-        """Fetch METAR data from API"""
-        try:
-            data = get_metar(icao_code, output_format="json")
-            if data and len(data) > 0:
-                return data[0]
-            raise ValueError(f"No METAR data available for {icao_code}")
-        except Exception as e:
-            raise ValueError(f"Failed to fetch METAR for {icao_code}: {str(e)}")
+    async def _fetch_metar(self, icao_code: str) -> dict:
+        """Fetch METAR data from the upstream API.
+
+        Raises:
+            NoWeatherDataError: the upstream has no observation for this
+                airport (the API layer maps this to a 404).
+            WeatherUpstreamError: the upstream is unreachable or answered with
+                an error status. Deliberately *not* converted to ``ValueError``:
+                an upstream outage is a 502, not "airport not found".
+        """
+        data = await get_metar(icao_code, output_format="json")
+        if data and len(data) > 0:
+            return data[0]
+        logger.info("No METAR data available for %s", icao_code)
+        raise NoWeatherDataError(f"No METAR data available for {icao_code}")
 
     def _parse_metar(self, metar_data: dict) -> dict:
         """Parse METAR JSON data into structured format"""

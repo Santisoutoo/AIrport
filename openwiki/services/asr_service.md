@@ -44,6 +44,12 @@ the caller supplied as two extra sentences ("Active callsigns: ...", "Expected S
 `use_initial_prompt=False` suppresses the prompt regardless of mode, kept for backward
 compatibility.
 
+All of those switches arrive as multipart form fields alongside the audio, and they are grouped in
+`TranscribeOptions` ([`api/schemas.py`](../../services/asr_service/api/schemas.py)) rather than
+listed one by one on the handler; `audio` stays a plain `UploadFile`. The model also owns the
+JSON-array-or-CSV parsing of `session_callsigns`/`session_sids` (`options.callsigns`,
+`options.sids`). Field names, defaults and the multipart contract are unchanged.
+
 ## The correction pipeline
 
 `api/routes.py` hands the raw Whisper string to
@@ -175,10 +181,7 @@ with `jiwer` against the phase corpora.
 harness: it drives a *deployed* ASR endpoint over an external voice dataset per model/tier/
 context-mode combination and reports WER (S/D/I breakdown), latency, real-time factor and
 per-transcription cost to a CSV trace. See
-[data-and-testing](../data-and-testing.md) for how these fit the rest of the test suite. The
-root-level [`transcription/`](../../transcription/) directory is an earlier, simpler prototype of
-this service — the same Whisper-plus-corrections idea, without `postprocess.py`'s multi-stage
-pipeline or the LLM fallback — superseded by this one.
+[data-and-testing](../data-and-testing.md) for how these fit the rest of the test suite.
 
 ## Related
 [architecture](../architecture.md) · [orchestrator](orchestrator_service.md) · [controller_hmi](controller_hmi_service.md) · [data-and-testing](../data-and-testing.md) · [index](../index.md)

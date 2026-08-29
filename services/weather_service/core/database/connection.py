@@ -1,6 +1,11 @@
+import logging
 import os
+
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, declarative_base
+
+logger = logging.getLogger(__name__)
 
 # Database configuration env variables
 DB_HOST = os.getenv("POSTGRES_HOST")
@@ -34,5 +39,7 @@ def check_connection() -> bool:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         return True
-    except Exception:
+    except SQLAlchemyError as exc:
+        # Health probe: never raise, but do not swallow the reason either.
+        logger.warning("Database health check failed: %s", exc)
         return False

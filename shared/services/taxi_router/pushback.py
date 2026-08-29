@@ -9,6 +9,7 @@ import math
 from dataclasses import dataclass
 from typing import Optional
 
+from ..geo import haversine
 from . import config
 
 
@@ -34,15 +35,6 @@ class PushbackLeg:
 
 
 _EARTH_R = 6371000.0
-
-
-def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    phi1 = math.radians(lat1)
-    phi2 = math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dl = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dl / 2) ** 2
-    return 2 * _EARTH_R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 def _advance_point(lat: float, lon: float, bearing_deg: float, dist_m: float) -> tuple[float, float]:
@@ -99,7 +91,7 @@ def plan_pushback_leg(
         tgt_lat, tgt_lon = _advance_point(stand_lat, stand_lon, back_bearing, dist)
     else:
         tgt_lat, tgt_lon = first_wp_lat, first_wp_lon
-        dist = _haversine_m(stand_lat, stand_lon, first_wp_lat, first_wp_lon)
+        dist = haversine(stand_lat, stand_lon, first_wp_lat, first_wp_lon)
         dist = max(config.PUSHBACK_MIN_DIST_M, min(config.PUSHBACK_MAX_DIST_M, dist))
 
     return PushbackLeg(

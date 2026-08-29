@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 
@@ -71,9 +71,9 @@ class ParsedCommand:
     raw_transcription: str = ""
     language: str = "en"
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         """Convierte a diccionario para JSON/MQTT"""
-        result = {
+        result: dict[str, Any] = {
             'intent': self.intent.value,
             'callsign': self.callsign,
             'confidence': self.confidence,

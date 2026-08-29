@@ -56,7 +56,6 @@ listens on `8000` inside its container except the Orchestrator, which listens on
 
 Not part of the active pipeline — don't be confused by them:
 
-- [`transcription/`](../../transcription/) — standalone transcription prototype, not in compose.
 - [`services/pilots_communication/`](../../services/pilots_communication/) — early prototype of
   what ASR + Orchestrator now do together.
 - `services/analytics_service`, `nlp_service`, `tts_service`, `xplane_manager` — empty
